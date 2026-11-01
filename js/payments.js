@@ -33,6 +33,45 @@ const Payments = {
       });
     }
 
+    // Client-based generator month change & selection controls
+    const genMonthInput = document.getElementById('generateBillingMonth');
+    if (genMonthInput) {
+      genMonthInput.addEventListener('change', () => this.renderGenerateClientsList());
+    }
+
+    const selectAllBtn = document.getElementById('genSelectAllBtn');
+    if (selectAllBtn) {
+      selectAllBtn.addEventListener('click', () => {
+        const tbody = document.getElementById('generateClientsListBody');
+        if (tbody) {
+          tbody.querySelectorAll('.gen-client-checkbox:not(:disabled)').forEach((cb) => { cb.checked = true; });
+          this.recalculateGenerateTotals();
+        }
+      });
+    }
+
+    const deselectAllBtn = document.getElementById('genDeselectAllBtn');
+    if (deselectAllBtn) {
+      deselectAllBtn.addEventListener('click', () => {
+        const tbody = document.getElementById('generateClientsListBody');
+        if (tbody) {
+          tbody.querySelectorAll('.gen-client-checkbox').forEach((cb) => { cb.checked = false; });
+          this.recalculateGenerateTotals();
+        }
+      });
+    }
+
+    const masterCheckbox = document.getElementById('genMasterCheckbox');
+    if (masterCheckbox) {
+      masterCheckbox.addEventListener('change', (e) => {
+        const tbody = document.getElementById('generateClientsListBody');
+        if (tbody) {
+          tbody.querySelectorAll('.gen-client-checkbox:not(:disabled)').forEach((cb) => { cb.checked = e.target.checked; });
+          this.recalculateGenerateTotals();
+        }
+      });
+    }
+
     // Status filter
     const statusFilter = document.getElementById('paymentStatusFilter');
     if (statusFilter) {
@@ -408,95 +447,158 @@ const Payments = {
 
   openGenerateModal() {
     const monthInput = document.getElementById('generateBillingMonth');
-    const previewEl = document.getElementById('generatePreviewNotice');
     if (monthInput) {
-      monthInput.value = Utils.getCurrentMonthString();
+      monthInput.value = this.activeMonthFilter || Utils.getCurrentMonthString();
     }
-    this.updateGeneratePreview();
+    this.renderGenerateClientsList();
     Utils.openModal('generateInvoicesModal');
   },
 
-  updateGeneratePreview() {
+  renderGenerateClientsList() {
     const monthInput = document.getElementById('generateBillingMonth');
-    const previewEl = document.getElementById('generatePreviewNotice');
-    if (!monthInput || !previewEl) return;
+    const tbody = document.getElementById('generateClientsListBody');
+    if (!tbody) return;
 
-    const billingMonth = monthInput.value || Utils.getCurrentMonthString();
-    const activeClients = Storage.getClients().filter((c) => c.status === 'active');
+    const billingMonth = (monthInput && monthInput.value) || Utils.getCurrentMonthString();
+    const clients = Storage.getClients();
+
+    if (clients.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align:center;padding:var(--space-6);color:var(--color-text-muted);">
+            No clients registered yet. Please add a client first.
+          </td>
+        </tr>
+      `;
+      this.recalculateGenerateTotals();
+      return;
+    }
+
     const existingInvoices = Storage.getInvoices().filter((inv) => inv.billingMonth === billingMonth);
-    const existingClientIds = new Set(existingInvoices.map((i) => i.clientId));
+    const existingMap = new Map();
+    existingInvoices.forEach((inv) => existingMap.set(inv.clientId, inv));
 
-    const eligibleClients = activeClients.filter((c) => !existingClientIds.has(c.id));
-    const skipCount = activeClients.length - eligibleClients.length;
+    tbody.innerHTML = clients.map((c) => {
+      const existing = existingMap.get(c.id);
+      const isAlreadyBilled = !!existing;
+      const isActive = c.status === 'active';
+      const shouldCheck = isActive && !isAlreadyBilled;
+      const dueDate = Utils.calculateDueDate(billingMonth, c.dueDay || 5);
 
-    let totalAmountPaise = 0;
-    eligibleClients.forEach((c) => {
-      totalAmountPaise += Utils.toPaise(c.monthlyAmount);
+      let statusBadge = '';
+      if (isAlreadyBilled) {
+        statusBadge = `<span class="badge badge-neutral"><span class="badge-dot"></span>Already Billed (${existing.invoiceNumber})</span>`;
+      } else if (isActive) {
+        statusBadge = `<span class="badge badge-success"><span class="badge-dot"></span>Ready to Bill</span>`;
+      } else {
+        statusBadge = `<span class="badge badge-warning"><span class="badge-dot"></span>Inactive</span>`;
+      }
+
+      return `
+        <tr style="${isAlreadyBilled ? 'opacity:0.6;' : ''}">
+          <td style="text-align:center;">
+            <input type="checkbox" 
+                   class="gen-client-checkbox" 
+                   data-client-id="${c.id}" 
+                   data-amount="${c.monthlyAmount}"
+                   data-due-date="${dueDate}"
+                   ${isAlreadyBilled ? 'disabled' : ''} 
+                   ${shouldCheck ? 'checked' : ''}>
+          </td>
+          <td style="font-weight:600;">${Utils.escapeHtml(c.name)}</td>
+          <td class="table-subtext">${Utils.escapeHtml(c.service)}</td>
+          <td class="tabular-nums" style="font-weight:600;">${Utils.formatCurrency(c.monthlyAmount)}</td>
+          <td class="tabular-nums">${Utils.formatDate(dueDate)}</td>
+          <td>${statusBadge}</td>
+        </tr>
+      `;
+    }).join('');
+
+    // Attach listener to every checkbox
+    tbody.querySelectorAll('.gen-client-checkbox').forEach((cb) => {
+      cb.addEventListener('change', () => this.recalculateGenerateTotals());
     });
 
-    previewEl.innerHTML = `
-      <div style="background-color:var(--color-bg-secondary);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);font-size:13px;">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-          <span>Active Clients:</span>
-          <strong>${activeClients.length}</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-          <span>Invoices to Create:</span>
-          <strong style="color:var(--color-success);">${eligibleClients.length} (${Utils.formatCurrency(Utils.fromPaise(totalAmountPaise))})</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between;">
-          <span>Already Generated (Skip):</span>
-          <strong>${skipCount}</strong>
-        </div>
-      </div>
-    `;
+    this.recalculateGenerateTotals();
+    Utils.refreshIcons();
+  },
+
+  recalculateGenerateTotals() {
+    const tbody = document.getElementById('generateClientsListBody');
+    const countEl = document.getElementById('genSelectedCount');
+    const totalEl = document.getElementById('genSelectedTotal');
+    const submitBtn = document.getElementById('genSubmitBtn');
+    const masterCb = document.getElementById('genMasterCheckbox');
+
+    if (!tbody) return;
+
+    const checkboxes = tbody.querySelectorAll('.gen-client-checkbox:not(:disabled)');
+    let selectedCount = 0;
+    let totalPaise = 0;
+
+    checkboxes.forEach((cb) => {
+      if (cb.checked) {
+        selectedCount++;
+        totalPaise += Utils.toPaise(cb.getAttribute('data-amount') || 0);
+      }
+    });
+
+    if (countEl) countEl.textContent = `${selectedCount} of ${checkboxes.length} client(s)`;
+    if (totalEl) totalEl.textContent = Utils.formatCurrency(Utils.fromPaise(totalPaise));
+
+    if (masterCb) {
+      masterCb.checked = checkboxes.length > 0 && selectedCount === checkboxes.length;
+      masterCb.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
+    }
+
+    if (submitBtn) {
+      if (selectedCount === 0) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i data-lucide="zap"></i> Select Clients to Bill`;
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i data-lucide="zap"></i> Generate ${selectedCount} Invoice(s) (${Utils.formatCurrency(Utils.fromPaise(totalPaise))})`;
+      }
+    }
   },
 
   executeGenerateInvoices() {
     const monthInput = document.getElementById('generateBillingMonth');
-    const billingMonth = monthInput ? monthInput.value : Utils.getCurrentMonthString();
+    const billingMonth = (monthInput && monthInput.value) || Utils.getCurrentMonthString();
 
-    if (!billingMonth) {
-      Utils.showToast('Please select a valid billing month', 'error');
+    const tbody = document.getElementById('generateClientsListBody');
+    if (!tbody) return;
+
+    const checkedBoxes = tbody.querySelectorAll('.gen-client-checkbox:checked:not(:disabled)');
+    if (checkedBoxes.length === 0) {
+      Utils.showToast('Please select at least one client to generate invoices for', 'info');
       return;
     }
-
-    const activeClients = Storage.getClients().filter((c) => c.status === 'active');
-    if (activeClients.length === 0) {
-      Utils.showToast('No active clients found. Add or activate clients first.', 'error');
-      Utils.closeModal('generateInvoicesModal');
-      return;
-    }
-
-    const existingInvoices = Storage.getInvoices().filter((inv) => inv.billingMonth === billingMonth);
-    const existingClientIds = new Set(existingInvoices.map((i) => i.clientId));
 
     let createdCount = 0;
-    let skippedCount = 0;
+    let totalPaise = 0;
 
-    activeClients.forEach((client) => {
-      if (existingClientIds.has(client.id)) {
-        skippedCount++;
-      } else {
-        const dueDate = Utils.calculateDueDate(billingMonth, client.dueDay);
+    checkedBoxes.forEach((cb) => {
+      const clientId = cb.getAttribute('data-client-id');
+      const amount = parseFloat(cb.getAttribute('data-amount')) || 0;
+      const dueDate = cb.getAttribute('data-due-date') || Utils.calculateDueDate(billingMonth, 5);
+      const client = Storage.getClientById(clientId);
+
+      if (client) {
         Storage.addInvoice({
           clientId: client.id,
           clientName: client.name,
           billingMonth,
-          amount: client.monthlyAmount,
+          amount,
           dueDate
         });
         createdCount++;
+        totalPaise += Utils.toPaise(amount);
       }
     });
 
     Utils.closeModal('generateInvoicesModal');
-
-    if (createdCount > 0) {
-      Utils.showToast(`Generation complete: ${createdCount} invoice(s) created, ${skippedCount} skipped (already billed).`, 'success');
-    } else {
-      Utils.showToast(`All ${skippedCount} active clients already have invoices for ${Utils.formatMonth(billingMonth)}.`, 'info');
-    }
+    Utils.showToast(`Generated ${createdCount} invoice(s) totaling ${Utils.formatCurrency(Utils.fromPaise(totalPaise))} for ${Utils.formatMonth(billingMonth)}`, 'success');
 
     this.activeMonthFilter = billingMonth;
     this.render();

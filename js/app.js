@@ -14,7 +14,10 @@ const App = {
     // 2. Initialize modal accessibility triggers
     Utils.initModalListeners();
 
-    // 3. Initialize all functional modules and attach form/button event listeners
+    // 3. Initialize dark/light theme preference
+    this.initTheme();
+
+    // 4. Initialize all functional modules and attach form/button event listeners
     if (window.Clients && typeof Clients.init === 'function') Clients.init();
     if (window.Payments && typeof Payments.init === 'function') Payments.init();
     if (window.Expenses && typeof Expenses.init === 'function') Expenses.init();
@@ -76,6 +79,36 @@ const App = {
     const backdrop = document.getElementById('sidebarBackdrop');
     if (sidebar) sidebar.classList.remove('drawer-open');
     if (backdrop) backdrop.classList.remove('active');
+  },
+
+  initTheme() {
+    const savedTheme = localStorage.getItem('cliento_theme') || 
+      (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    this.setTheme(savedTheme, false);
+
+    const toggleBtn = document.getElementById('themeToggleBtn');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const curTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        const nextTheme = curTheme === 'dark' ? 'light' : 'dark';
+        this.setTheme(nextTheme, true);
+      });
+    }
+  },
+
+  setTheme(theme, showToast = false) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('cliento_theme', theme);
+
+    const toggleBtn = document.getElementById('themeToggleBtn');
+    if (toggleBtn) {
+      toggleBtn.innerHTML = `<i data-lucide="${theme === 'dark' ? 'sun' : 'moon'}" class="theme-toggle-icon"></i>`;
+    }
+    Utils.refreshIcons();
+
+    if (showToast) {
+      Utils.showToast(`${theme === 'dark' ? 'Dark' : 'Light'} theme applied`, 'info', 1800);
+    }
   },
 
   navigateTo(pageId, updateHash = true) {

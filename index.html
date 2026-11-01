@@ -14,6 +14,17 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/responsive.css">
+
+  <!-- Immediate Theme Initializer (Prevents theme flicker) -->
+  <script>
+    (function() {
+      try {
+        const saved = localStorage.getItem('cliento_theme');
+        const theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
 
@@ -73,6 +84,9 @@
           <div id="topNavbarTitle" class="top-navbar-title">Dashboard Overview</div>
         </div>
         <div class="top-navbar-actions">
+          <button id="themeToggleBtn" class="btn btn-secondary btn-icon btn-sm" aria-label="Toggle dark or light theme" title="Toggle Theme">
+            <i data-lucide="moon" id="themeIcon" class="theme-toggle-icon"></i>
+          </button>
           <button class="btn btn-secondary btn-sm" onclick="Payments.openCreateInvoiceModal()">
             <i data-lucide="plus"></i> New Invoice
           </button>
@@ -852,34 +866,74 @@
     </div>
   </div>
 
-  <!-- Generate Monthly Payments Modal -->
+  <!-- Generate Monthly Payments Modal (Client-Based) -->
   <div id="generateInvoicesModal" class="modal-backdrop">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="generateInvoicesTitle">
+    <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="generateInvoicesTitle">
       <div class="modal-header">
-        <h2 id="generateInvoicesTitle" class="modal-title">Generate Monthly Payments</h2>
+        <div>
+          <h2 id="generateInvoicesTitle" class="modal-title">Generate Monthly Payments</h2>
+          <div style="font-size:12px;color:var(--color-text-muted);margin-top:2px;">
+            Select individual clients to bill for the recurring monthly cycle
+          </div>
+        </div>
         <button class="modal-close" data-modal-close aria-label="Close dialog">
           <i data-lucide="x"></i>
         </button>
       </div>
       <form id="generateInvoicesForm" novalidate>
         <div class="modal-body">
-          <div class="form-group" style="margin-bottom:var(--space-4);">
-            <label for="generateBillingMonth" class="form-label">
-              Billing Month <span class="required-indicator">*</span>
-            </label>
-            <input type="month" id="generateBillingMonth" class="form-control" onchange="Payments.updateGeneratePreview()" required>
-            <span class="form-hint">Generates one recurring invoice per active client with their preset monthly charge</span>
+          <!-- Month Selector & Quick Action Filters -->
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-bottom:var(--space-4);flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:var(--space-2);">
+              <label for="generateBillingMonth" class="form-label" style="margin:0;white-space:nowrap;">
+                Billing Month:
+              </label>
+              <input type="month" id="generateBillingMonth" class="form-control" style="width:170px;" required>
+            </div>
+            
+            <div style="display:flex;align-items:center;gap:var(--space-2);">
+              <button type="button" id="genSelectAllBtn" class="btn btn-secondary btn-sm">Select All Ready</button>
+              <button type="button" id="genDeselectAllBtn" class="btn btn-secondary btn-sm">Deselect All</button>
+            </div>
           </div>
 
-          <!-- Preview & Duplicate Check Box -->
-          <div id="generatePreviewNotice">
-            <!-- Dynamic count -->
+          <!-- Client Checkbox Table -->
+          <div class="table-responsive" style="max-height:280px;overflow-y:auto;border:1px solid var(--color-border);border-radius:var(--radius-md);margin-bottom:var(--space-4);">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width:36px;text-align:center;">
+                    <input type="checkbox" id="genMasterCheckbox" aria-label="Select all ready clients">
+                  </th>
+                  <th>Client Name</th>
+                  <th>Service</th>
+                  <th>Monthly Charge</th>
+                  <th>Due Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="generateClientsListBody">
+                <!-- Dynamically populated per client -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Live Summary Bar -->
+          <div id="generatePreviewNotice" style="background-color:var(--color-bg-secondary);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+            <div>
+              <span style="color:var(--color-text-secondary);">Selected Clients:</span>
+              <strong id="genSelectedCount">0</strong>
+            </div>
+            <div>
+              <span style="color:var(--color-text-secondary);">Total Invoicing:</span>
+              <strong id="genSelectedTotal" class="tabular-nums" style="color:var(--color-success);font-size:15px;">₹0.00</strong>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
-          <button type="submit" class="btn btn-primary">
-            <i data-lucide="check"></i> Confirm & Generate
+          <button type="submit" id="genSubmitBtn" class="btn btn-primary">
+            <i data-lucide="zap"></i> Generate Selected Invoices
           </button>
         </div>
       </form>

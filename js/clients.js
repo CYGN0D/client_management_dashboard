@@ -362,9 +362,14 @@ const Clients = {
       <div class="card" style="margin-bottom:var(--space-6);">
         <div class="card-header">
           <div class="card-title">Client Details</div>
-          <button class="btn btn-secondary btn-sm" onclick="Clients.openAddEditModal('${client.id}')">
-            <i data-lucide="edit-2"></i> Edit Client
-          </button>
+          <div style="display:flex;gap:var(--space-2);">
+            <button class="btn btn-primary btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}')">
+              <i data-lucide="receipt"></i> Bill Client
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="Clients.openAddEditModal('${client.id}')">
+              <i data-lucide="edit-2"></i> Edit Client
+            </button>
+          </div>
         </div>
         <div class="card-body">
           <div class="detail-grid">
