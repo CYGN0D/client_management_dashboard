@@ -14,23 +14,31 @@ const App = {
     // 2. Initialize modal accessibility triggers
     Utils.initModalListeners();
 
-    // 3. Set up sidebar navigation and routing
+    // 3. Initialize all functional modules and attach form/button event listeners
+    if (window.Clients && typeof Clients.init === 'function') Clients.init();
+    if (window.Payments && typeof Payments.init === 'function') Payments.init();
+    if (window.Expenses && typeof Expenses.init === 'function') Expenses.init();
+    if (window.Dashboard && typeof Dashboard.init === 'function') Dashboard.init();
+    if (window.Reports && typeof Reports.init === 'function') Reports.init();
+    if (window.Settings && typeof Settings.init === 'function') Settings.init();
+
+    // 4. Set up sidebar navigation and routing
     this.bindNavigation();
 
-    // 4. Set up mobile hamburger drawer
+    // 5. Set up mobile hamburger drawer
     this.bindMobileDrawer();
 
-    // 5. Route to initial page from URL hash or default to dashboard
+    // 6. Route to initial page from URL hash or default to dashboard
     const initialHash = window.location.hash.replace('#', '') || 'dashboard';
     this.navigateTo(initialHash, false);
 
-    // 6. Handle browser back/forward buttons
+    // 7. Handle browser back/forward buttons
     window.addEventListener('hashchange', () => {
       const page = window.location.hash.replace('#', '') || 'dashboard';
       this.navigateTo(page, false);
     });
 
-    // 7. Refresh Lucide icons
+    // 8. Refresh Lucide icons
     Utils.refreshIcons();
   },
 

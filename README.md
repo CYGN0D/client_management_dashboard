@@ -64,7 +64,7 @@ Built with **pure HTML5, CSS3, and Vanilla JavaScript (ES6+)**. No frameworks, n
 - **Business Profile**: Manage business name, contact phone, billing email, and address.
 - **Billing Preferences**: Configure default invoice prefix (e.g. `INV-`) and standard monthly due day.
 - **JSON Backup & Restore**: Export full application data into a single `.json` backup file; restore with full schema validation and confirmation.
-- **Demonstration Data Reset**: One-click wipe to start fresh with a blank workspace.
+- **Data Reset**: One-click wipe to reset all records to a clean slate.
 
 ---
 
@@ -95,7 +95,7 @@ client_management_dashboard/
 │
 └── js/
     ├── utils.js            # Currency formatting, date math, modal & toast helpers, offline SVGs
-    ├── storage.js          # LocalStorage CRUD, sample demo data, backup JSON import/export
+    ├── storage.js          # LocalStorage CRUD, backup JSON import/export, zero dummy data
     ├── clients.js          # Client list, instant search, add/edit form, client detail view
     ├── payments.js         # Invoice generation, payment listing, payment recording modal
     ├── expenses.js         # Expense logging, category/month filters, expense modals

@@ -409,9 +409,10 @@ const Payments = {
       isValid = false;
     }
 
-    if (!dateInput.value) {
-      Utils.setFieldError(dateInput, 'Payment date is required');
-      isValid = false;
+    let paymentDate = dateInput.value;
+    if (!paymentDate) {
+      paymentDate = Utils.getTodayString();
+      dateInput.value = paymentDate;
     }
 
     if (!isValid) return;
@@ -420,7 +421,7 @@ const Payments = {
       Storage.recordPayment({
         invoiceId: invoice.id,
         amount: Utils.fromPaise(enteredPaise),
-        paymentDate: dateInput.value,
+        paymentDate: paymentDate,
         paymentMethod: methodInput.value,
         notes: notesInput.value
       });

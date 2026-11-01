@@ -281,10 +281,10 @@ const Clients = {
       isValid = false;
     }
 
-    const joiningDate = joiningDateInput.value;
+    let joiningDate = joiningDateInput.value;
     if (!joiningDate) {
-      Utils.setFieldError(joiningDateInput, 'Joining date is required');
-      isValid = false;
+      joiningDate = Utils.getTodayString();
+      joiningDateInput.value = joiningDate;
     }
 
     if (!isValid) return;

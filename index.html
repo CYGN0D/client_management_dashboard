@@ -27,7 +27,7 @@
         <a href="#dashboard" class="brand" data-nav-page="dashboard">
           <div class="brand-icon">C</div>
           <span class="brand-text">Cliento</span>
-          <span class="brand-badge">PRO</span>
+          <!-- <span class="brand-badge">PRO</span> -->
         </a>
       </div>
 
@@ -604,7 +604,7 @@
               <div class="card-title">Business Information & Preferences</div>
             </div>
             <div class="card-body">
-              <form id="settingsForm">
+              <form id="settingsForm" novalidate>
                 <div class="form-grid">
                   <div class="form-group">
                     <label for="settingsBusinessName" class="form-label">
@@ -683,7 +683,7 @@
 
                 <div>
                   <button id="clearDemoDataBtn" class="btn btn-danger">
-                    <i data-lucide="trash-2"></i> Wipe All Data / Clear Demo
+                    <i data-lucide="trash-2"></i> Reset All Data
                   </button>
                 </div>
               </div>
@@ -708,7 +708,7 @@
           <i data-lucide="x"></i>
         </button>
       </div>
-      <form id="clientForm">
+      <form id="clientForm" novalidate>
         <div class="modal-body">
           <input type="hidden" id="clientFormId">
           <div class="form-grid">
@@ -716,31 +716,31 @@
               <label for="clientName" class="form-label">
                 Client Name <span class="required-indicator">*</span>
               </label>
-              <input type="text" id="clientName" class="form-control" placeholder="e.g. Apex Media Lab" required>
+              <input type="text" id="clientName" class="form-control" placeholder="Client or Company Name" required>
             </div>
 
             <div class="form-group">
               <label for="clientService" class="form-label">
                 Service / Retainer <span class="required-indicator">*</span>
               </label>
-              <input type="text" id="clientService" class="form-control" placeholder="e.g. SEO & Maintenance" required>
+              <input type="text" id="clientService" class="form-control" placeholder="Service or Retainer Description" required>
             </div>
 
             <div class="form-group">
               <label for="clientPhone" class="form-label">Phone Number</label>
-              <input type="tel" id="clientPhone" class="form-control" placeholder="+91 98765 43210">
+              <input type="tel" id="clientPhone" class="form-control" placeholder="+91 98765 00000">
             </div>
 
             <div class="form-group">
               <label for="clientEmail" class="form-label">Billing Email</label>
-              <input type="email" id="clientEmail" class="form-control" placeholder="billing@client.com">
+              <input type="email" id="clientEmail" class="form-control" placeholder="client@company.com">
             </div>
 
             <div class="form-group">
               <label for="clientMonthlyAmount" class="form-label">
                 Monthly Charge (₹) <span class="required-indicator">*</span>
               </label>
-              <input type="number" id="clientMonthlyAmount" class="form-control" placeholder="45000" min="1" step="any" required>
+              <input type="number" id="clientMonthlyAmount" class="form-control" placeholder="Amount in Rupees" min="1" step="any" required>
             </div>
 
             <div class="form-group">
@@ -802,7 +802,7 @@
           <i data-lucide="x"></i>
         </button>
       </div>
-      <form id="generateInvoicesForm">
+      <form id="generateInvoicesForm" novalidate>
         <div class="modal-body">
           <div class="form-group" style="margin-bottom:var(--space-4);">
             <label for="generateBillingMonth" class="form-label">
@@ -836,7 +836,7 @@
           <i data-lucide="x"></i>
         </button>
       </div>
-      <form id="recordPaymentForm">
+      <form id="recordPaymentForm" novalidate>
         <div class="modal-body">
           <input type="hidden" id="recordPaymentInvoiceId">
 
@@ -890,7 +890,7 @@
 
             <div class="form-group col-span-2">
               <label for="recordPaymentNotes" class="form-label">Reference / Notes</label>
-              <input type="text" id="recordPaymentNotes" class="form-control" placeholder="e.g. UTR / Txn ID #9823472">
+              <input type="text" id="recordPaymentNotes" class="form-control" placeholder="Reference / UTR / Transaction ID">
             </div>
           </div>
         </div>
@@ -929,7 +929,7 @@
           <i data-lucide="x"></i>
         </button>
       </div>
-      <form id="expenseForm">
+      <form id="expenseForm" novalidate>
         <div class="modal-body">
           <input type="hidden" id="expenseFormId">
           <div class="form-grid">
@@ -937,7 +937,7 @@
               <label for="expenseTitle" class="form-label">
                 Expense Title <span class="required-indicator">*</span>
               </label>
-              <input type="text" id="expenseTitle" class="form-control" placeholder="e.g. Cloud Server Hosting" required>
+              <input type="text" id="expenseTitle" class="form-control" placeholder="Expense description" required>
             </div>
 
             <div class="form-group">
@@ -953,7 +953,7 @@
               <label for="expenseAmount" class="form-label">
                 Amount (₹) <span class="required-indicator">*</span>
               </label>
-              <input type="number" id="expenseAmount" class="form-control" placeholder="12000" min="0.01" step="any" required>
+              <input type="number" id="expenseAmount" class="form-control" placeholder="Amount in Rupees" min="0.01" step="any" required>
             </div>
 
             <div class="form-group col-span-2">

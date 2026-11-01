@@ -300,10 +300,10 @@ const Expenses = {
       isValid = false;
     }
 
-    const date = dateInput.value;
+    let date = dateInput.value;
     if (!date) {
-      Utils.setFieldError(dateInput, 'Date is required');
-      isValid = false;
+      date = Utils.getTodayString();
+      dateInput.value = date;
     }
 
     if (!isValid) return;
