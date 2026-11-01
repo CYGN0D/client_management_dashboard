@@ -88,11 +88,98 @@ const App = {
 
     const toggleBtn = document.getElementById('themeToggleBtn');
     if (toggleBtn) {
-      toggleBtn.addEventListener('click', () => {
-        const curTheme = document.documentElement.getAttribute('data-theme') || 'light';
-        const nextTheme = curTheme === 'dark' ? 'light' : 'dark';
-        this.setTheme(nextTheme, true);
+      toggleBtn.addEventListener('click', (e) => {
+        this.toggleThemeWithCircleAnimation(e);
       });
+    }
+  },
+
+  isThemeAnimating: false,
+
+  toggleThemeWithCircleAnimation(event) {
+    if (this.isThemeAnimating) return;
+
+    const curTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const nextTheme = curTheme === 'dark' ? 'light' : 'dark';
+
+    // If user prefers reduced motion or browser doesn't support Web Animations API
+    if (
+      (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ||
+      !Element.prototype.animate
+    ) {
+      this.setTheme(nextTheme, true);
+      return;
+    }
+
+    const toggleBtn = document.getElementById('themeToggleBtn');
+    const overlay = document.getElementById('themeCircleOverlay');
+
+    if (!overlay || !toggleBtn) {
+      this.setTheme(nextTheme, true);
+      return;
+    }
+
+    // Origin: Center coordinates of the theme toggle button
+    const rect = toggleBtn.getBoundingClientRect();
+    const x = Math.round(rect.left + rect.width / 2);
+    const y = Math.round(rect.top + rect.height / 2);
+
+    // Maximum distance from button to any corner of the viewport
+    const endRadius = Math.ceil(Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    ));
+
+    this.isThemeAnimating = true;
+
+    if (nextTheme === 'dark') {
+      // Light -> Dark: Animate circular dark overlay expanding from button to cover screen
+      overlay.style.visibility = 'visible';
+      overlay.style.opacity = '1';
+
+      const anim = overlay.animate([
+        { clipPath: `circle(0px at ${x}px ${y}px)` },
+        { clipPath: `circle(${endRadius}px at ${x}px ${y}px)` }
+      ], {
+        duration: 480,
+        easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        fill: 'forwards'
+      });
+
+      anim.onfinish = () => {
+        // Apply dark theme across whole app
+        this.setTheme('dark', false);
+        // Hide overlay smoothly without layout shift or flicker
+        overlay.style.visibility = 'hidden';
+        anim.cancel();
+        this.isThemeAnimating = false;
+        Utils.showToast('Dark theme applied', 'info', 1500);
+      };
+    } else {
+      // Dark -> Light: Reverse animation!
+      // Dark overlay starts fully covering screen, light theme applied underneath,
+      // and dark overlay smoothly shrinks back into button, revealing light theme
+      overlay.style.visibility = 'visible';
+      overlay.style.opacity = '1';
+
+      // Switch underlying theme to light immediately under cover of overlay
+      this.setTheme('light', false);
+
+      const anim = overlay.animate([
+        { clipPath: `circle(${endRadius}px at ${x}px ${y}px)` },
+        { clipPath: `circle(0px at ${x}px ${y}px)` }
+      ], {
+        duration: 480,
+        easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        fill: 'forwards'
+      });
+
+      anim.onfinish = () => {
+        overlay.style.visibility = 'hidden';
+        anim.cancel();
+        this.isThemeAnimating = false;
+        Utils.showToast('Light theme applied', 'info', 1500);
+      };
     }
   },
 

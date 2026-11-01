@@ -304,9 +304,9 @@ const Dashboard = {
 
       return `
         <tr>
-          <td>
-            <div style="font-weight:600;">${Utils.escapeHtml(inv.clientName)}</div>
-            <div class="table-subtext">${inv.invoiceType === 'changes' ? 'Changes: ' : ''}${Utils.escapeHtml(inv.serviceName || inv.invoiceNumber)}</div>
+          <td style="font-weight:600;">
+            <div>${Utils.escapeHtml(inv.clientName)}</div>
+            <div class="table-subtext">${Utils.escapeHtml(inv.serviceName || inv.invoiceNumber)}</div>
           </td>
           <td class="tabular-nums" style="font-weight:600;color:var(--color-primary);">${Utils.formatCurrency(Utils.fromPaise(remPaise))}</td>
           <td class="tabular-nums" style="${inv.isOverdue ? 'color:var(--color-danger);font-weight:600;' : ''}">${Utils.formatDate(inv.dueDate)}</td>

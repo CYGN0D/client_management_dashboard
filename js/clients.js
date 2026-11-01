@@ -140,13 +140,9 @@ const Clients = {
         ? `<span class="badge badge-success"><span class="badge-dot"></span>Active</span>`
         : `<span class="badge badge-neutral"><span class="badge-dot"></span>Inactive</span>`;
 
-      const hasMonthlyRetainer = (parseFloat(client.monthlyAmount) || 0) > 0;
-      const monthlyHtml = hasMonthlyRetainer
-        ? `
-          <div class="tabular-nums" style="font-weight: 500;">${Utils.formatCurrency(client.monthlyAmount)} / mo</div>
-          ${client.monthlyDescription ? `<div class="table-subtext" title="${Utils.escapeHtml(client.monthlyDescription)}">${Utils.escapeHtml(client.monthlyDescription)}</div>` : ''}
-        `
-        : `<span class="badge badge-neutral" style="font-size:11px;font-weight:normal;">No Retainer (On Demand)</span>`;
+      const monthlyDisplay = (client.monthlyAmount && client.monthlyAmount > 0)
+        ? `<span class="tabular-nums" style="font-weight: 500;">${Utils.formatCurrency(client.monthlyAmount)}</span>`
+        : `<span class="badge badge-neutral" style="font-size:11px;">No Retainer (Ad-hoc)</span>`;
 
       return `
         <tr>
@@ -156,12 +152,12 @@ const Clients = {
           </td>
           <td>${client.phone ? Utils.escapeHtml(client.phone) : '<span class="table-subtext">—</span>'}</td>
           <td>${Utils.escapeHtml(client.service)}</td>
-          <td>${monthlyHtml}</td>
-          <td>${hasMonthlyRetainer ? `Day ${client.dueDay} of month` : '<span class="table-subtext">—</span>'}</td>
+          <td>${monthlyDisplay}</td>
+          <td>Day ${client.dueDay} of month</td>
           <td>${statusBadge}</td>
           <td class="actions-col">
             <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);">
-              <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}', 'changes')" title="Add Extra Charge / Changes" aria-label="Add Extra Charge / Changes">
+              <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}')" title="Add Charge / Invoice" aria-label="Add Charge / Invoice">
                 <i data-lucide="receipt"></i>
               </button>
               <button class="btn btn-secondary btn-icon btn-sm" onclick="Clients.viewClientDetails('${client.id}')" title="View Details" aria-label="View Details">
@@ -211,7 +207,6 @@ const Clients = {
     const emailInput = document.getElementById('clientEmail');
     const serviceInput = document.getElementById('clientService');
     const amountInput = document.getElementById('clientMonthlyAmount');
-    const monthlyDescInput = document.getElementById('clientMonthlyDescription');
     const joiningDateInput = document.getElementById('clientJoiningDate');
     const dueDayInput = document.getElementById('clientDueDay');
     const statusInput = document.getElementById('clientStatus');
@@ -225,15 +220,14 @@ const Clients = {
       phoneInput.value = client.phone || '';
       emailInput.value = client.email || '';
       serviceInput.value = client.service;
-      amountInput.value = (client.monthlyAmount > 0) ? client.monthlyAmount : '';
-      if (monthlyDescInput) monthlyDescInput.value = client.monthlyDescription || '';
+      amountInput.value = (client.monthlyAmount && client.monthlyAmount > 0) ? client.monthlyAmount : '';
       joiningDateInput.value = client.joiningDate || Utils.getTodayString();
       dueDayInput.value = client.dueDay || 5;
       statusInput.value = client.status || 'active';
     } else {
       modalTitle.textContent = 'Add New Client';
       idInput.value = '';
-      if (monthlyDescInput) monthlyDescInput.value = '';
+      amountInput.value = '';
       joiningDateInput.value = Utils.getTodayString();
       const settings = Storage.getSettings();
       dueDayInput.value = settings.billingPreference || 5;
@@ -253,7 +247,6 @@ const Clients = {
     const emailInput = document.getElementById('clientEmail');
     const serviceInput = document.getElementById('clientService');
     const amountInput = document.getElementById('clientMonthlyAmount');
-    const monthlyDescInput = document.getElementById('clientMonthlyDescription');
     const joiningDateInput = document.getElementById('clientJoiningDate');
     const dueDayInput = document.getElementById('clientDueDay');
     const statusInput = document.getElementById('clientStatus');
@@ -269,24 +262,25 @@ const Clients = {
 
     const service = serviceInput.value.trim();
     if (!service) {
-      Utils.setFieldError(serviceInput, 'Primary service type is required');
+      Utils.setFieldError(serviceInput, 'Service or retainer purpose is required');
       isValid = false;
     }
 
-    // Monthly charge is completely optional (0 if empty)
     let amount = 0;
-    if (amountInput.value && amountInput.value.trim() !== '') {
-      amount = parseFloat(amountInput.value);
+    const amountVal = amountInput.value.trim();
+    if (amountVal !== '') {
+      amount = parseFloat(amountVal);
       if (isNaN(amount) || amount < 0) {
-        Utils.setFieldError(amountInput, 'Monthly charge must be a positive number or 0');
+        Utils.setFieldError(amountInput, 'Monthly retainer must be 0 or greater');
         isValid = false;
       }
     }
 
-    const monthlyDescription = monthlyDescInput ? monthlyDescInput.value.trim() : '';
-
-    const dueDay = parseInt(dueDayInput.value, 10);
-    if (isNaN(dueDay) || dueDay < 1 || dueDay > 28) {
+    let dueDay = 5;
+    const dueDayVal = parseInt(dueDayInput.value, 10);
+    if (!isNaN(dueDayVal) && dueDayVal >= 1 && dueDayVal <= 28) {
+      dueDay = dueDayVal;
+    } else if (dueDayInput.value.trim() !== '') {
       Utils.setFieldError(dueDayInput, 'Due day must be between 1 and 28');
       isValid = false;
     }
@@ -311,9 +305,8 @@ const Clients = {
       email,
       service,
       monthlyAmount: amount,
-      monthlyDescription,
-      dueDay,
       joiningDate,
+      dueDay,
       status: statusInput.value
     };
 
@@ -352,8 +345,6 @@ const Clients = {
       ? `<span class="badge badge-success"><span class="badge-dot"></span>Active</span>`
       : `<span class="badge badge-neutral"><span class="badge-dot"></span>Inactive</span>`;
 
-    const hasRetainer = (parseFloat(client.monthlyAmount) || 0) > 0;
-
     container.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--space-5);">
         <div>
@@ -367,18 +358,15 @@ const Clients = {
       <div class="stat-grid stat-grid-3" style="margin-bottom:var(--space-6);">
         <div class="stat-card" style="padding:var(--space-3) var(--space-4);">
           <div class="stat-label">Monthly Retainer</div>
-          <div class="stat-value" style="font-size:18px;">${hasRetainer ? Utils.formatCurrency(client.monthlyAmount) : '₹0.00'}</div>
-          <div class="stat-subtext">${hasRetainer && client.monthlyDescription ? Utils.escapeHtml(client.monthlyDescription) : (hasRetainer ? 'Recurring Retainer' : 'On Demand / Project-based')}</div>
+          <div class="stat-value" style="font-size:18px;">${(client.monthlyAmount && client.monthlyAmount > 0) ? Utils.formatCurrency(client.monthlyAmount) : 'Ad-hoc (No Retainer)'}</div>
         </div>
         <div class="stat-card" style="padding:var(--space-3) var(--space-4);">
           <div class="stat-label">Total Paid</div>
           <div class="stat-value" style="font-size:18px;color:var(--color-success);">${Utils.formatCurrency(Utils.fromPaise(totalPaidPaise))}</div>
-          <div class="stat-subtext">Lifetime payments</div>
         </div>
         <div class="stat-card" style="padding:var(--space-3) var(--space-4);">
           <div class="stat-label">Outstanding Balance</div>
           <div class="stat-value" style="font-size:18px;color:${outstandingPaise > 0 ? 'var(--color-danger)' : 'var(--color-text-primary)'};">${Utils.formatCurrency(Utils.fromPaise(outstandingPaise))}</div>
-          <div class="stat-subtext">Unsettled amount</div>
         </div>
       </div>
 
@@ -386,12 +374,9 @@ const Clients = {
       <div class="card" style="margin-bottom:var(--space-6);">
         <div class="card-header">
           <div class="card-title">Client Details</div>
-          <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;">
-            <button class="btn btn-primary btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}', 'changes')">
-              <i data-lucide="plus-circle"></i> + Add Extra Charge / Changes
-            </button>
-            <button class="btn btn-secondary btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}', 'monthly')">
-              <i data-lucide="receipt"></i> Bill Retainer
+          <div style="display:flex;gap:var(--space-2);">
+            <button class="btn btn-primary btn-sm" onclick="Utils.closeModal('clientDetailModal'); Payments.openCreateInvoiceModal('${client.id}')">
+              <i data-lucide="plus"></i> Add Charge / Invoice
             </button>
             <button class="btn btn-secondary btn-sm" onclick="Clients.openAddEditModal('${client.id}')">
               <i data-lucide="edit-2"></i> Edit Client
@@ -401,42 +386,34 @@ const Clients = {
         <div class="card-body">
           <div class="detail-grid">
             <div class="detail-item">
-              <span class="detail-label">Primary Service</span>
-              <span class="detail-value">${Utils.escapeHtml(client.service)}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Monthly Retainer</span>
-              <span class="detail-value">${hasRetainer ? `${Utils.formatCurrency(client.monthlyAmount)} / mo` : 'None (Project-based / On Demand)'}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Retainer Purpose</span>
-              <span class="detail-value">${client.monthlyDescription ? Utils.escapeHtml(client.monthlyDescription) : '—'}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Billing Due Day</span>
-              <span class="detail-value">${hasRetainer ? `Day ${client.dueDay} of every month` : 'N/A'}</span>
+              <span class="detail-label">Service / Purpose</span>
+              <span class="detail-value" style="font-weight:600;">${Utils.escapeHtml(client.service)}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Phone</span>
               <span class="detail-value">${client.phone ? Utils.escapeHtml(client.phone) : '—'}</span>
             </div>
             <div class="detail-item">
-              <span class="detail-label">Billing Email</span>
+              <span class="detail-label">Email</span>
               <span class="detail-value">${client.email ? Utils.escapeHtml(client.email) : '—'}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Joining Date</span>
               <span class="detail-value">${Utils.formatDate(client.joiningDate)}</span>
             </div>
+            <div class="detail-item">
+              <span class="detail-label">Billing Due Day</span>
+              <span class="detail-value">Day ${client.dueDay} of every month</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Invoices & Extra Charges List -->
+      <!-- Invoices & Charges History -->
       <div class="card" style="margin-bottom:var(--space-6);">
         <div class="card-header">
-          <div class="card-title">Invoices & Extra Charges (${invoices.length})</div>
-          <button class="btn btn-secondary btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}', 'changes')">
+          <div class="card-title">Invoices & Billed Charges (${invoices.length})</div>
+          <button class="btn btn-secondary btn-sm" onclick="Utils.closeModal('clientDetailModal'); Payments.openCreateInvoiceModal('${client.id}')">
             <i data-lucide="plus"></i> New Charge
           </button>
         </div>
@@ -444,12 +421,12 @@ const Clients = {
           <table class="data-table">
             <thead>
               <tr>
-                <th>Invoice / Service</th>
-                <th>Cycle</th>
+                <th>Invoice #</th>
+                <th>Service / Charge</th>
+                <th>Month</th>
                 <th>Amount</th>
-                <th>Due Date</th>
                 <th>Status</th>
-                <th style="text-align:right;">Actions</th>
+                <th style="text-align:right;">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -458,30 +435,29 @@ const Clients = {
                   <td colspan="6" style="text-align:center;color:var(--color-text-muted);padding:var(--space-4);">No invoices or charges recorded for this client yet.</td>
                 </tr>
               ` : invoices.map((inv) => {
-                const isPaid = inv.status === 'paid';
+                const remPaise = Utils.toPaise(inv.amount) - Utils.toPaise(inv.paidAmount || 0);
                 return `
                   <tr>
+                    <td class="tabular-nums" style="font-weight:600;">${inv.invoiceNumber}</td>
                     <td>
-                      <div style="font-weight:600;">${Utils.escapeHtml(inv.invoiceNumber)}</div>
-                      <div style="font-size:12px;color:var(--color-text-secondary);display:inline-flex;align-items:center;gap:4px;">
-                        ${inv.invoiceType === 'changes' ? '<span class="badge badge-warning" style="font-size:10px;padding:0 5px;">Changes</span>' : ''}
-                        <span>${Utils.escapeHtml(inv.serviceName || 'Monthly Retainer')}</span>
-                      </div>
+                      <div style="font-weight:500;">${Utils.escapeHtml(inv.serviceName || 'Service')}</div>
+                      ${inv.notes ? `<div class="table-subtext">${Utils.escapeHtml(inv.notes)}</div>` : ''}
                     </td>
                     <td>${Utils.formatMonth(inv.billingMonth)}</td>
                     <td class="tabular-nums" style="font-weight:600;">${Utils.formatCurrency(inv.amount)}</td>
-                    <td class="tabular-nums">${Utils.formatDate(inv.dueDate)}</td>
                     <td>
-                      <span class="badge badge-${inv.status === 'paid' ? 'success' : inv.status === 'partial' ? 'warning' : inv.status === 'overdue' ? 'danger' : 'neutral'}">
-                        ${inv.status.toUpperCase()}
-                      </span>
+                      ${inv.status === 'paid' ? '<span class="badge badge-success"><span class="badge-dot"></span>Paid</span>' : (inv.status === 'partial' ? '<span class="badge badge-warning"><span class="badge-dot"></span>Partial</span>' : '<span class="badge badge-danger"><span class="badge-dot"></span>Pending</span>')}
                     </td>
                     <td style="text-align:right;">
-                      ${!isPaid ? `
-                        <button class="btn btn-primary btn-sm" onclick="Payments.openRecordPaymentModal('${inv.id}')">
+                      ${remPaise > 0 ? `
+                        <button class="btn btn-primary btn-sm" onclick="Utils.closeModal('clientDetailModal'); Payments.openRecordPaymentModal('${inv.id}')">
                           <i data-lucide="plus-circle"></i> Pay
                         </button>
-                      ` : ''}
+                      ` : `
+                        <button class="btn btn-secondary btn-icon btn-sm" onclick="Utils.closeModal('clientDetailModal'); Payments.viewInvoiceHistory('${inv.id}')" title="History">
+                          <i data-lucide="history"></i>
+                        </button>
+                      `}
                     </td>
                   </tr>
                 `;

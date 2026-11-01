@@ -73,8 +73,7 @@ const Storage = {
       phone: (clientData.phone || '').trim(),
       email: (clientData.email || '').trim(),
       service: clientData.service.trim(),
-      monthlyAmount: clientData.monthlyAmount !== undefined && clientData.monthlyAmount !== '' ? (parseFloat(clientData.monthlyAmount) || 0) : 0,
-      monthlyDescription: (clientData.monthlyDescription || '').trim(),
+      monthlyAmount: parseFloat(clientData.monthlyAmount) || 0,
       joiningDate: clientData.joiningDate || Utils.getTodayString(),
       dueDay: parseInt(clientData.dueDay, 10) || 5,
       status: clientData.status || 'active', // 'active' | 'inactive'
@@ -97,8 +96,7 @@ const Storage = {
       phone: clientData.phone !== undefined ? clientData.phone.trim() : clients[idx].phone,
       email: clientData.email !== undefined ? clientData.email.trim() : clients[idx].email,
       service: clientData.service !== undefined ? clientData.service.trim() : clients[idx].service,
-      monthlyAmount: clientData.monthlyAmount !== undefined && clientData.monthlyAmount !== '' ? (parseFloat(clientData.monthlyAmount) || 0) : clients[idx].monthlyAmount,
-      monthlyDescription: clientData.monthlyDescription !== undefined ? clientData.monthlyDescription.trim() : (clients[idx].monthlyDescription || ''),
+      monthlyAmount: clientData.monthlyAmount !== undefined ? parseFloat(clientData.monthlyAmount) : clients[idx].monthlyAmount,
       joiningDate: clientData.joiningDate || clients[idx].joiningDate,
       dueDay: clientData.dueDay !== undefined ? parseInt(clientData.dueDay, 10) : clients[idx].dueDay,
       status: clientData.status || clients[idx].status,
@@ -175,10 +173,10 @@ const Storage = {
       invoiceNumber: invNumber,
       clientId: invoiceData.clientId,
       clientName: invoiceData.clientName,
-      billingMonth: invoiceData.billingMonth, // YYYY-MM
-      serviceName: (invoiceData.serviceName || 'Monthly Retainer').trim(),
-      invoiceType: invoiceData.invoiceType || 'changes', // 'changes' | 'monthly' | 'custom'
+      serviceName: (invoiceData.serviceName || invoiceData.service || 'Service').trim(),
+      chargeType: invoiceData.chargeType || 'standard',
       notes: (invoiceData.notes || '').trim(),
+      billingMonth: invoiceData.billingMonth, // YYYY-MM
       amount: parseFloat(invoiceData.amount) || 0,
       paidAmount: 0,
       dueDate: invoiceData.dueDate, // YYYY-MM-DD

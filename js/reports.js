@@ -384,9 +384,9 @@ const Reports = {
 
       return `
         <tr>
-          <td>
-            <div style="font-weight:600;">${Utils.escapeHtml(inv.clientName)}</div>
-            <div class="table-subtext">${inv.invoiceType === 'changes' ? 'Changes: ' : ''}${Utils.escapeHtml(inv.serviceName || inv.invoiceNumber)}</div>
+          <td style="font-weight:600;">
+            <div>${Utils.escapeHtml(inv.clientName)}</div>
+            <div class="table-subtext">${Utils.escapeHtml(inv.serviceName || inv.invoiceNumber)}</div>
           </td>
           <td>${Utils.formatMonth(inv.billingMonth)}</td>
           <td class="tabular-nums">${Utils.formatCurrency(inv.amount)}</td>
