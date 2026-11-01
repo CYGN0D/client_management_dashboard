@@ -30,11 +30,10 @@ Built with **pure HTML5, CSS3, and Vanilla JavaScript (ES6+)**. No frameworks, n
   - Detailed historical transaction ledger.
 - **Audit-Safe Deactivation**: Clients with past financial records (invoices or payments) are safely deactivated rather than deleted, preserving complete audit history.
 
-### 3. Monthly Invoicing & Payment Tracking
-- **Automated Monthly Invoice Generator**:
-  - One-click billing run for all active clients for any selected month (`YYYY-MM`).
-  - **Strict Idempotency**: Automatically detects and skips existing invoices to eliminate duplicate billing.
-  - Inactive clients are never billed.
+### 3. Invoicing & Payment Tracking
+- **Direct & Batch Invoicing**:
+  - **Create Individual Invoice**: Create ad-hoc or monthly invoices directly for any client with customized amounts and auto-calculated due dates.
+  - **Automated Monthly Generator**: One-click batch billing for all active clients for any selected month (`YYYY-MM`) with strict idempotency (skips duplicate clients).
 - **Multi-State Payment Workflow**:
   - **Paid**: Amount received meets or exceeds invoice total.
   - **Partial**: Partial payment recorded; displays remaining balance and overdue indicator if past due date.

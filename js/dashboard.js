@@ -285,7 +285,7 @@ const Dashboard = {
     if (upcoming.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="4" style="text-align:center;color:var(--color-text-muted);padding:var(--space-4);">No upcoming or overdue payments due. All client accounts are settled!</td>
+          <td colspan="5" style="text-align:center;color:var(--color-text-muted);padding:var(--space-4);">No upcoming or overdue payments due. All client accounts are settled!</td>
         </tr>
       `;
       return;
@@ -308,9 +308,15 @@ const Dashboard = {
           <td class="tabular-nums" style="font-weight:600;color:var(--color-primary);">${Utils.formatCurrency(Utils.fromPaise(remPaise))}</td>
           <td class="tabular-nums" style="${inv.isOverdue ? 'color:var(--color-danger);font-weight:600;' : ''}">${Utils.formatDate(inv.dueDate)}</td>
           <td>${badgeHtml}</td>
+          <td style="text-align:right;">
+            <button class="btn btn-primary btn-sm" onclick="Payments.openRecordPaymentModal('${inv.id}')" title="Record Payment">
+              <i data-lucide="plus-circle"></i> Pay
+            </button>
+          </td>
         </tr>
       `;
     }).join('');
+    Utils.refreshIcons();
   }
 };
 

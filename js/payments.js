@@ -82,6 +82,25 @@ const Payments = {
         this.handleRecordPaymentSubmit();
       });
     }
+
+    // Create Invoice form submission
+    const createInvForm = document.getElementById('createInvoiceForm');
+    if (createInvForm) {
+      createInvForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        this.handleCreateInvoiceSubmit();
+      });
+    }
+
+    // Auto update amount and due date when client or month is changed
+    const clientSelect = document.getElementById('createInvoiceClientId');
+    const monthInput = document.getElementById('createInvoiceMonth');
+    if (clientSelect) {
+      clientSelect.addEventListener('change', () => this.syncCreateInvoiceFields());
+    }
+    if (monthInput) {
+      monthInput.addEventListener('change', () => this.syncCreateInvoiceFields());
+    }
   },
 
   render() {
@@ -180,10 +199,15 @@ const Payments = {
               <div class="empty-state-text">
                 ${this.activeSearchQuery || this.activeStatusFilter !== 'all' || this.activeMonthFilter
                   ? 'No records match your selected filters.'
-                  : 'Click "Generate Monthly Payments" to bill all active clients for the month.'}
+                  : 'Create an invoice for an individual client or run monthly recurring generation.'}
               </div>
               ${!this.activeSearchQuery && this.activeStatusFilter === 'all'
-                ? '<button class="btn btn-primary btn-sm" onclick="Payments.openGenerateModal()"><i data-lucide="zap"></i> Generate Monthly Payments</button>'
+                ? `
+                  <div style="display:flex;gap:var(--space-2);justify-content:center;flex-wrap:wrap;margin-top:var(--space-2);">
+                    <button class="btn btn-primary btn-sm" onclick="Payments.openCreateInvoiceModal()"><i data-lucide="plus"></i> New Invoice</button>
+                    <button class="btn btn-secondary btn-sm" onclick="Payments.openGenerateModal()"><i data-lucide="zap"></i> Generate Monthly Payments</button>
+                  </div>
+                `
                 : ''}
             </div>
           </td>
@@ -248,6 +272,138 @@ const Payments = {
     }).join('');
 
     Utils.refreshIcons();
+  },
+
+  openCreateInvoiceModal(prefillClientId = null) {
+    const clients = Storage.getClients();
+    if (clients.length === 0) {
+      Utils.showToast('No clients found. Please add a client first.', 'info');
+      if (window.Clients) Clients.openAddEditModal();
+      return;
+    }
+
+    const form = document.getElementById('createInvoiceForm');
+    if (form) {
+      Utils.clearFieldErrors(form);
+      form.reset();
+    }
+
+    const clientSelect = document.getElementById('createInvoiceClientId');
+    const monthInput = document.getElementById('createInvoiceMonth');
+
+    if (monthInput) {
+      monthInput.value = Utils.getCurrentMonthString();
+    }
+
+    if (clientSelect) {
+      clientSelect.innerHTML = `
+        <option value="">-- Choose Client --</option>
+        ${clients.map((c) => `
+          <option value="${c.id}" ${c.id === prefillClientId ? 'selected' : ''}>
+            ${Utils.escapeHtml(c.name)} (${Utils.escapeHtml(c.service)})
+          </option>
+        `).join('')}
+      `;
+    }
+
+    this.syncCreateInvoiceFields();
+    Utils.openModal('createInvoiceModal');
+  },
+
+  syncCreateInvoiceFields() {
+    const clientSelect = document.getElementById('createInvoiceClientId');
+    const monthInput = document.getElementById('createInvoiceMonth');
+    const amountInput = document.getElementById('createInvoiceAmount');
+    const dueDateInput = document.getElementById('createInvoiceDueDate');
+
+    if (!clientSelect || !monthInput || !amountInput || !dueDateInput) return;
+
+    const clientId = clientSelect.value;
+    const month = monthInput.value || Utils.getCurrentMonthString();
+
+    if (!clientId) {
+      amountInput.value = '';
+      dueDateInput.value = '';
+      return;
+    }
+
+    const client = Storage.getClientById(clientId);
+    if (client) {
+      if (!amountInput.value || amountInput.dataset.autoFilled === 'true') {
+        amountInput.value = client.monthlyAmount || '';
+        amountInput.dataset.autoFilled = 'true';
+      }
+      dueDateInput.value = Utils.calculateDueDate(month, client.dueDay || 5);
+    }
+  },
+
+  async handleCreateInvoiceSubmit() {
+    const form = document.getElementById('createInvoiceForm');
+    Utils.clearFieldErrors(form);
+
+    const clientSelect = document.getElementById('createInvoiceClientId');
+    const monthInput = document.getElementById('createInvoiceMonth');
+    const amountInput = document.getElementById('createInvoiceAmount');
+    const dueDateInput = document.getElementById('createInvoiceDueDate');
+
+    let isValid = true;
+    const clientId = clientSelect.value;
+    if (!clientId) {
+      Utils.setFieldError(clientSelect, 'Please select a client');
+      isValid = false;
+    }
+
+    const billingMonth = monthInput.value;
+    if (!billingMonth) {
+      Utils.setFieldError(monthInput, 'Billing month is required');
+      isValid = false;
+    }
+
+    const amount = parseFloat(amountInput.value);
+    if (isNaN(amount) || amount <= 0) {
+      Utils.setFieldError(amountInput, 'Invoice amount must be greater than zero');
+      isValid = false;
+    }
+
+    const dueDate = dueDateInput.value || Utils.calculateDueDate(billingMonth, 5);
+
+    if (!isValid) return;
+
+    const client = Storage.getClientById(clientId);
+    if (!client) {
+      Utils.showToast('Selected client not found', 'error');
+      return;
+    }
+
+    // Check duplicate
+    const existing = Storage.getInvoices().find(
+      (inv) => inv.clientId === clientId && inv.billingMonth === billingMonth
+    );
+
+    if (existing) {
+      const proceed = await Utils.confirm({
+        title: 'Invoice Already Exists',
+        message: `An invoice (${existing.invoiceNumber}) already exists for ${client.name} for ${Utils.formatMonth(billingMonth)}. Do you want to generate another invoice?`,
+        confirmText: 'Create Additional Invoice',
+        confirmDanger: false
+      });
+      if (!proceed) return;
+    }
+
+    Storage.addInvoice({
+      clientId: client.id,
+      clientName: client.name,
+      billingMonth,
+      amount,
+      dueDate
+    });
+
+    Utils.showToast(`Invoice for ${client.name} created successfully`, 'success');
+    Utils.closeModal('createInvoiceModal');
+    this.activeMonthFilter = billingMonth;
+    this.render();
+    if (window.Dashboard) window.Dashboard.render();
+    if (window.Reports) window.Reports.render();
   },
 
   openGenerateModal() {

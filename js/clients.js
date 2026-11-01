@@ -152,21 +152,19 @@ const Clients = {
           <td>Day ${client.dueDay} of month</td>
           <td>${statusBadge}</td>
           <td class="actions-col">
-            <div class="dropdown">
-              <button class="btn btn-secondary btn-icon btn-sm dropdown-toggle" onclick="Clients.toggleActionMenu(event, '${client.id}')" title="Actions" aria-label="Actions">
-                <i data-lucide="more-vertical"></i>
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);">
+              <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}')" title="Create Invoice for Client" aria-label="Create Invoice for Client">
+                <i data-lucide="receipt"></i>
               </button>
-              <div class="dropdown-menu" id="clientActionsMenu_${client.id}">
-                <button class="dropdown-item" onclick="Clients.viewClientDetails('${client.id}')">
-                  <i data-lucide="eye"></i> View Details
-                </button>
-                <button class="dropdown-item" onclick="Clients.openAddEditModal('${client.id}')">
-                  <i data-lucide="edit-2"></i> Edit
-                </button>
-                <button class="dropdown-item text-danger" onclick="Clients.confirmDeleteClient('${client.id}')">
-                  <i data-lucide="${isStatusActive ? 'user-x' : 'trash-2'}"></i> ${isStatusActive ? 'Deactivate' : 'Delete'}
-                </button>
-              </div>
+              <button class="btn btn-secondary btn-icon btn-sm" onclick="Clients.viewClientDetails('${client.id}')" title="View Details" aria-label="View Details">
+                <i data-lucide="eye"></i>
+              </button>
+              <button class="btn btn-secondary btn-icon btn-sm" onclick="Clients.openAddEditModal('${client.id}')" title="Edit Client" aria-label="Edit Client">
+                <i data-lucide="edit-2"></i>
+              </button>
+              <button class="btn ${isStatusActive ? 'btn-secondary' : 'btn-danger'} btn-icon btn-sm" onclick="Clients.confirmDeleteClient('${client.id}')" title="${isStatusActive ? 'Deactivate Client' : 'Delete Client'}" aria-label="${isStatusActive ? 'Deactivate Client' : 'Delete Client'}">
+                <i data-lucide="${isStatusActive ? 'user-x' : 'trash-2'}"></i>
+              </button>
             </div>
           </td>
         </tr>

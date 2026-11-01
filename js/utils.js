@@ -295,10 +295,12 @@ const Utils = {
           backdrop.classList.remove('open');
         }
       });
-      const closeBtn = backdrop.querySelector('.modal-close, [data-modal-close]');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', () => backdrop.classList.remove('open'));
-      }
+      backdrop.querySelectorAll('.modal-close, [data-modal-close]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          backdrop.classList.remove('open');
+        });
+      });
     });
   },
 

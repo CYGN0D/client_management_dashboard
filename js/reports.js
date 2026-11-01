@@ -362,7 +362,7 @@ const Reports = {
     if (invoices.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" style="text-align:center;color:var(--color-text-muted);padding:var(--space-4);">No pending or overdue payments. All client accounts are fully settled!</td>
+          <td colspan="8" style="text-align:center;color:var(--color-text-muted);padding:var(--space-4);">No pending or overdue payments. All client accounts are fully settled!</td>
         </tr>
       `;
       return;
@@ -391,9 +391,15 @@ const Reports = {
           <td class="tabular-nums" style="font-weight:600;color:var(--color-danger);">${Utils.formatCurrency(Utils.fromPaise(remPaise))}</td>
           <td class="tabular-nums" style="${inv.isOverdue ? 'color:var(--color-danger);font-weight:500;' : ''}">${Utils.formatDate(inv.dueDate)}</td>
           <td>${badgeHtml}</td>
+          <td style="text-align:right;">
+            <button class="btn btn-primary btn-sm" onclick="Payments.openRecordPaymentModal('${inv.id}')" title="Record Payment">
+              <i data-lucide="plus-circle"></i> Pay
+            </button>
+          </td>
         </tr>
       `;
     }).join('');
+    Utils.refreshIcons();
   }
 };
 
