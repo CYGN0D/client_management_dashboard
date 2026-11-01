@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cliento — Client Management & Payment Tracking</title>
+  
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Backdrop for mobile navigation drawer -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+
+    <!-- Fixed Left Sidebar -->
+    <aside class="app-sidebar" aria-label="Main Navigation">
+      <div class="sidebar-header">
+        <a href="#dashboard" class="brand" data-nav-page="dashboard">
+          <div class="brand-icon">C</div>
+          <span class="brand-text">Cliento</span>
+          <span class="brand-badge">PRO</span>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#dashboard" class="nav-item active" data-nav-page="dashboard">
+          <i data-lucide="layout-dashboard" class="nav-icon"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#clients" class="nav-item" data-nav-page="clients">
+          <i data-lucide="users" class="nav-icon"></i>
+          <span>Clients</span>
+        </a>
+        <a href="#payments" class="nav-item" data-nav-page="payments">
+          <i data-lucide="receipt" class="nav-icon"></i>
+          <span>Payments</span>
+        </a>
+        <a href="#expenses" class="nav-item" data-nav-page="expenses">
+          <i data-lucide="wallet" class="nav-icon"></i>
+          <span>Expenses</span>
+        </a>
+        <a href="#reports" class="nav-item" data-nav-page="reports">
+          <i data-lucide="bar-chart-3" class="nav-icon"></i>
+          <span>Reports</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="#settings" class="nav-item" data-nav-page="settings">
+          <i data-lucide="settings" class="nav-icon"></i>
+          <span>Settings</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="app-main">
+      <!-- Top Navbar for Mobile & Quick Context -->
+      <header class="top-navbar">
+        <div style="display:flex;align-items:center;gap:var(--space-3);">
+          <button id="mobileMenuToggleBtn" class="mobile-menu-btn" aria-label="Toggle navigation menu">
+            <i data-lucide="menu"></i>
+          </button>
+          <div id="topNavbarTitle" class="top-navbar-title">Dashboard Overview</div>
+        </div>
+        <div class="top-navbar-actions">
+          <button class="btn btn-secondary btn-sm" onclick="App.navigateTo('payments')">
+            <i data-lucide="plus"></i> Invoices
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="Clients.openAddEditModal()">
+            <i data-lucide="user-plus"></i> New Client
+          </button>
+        </div>
+      </header>
+
+      <!-- Scrollable Page Content Container -->
+      <main class="content-area">
+
+        <!-- ==================================================================
+             PAGE 1: DASHBOARD
+             ================================================================== -->
+        <section id="view-dashboard" class="page-view active">
+          <div class="page-header">
+            <div class="page-title-group">
+              <div id="dashboardGreeting" class="page-subtitle">Good day</div>
+              <h1 class="page-title">Dashboard</h1>
+            </div>
+            <div class="page-actions">
+              <div id="dashboardCurrentDate" class="tabular-nums" style="font-size:13px;color:var(--color-text-secondary);font-weight:500;">
+                Today
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 Primary Summary Metrics -->
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">Total Clients</span>
+                <div class="stat-icon"><i data-lucide="users"></i></div>
+              </div>
+              <div id="metricTotalClients" class="stat-value">0</div>
+              <div id="metricClientsSub" class="stat-subtext">Active clients</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">Monthly Income</span>
+                <div class="stat-icon"><i data-lucide="trending-up"></i></div>
+              </div>
+              <div id="metricMonthlyIncome" class="stat-value">₹0.00</div>
+              <div id="metricIncomeSub" class="stat-subtext">Received this month</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">Received Payments</span>
+                <div class="stat-icon"><i data-lucide="check-circle-2"></i></div>
+              </div>
+              <div id="metricReceivedPayments" class="stat-value">₹0.00</div>
+              <div id="metricReceivedSub" class="stat-subtext">Collected transactions</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">Pending Payments</span>
+                <div class="stat-icon"><i data-lucide="clock"></i></div>
+              </div>
+              <div id="metricPendingPayments" class="stat-value">₹0.00</div>
+              <div id="metricPendingSub" class="stat-subtext">Outstanding balance</div>
+            </div>
+          </div>
+
+          <!-- Monthly Income Overview Chart -->
+          <div class="card" style="margin-bottom:var(--space-6);">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Monthly Income Overview</div>
+                <div style="font-size:12px;color:var(--color-text-muted);margin-top:2px;">
+                  Actual payment receipts recorded over the last 6 months
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="dashboardIncomeChart" class="chart-container">
+                <!-- SVG Chart rendered by dashboard.js -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Split: Recent Payments & Recent Expenses -->
+          <div class="dashboard-split-grid">
+            <!-- Recent Payments -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Recent Payments</div>
+                <a href="#payments" class="view-all-link" data-nav-page="payments">
+                  View All <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
+                </a>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Client</th>
+                      <th>Amount</th>
+                      <th>Date</th>
+                      <th>Method</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashboardRecentPaymentsBody">
+                    <!-- Dynamic -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Recent Expenses -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Recent Expenses</div>
+                <a href="#expenses" class="view-all-link" data-nav-page="expenses">
+                  View All <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
+                </a>
+              </div>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Expense</th>
+                      <th>Category</th>
+                      <th>Amount</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashboardRecentExpensesBody">
+                    <!-- Dynamic -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upcoming & Overdue Payments Dues -->
+          <div class="card" style="margin-top:var(--space-6);">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Upcoming & Overdue Client Dues</div>
+                <div style="font-size:12px;color:var(--color-text-muted);margin-top:2px;">
+                  Unsettled client invoices sorted by earliest due date
+                </div>
+              </div>
+              <a href="#payments" class="view-all-link" data-nav-page="payments">
+                Manage Invoices <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
+              </a>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Client Name</th>
+                    <th>Amount Due</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboardUpcomingPaymentsBody">
+                  <!-- Dynamic -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             PAGE 2: CLIENT MANAGEMENT
+             ================================================================== -->
+        <section id="view-clients" class="page-view">
+          <div class="page-header">
+            <div class="page-title-group">
+              <div style="display:flex;align-items:center;gap:var(--space-3);">
+                <h1 class="page-title">Clients</h1>
+                <span id="clientTotalBadge" class="brand-badge">0 total</span>
+              </div>
+              <div class="page-subtitle">Manage client profiles, retainers, and billing schedules</div>
+            </div>
+            <div class="page-actions">
+              <button id="addClientBtn" class="btn btn-primary">
+                <i data-lucide="plus"></i> Add Client
+              </button>
+            </div>
+          </div>
+
+          <!-- Search & Filter Toolbar -->
+          <div class="toolbar">
+            <div class="search-input-wrapper">
+              <i data-lucide="search" class="search-icon"></i>
+              <input type="text" id="clientSearchInput" class="form-control" placeholder="Search by name, phone, or service...">
+            </div>
+            <div class="filter-actions">
+              <select id="clientStatusFilter" class="form-select" style="width:140px;" aria-label="Filter by client status">
+                <option value="all">All Clients</option>
+                <option value="active">Active Only</option>
+                <option value="inactive">Inactive Only</option>
+              </select>
+              <button id="clientClearFiltersBtn" class="btn btn-secondary btn-sm">Clear Filters</button>
+            </div>
+          </div>
+
+          <!-- Clients Table -->
+          <div class="card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Client Name</th>
+                    <th>Phone</th>
+                    <th>Service</th>
+                    <th>Monthly Charge</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th style="text-align:right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="clientsTableBody">
+                  <!-- Dynamic -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             PAGE 3: MONTHLY PAYMENTS
+             ================================================================== -->
+        <section id="view-payments" class="page-view">
+          <div class="page-header">
+            <div class="page-title-group">
+              <h1 class="page-title">Payments</h1>
+              <div class="page-subtitle">Generate monthly recurring invoices and track incoming client settlements</div>
+            </div>
+            <div class="page-actions">
+              <button id="generateInvoicesBtn" class="btn btn-primary">
+                <i data-lucide="zap"></i> Generate Monthly Payments
+              </button>
+            </div>
+          </div>
+
+          <!-- Payments Summary Metrics -->
+          <div class="stat-grid stat-grid-3">
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">Total Expected</span>
+                <div class="stat-icon"><i data-lucide="file-text"></i></div>
+              </div>
+              <div id="paymentsMetricExpected" class="stat-value">₹0.00</div>
+              <div class="stat-subtext">Sum of monthly billing</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">Total Received</span>
+                <div class="stat-icon"><i data-lucide="check-circle"></i></div>
+              </div>
+              <div id="paymentsMetricReceived" class="stat-value" style="color:var(--color-success);">₹0.00</div>
+              <div class="stat-subtext">Payments recorded</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">Total Pending</span>
+                <div class="stat-icon"><i data-lucide="alert-circle"></i></div>
+              </div>
+              <div id="paymentsMetricPending" class="stat-value" style="color:var(--color-danger);">₹0.00</div>
+              <div class="stat-subtext">Unsettled balance</div>
+            </div>
+          </div>
+
+          <!-- Search & Filter Toolbar -->
+          <div class="toolbar">
+            <div class="search-input-wrapper">
+              <i data-lucide="search" class="search-icon"></i>
+              <input type="text" id="paymentSearchInput" class="form-control" placeholder="Search by client name, invoice #, or month...">
+            </div>
+            <div class="filter-actions">
+              <select id="paymentMonthFilter" class="form-select" style="min-width:160px;" aria-label="Filter by billing month">
+                <!-- Dynamically populated -->
+              </select>
+              <select id="paymentStatusFilter" class="form-select" style="width:130px;" aria-label="Filter by status">
+                <option value="all">All Statuses</option>
+                <option value="paid">Paid</option>
+                <option value="partial">Partial</option>
+                <option value="pending">Pending</option>
+                <option value="overdue">Overdue</option>
+              </select>
+              <button id="paymentClearFiltersBtn" class="btn btn-secondary btn-sm">Clear</button>
+            </div>
+          </div>
+
+          <!-- Payments Listing Table -->
+          <div class="card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Client Name / Invoice</th>
+                    <th>Billing Month</th>
+                    <th>Invoice Amount</th>
+                    <th>Paid Amount</th>
+                    <th>Remaining</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th style="text-align:right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="paymentsTableBody">
+                  <!-- Dynamic -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             PAGE 4: EXPENSES
+             ================================================================== -->
+        <section id="view-expenses" class="page-view">
+          <div class="page-header">
+            <div class="page-title-group">
+              <h1 class="page-title">Expenses</h1>
+              <div class="page-subtitle">Record and manage ongoing operational business expenses</div>
+            </div>
+            <div class="page-actions">
+              <button id="addExpenseBtn" class="btn btn-primary">
+                <i data-lucide="plus"></i> Add Expense
+              </button>
+            </div>
+          </div>
+
+          <!-- Expense Summary Metrics -->
+          <div class="stat-grid stat-grid-2" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">Total Expenses This Month</span>
+                <div class="stat-icon"><i data-lucide="calendar"></i></div>
+              </div>
+              <div id="expensesTotalMonth" class="stat-value">₹0.00</div>
+              <div class="stat-subtext">Operating expenditures for current month</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">Total Expenses Today</span>
+                <div class="stat-icon"><i data-lucide="clock"></i></div>
+              </div>
+              <div id="expensesTotalToday" class="stat-value">₹0.00</div>
+              <div class="stat-subtext">Recorded today</div>
+            </div>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="toolbar">
+            <div class="search-input-wrapper">
+              <i data-lucide="search" class="search-icon"></i>
+              <input type="text" id="expenseSearchInput" class="form-control" placeholder="Search expenses by title or notes...">
+            </div>
+            <div class="filter-actions">
+              <select id="expenseCategoryFilter" class="form-select" style="min-width:150px;" aria-label="Filter by category">
+                <!-- Dynamically populated -->
+              </select>
+              <select id="expenseMonthFilter" class="form-select" style="min-width:160px;" aria-label="Filter by month">
+                <!-- Dynamically populated -->
+              </select>
+              <button id="expenseClearFiltersBtn" class="btn btn-secondary btn-sm">Clear</button>
+            </div>
+          </div>
+
+          <!-- Expense Table -->
+          <div class="card">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Expense Name</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th style="text-align:right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="expensesTableBody">
+                  <!-- Dynamic -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             PAGE 5: FINANCIAL REPORTS
+             ================================================================== -->
+        <section id="view-reports" class="page-view">
+          <div class="page-header">
+            <div class="page-title-group">
+              <h1 class="page-title">Reports</h1>
+              <!-- <div class="page-subtitle">Comprehensive financial breakdown, profitability, and debt audit</div> -->
+            </div>
+            <div class="page-actions">
+              <select id="reportPeriodFilter" class="form-select" style="min-width:180px;" aria-label="Select reporting period">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Reports Stat Grid (5 Metrics) -->
+          <div class="stat-grid stat-grid-5">
+            <div class="stat-card">
+              <div class="stat-label">Monthly Income</div>
+              <div id="reportMetricIncome" class="stat-value" style="font-size:20px;color:var(--color-success);">₹0.00</div>
+              <div class="stat-subtext">Cash received</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-label">Monthly Expenses</div>
+              <div id="reportMetricExpenses" class="stat-value" style="font-size:20px;">₹0.00</div>
+              <div class="stat-subtext">Operating costs</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-label">Net Profit</div>
+              <div id="reportMetricProfit" class="stat-value" style="font-size:20px;">₹0.00</div>
+              <div class="stat-subtext">Income minus expenses</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-label">Received Payments</div>
+              <div id="reportMetricReceived" class="stat-value" style="font-size:20px;">0</div>
+              <div class="stat-subtext">Settlement transactions</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-label">Pending Payments</div>
+              <div id="reportMetricPending" class="stat-value" style="font-size:20px;color:var(--color-danger);">₹0.00</div>
+              <div class="stat-subtext">Unpaid invoices</div>
+            </div>
+          </div>
+
+          <!-- Income vs Expenses Chart Card -->
+          <div class="card" style="margin-bottom:var(--space-6);">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Income vs Expenses Comparison</div>
+                <div style="font-size:12px;color:var(--color-text-muted);margin-top:2px;">
+                  Actual cash collected vs operating expenses across the last 6 months
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="reportsComparisonChart" class="chart-container">
+                <!-- SVG Chart rendered by reports.js -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Monthly Financial Breakdown Summary Table -->
+          <div class="card" style="margin-bottom:var(--space-6);">
+            <div class="card-header">
+              <div class="card-title">Monthly Financial Summary</div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Month</th>
+                    <th>Income Received</th>
+                    <th>Expenses</th>
+                    <th>Net Profit</th>
+                    <th>Pending Amount</th>
+                  </tr>
+                </thead>
+                <tbody id="reportMonthlySummaryBody">
+                  <!-- Dynamic -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Pending Payments Audit Report -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Pending Payments Report</div>
+                <div style="font-size:12px;color:var(--color-text-muted);margin-top:2px;">
+                  All outstanding client balances across recorded billing cycles
+                </div>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Client Name</th>
+                    <th>Billing Month</th>
+                    <th>Invoice Amount</th>
+                    <th>Paid Amount</th>
+                    <th>Remaining Balance</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="reportPendingPaymentsBody">
+                  <!-- Dynamic -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================
+             PAGE 6: SETTINGS
+             ================================================================== -->
+        <section id="view-settings" class="page-view">
+          <div class="page-header">
+            <div class="page-title-group">
+              <h1 class="page-title">Settings</h1>
+              <div class="page-subtitle">Configure business profile, billing preferences, and manage offline data backups</div>
+            </div>
+          </div>
+
+          <!-- Business Profile & Preferences Form -->
+          <div class="card" style="margin-bottom:var(--space-6);">
+            <div class="card-header">
+              <div class="card-title">Business Information & Preferences</div>
+            </div>
+            <div class="card-body">
+              <form id="settingsForm">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="settingsBusinessName" class="form-label">
+                      Business / Studio Name <span class="required-indicator">*</span>
+                    </label>
+                    <input type="text" id="settingsBusinessName" class="form-control" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="settingsPhone" class="form-label">Contact Phone</label>
+                    <input type="text" id="settingsPhone" class="form-control">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="settingsEmail" class="form-label">Billing Email</label>
+                    <input type="email" id="settingsEmail" class="form-control">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="settingsCurrency" class="form-label">Currency</label>
+                    <input type="text" id="settingsCurrency" class="form-control" value="INR (₹) — Indian Rupee" disabled>
+                    <span class="form-hint">Standardized to Indian Rupee (₹) format</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="settingsBillingPreference" class="form-label">
+                      Default Monthly Due Day <span class="required-indicator">*</span>
+                    </label>
+                    <input type="number" id="settingsBillingPreference" class="form-control" min="1" max="28" required>
+                    <span class="form-hint">Default day of month (1–28) for new client invoices</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="settingsInvoicePrefix" class="form-label">
+                      Invoice Prefix <span class="required-indicator">*</span>
+                    </label>
+                    <input type="text" id="settingsInvoicePrefix" class="form-control" required>
+                    <span class="form-hint">e.g. INV- produces INV-2026-0001</span>
+                  </div>
+
+                  <div class="form-group col-span-2">
+                    <label for="settingsAddress" class="form-label">Business Address</label>
+                    <textarea id="settingsAddress" class="form-control form-textarea"></textarea>
+                  </div>
+                </div>
+
+                <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-3);margin-top:var(--space-5);">
+                  <button type="button" id="settingsDiscardBtn" class="btn btn-secondary">Discard Changes</button>
+                  <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Data Backup, Restore & Reset -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Data Storage & Integrity</div>
+            </div>
+            <div class="card-body">
+              <div style="margin-bottom:var(--space-4);padding:var(--space-3) var(--space-4);background:var(--color-bg-secondary);border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:13px;color:var(--color-text-secondary);line-height:1.6;">
+                <strong>Browser Storage Notice:</strong> Cliento stores all client profiles, invoices, transactions, and expenses locally inside your browser's persistent LocalStorage. Data is completely private and does not sync to third-party cloud servers. Please download regular JSON backups before clearing your browser history or cache.
+              </div>
+
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-4);">
+                <div style="display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;">
+                  <button id="exportBackupBtn" class="btn btn-secondary">
+                    <i data-lucide="download"></i> Export Data Backup (JSON)
+                  </button>
+
+                  <label class="btn btn-secondary" style="margin:0;cursor:pointer;">
+                    <i data-lucide="upload"></i> Restore from JSON Backup
+                    <input type="file" id="importBackupFileInput" accept=".json,application/json" style="display:none;">
+                  </label>
+                </div>
+
+                <div>
+                  <button id="clearDemoDataBtn" class="btn btn-danger">
+                    <i data-lucide="trash-2"></i> Wipe All Data / Clear Demo
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODALS & DIALOGS
+       ==================================================================== -->
+
+  <!-- Add / Edit Client Modal -->
+  <div id="clientModal" class="modal-backdrop">
+    <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="clientModalTitle">
+      <div class="modal-header">
+        <h2 id="clientModalTitle" class="modal-title">Add New Client</h2>
+        <button class="modal-close" data-modal-close aria-label="Close dialog">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <form id="clientForm">
+        <div class="modal-body">
+          <input type="hidden" id="clientFormId">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="clientName" class="form-label">
+                Client Name <span class="required-indicator">*</span>
+              </label>
+              <input type="text" id="clientName" class="form-control" placeholder="e.g. Apex Media Lab" required>
+            </div>
+
+            <div class="form-group">
+              <label for="clientService" class="form-label">
+                Service / Retainer <span class="required-indicator">*</span>
+              </label>
+              <input type="text" id="clientService" class="form-control" placeholder="e.g. SEO & Maintenance" required>
+            </div>
+
+            <div class="form-group">
+              <label for="clientPhone" class="form-label">Phone Number</label>
+              <input type="tel" id="clientPhone" class="form-control" placeholder="+91 98765 43210">
+            </div>
+
+            <div class="form-group">
+              <label for="clientEmail" class="form-label">Billing Email</label>
+              <input type="email" id="clientEmail" class="form-control" placeholder="billing@client.com">
+            </div>
+
+            <div class="form-group">
+              <label for="clientMonthlyAmount" class="form-label">
+                Monthly Charge (₹) <span class="required-indicator">*</span>
+              </label>
+              <input type="number" id="clientMonthlyAmount" class="form-control" placeholder="45000" min="1" step="any" required>
+            </div>
+
+            <div class="form-group">
+              <label for="clientDueDay" class="form-label">
+                Billing Due Day <span class="required-indicator">*</span>
+              </label>
+              <input type="number" id="clientDueDay" class="form-control" min="1" max="28" value="5" required>
+              <span class="form-hint">Day of month (1 to 28)</span>
+            </div>
+
+            <div class="form-group">
+              <label for="clientJoiningDate" class="form-label">
+                Joining Date <span class="required-indicator">*</span>
+              </label>
+              <input type="date" id="clientJoiningDate" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+              <label for="clientStatus" class="form-label">Status</label>
+              <select id="clientStatus" class="form-select">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Client</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Client Details Modal -->
+  <div id="clientDetailModal" class="modal-backdrop">
+    <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="clientDetailTitle">
+      <div class="modal-header">
+        <h2 id="clientDetailTitle" class="modal-title">Client Overview</h2>
+        <button class="modal-close" data-modal-close aria-label="Close dialog">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div id="clientDetailContent" class="modal-body">
+        <!-- Rendered dynamically by clients.js -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate Monthly Payments Modal -->
+  <div id="generateInvoicesModal" class="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="generateInvoicesTitle">
+      <div class="modal-header">
+        <h2 id="generateInvoicesTitle" class="modal-title">Generate Monthly Payments</h2>
+        <button class="modal-close" data-modal-close aria-label="Close dialog">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <form id="generateInvoicesForm">
+        <div class="modal-body">
+          <div class="form-group" style="margin-bottom:var(--space-4);">
+            <label for="generateBillingMonth" class="form-label">
+              Billing Month <span class="required-indicator">*</span>
+            </label>
+            <input type="month" id="generateBillingMonth" class="form-control" onchange="Payments.updateGeneratePreview()" required>
+            <span class="form-hint">Generates one recurring invoice per active client with their preset monthly charge</span>
+          </div>
+
+          <!-- Preview & Duplicate Check Box -->
+          <div id="generatePreviewNotice">
+            <!-- Dynamic count -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i data-lucide="check"></i> Confirm & Generate
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Record Payment Modal -->
+  <div id="recordPaymentModal" class="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="recordPaymentTitle">
+      <div class="modal-header">
+        <h2 id="recordPaymentTitle" class="modal-title">Record Payment</h2>
+        <button class="modal-close" data-modal-close aria-label="Close dialog">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <form id="recordPaymentForm">
+        <div class="modal-body">
+          <input type="hidden" id="recordPaymentInvoiceId">
+
+          <!-- Invoice Summary Notice -->
+          <div style="background-color:var(--color-bg-secondary);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);margin-bottom:var(--space-4);font-size:13px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="color:var(--color-text-secondary);">Client:</span>
+              <strong id="recordPaymentClientName">—</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="color:var(--color-text-secondary);">Invoice Number:</span>
+              <span id="recordPaymentInvoiceNumber" class="table-subtext" style="font-weight:600;">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="color:var(--color-text-secondary);">Invoice Total:</span>
+              <span id="recordPaymentTotalAmount" class="tabular-nums" style="font-weight:600;">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:var(--color-text-secondary);">Outstanding Due:</span>
+              <span id="recordPaymentOutstanding" class="tabular-nums" style="font-weight:600;color:var(--color-danger);">—</span>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group col-span-2">
+              <label for="recordPaymentAmount" class="form-label">
+                Payment Amount (₹) <span class="required-indicator">*</span>
+              </label>
+              <input type="number" id="recordPaymentAmount" class="form-control" step="any" min="0.01" required>
+              <span class="form-hint">Supports full or partial payments. Cannot exceed remaining balance.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="recordPaymentDate" class="form-label">
+                Payment Date <span class="required-indicator">*</span>
+              </label>
+              <input type="date" id="recordPaymentDate" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+              <label for="recordPaymentMethod" class="form-label">
+                Payment Method <span class="required-indicator">*</span>
+              </label>
+              <select id="recordPaymentMethod" class="form-select" required>
+                <option value="Bank Transfer">Bank Transfer (NEFT/RTGS/IMPS)</option>
+                <option value="UPI">UPI (GPay / PhonePe / Paytm)</option>
+                <option value="Cash">Cash</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group col-span-2">
+              <label for="recordPaymentNotes" class="form-label">Reference / Notes</label>
+              <input type="text" id="recordPaymentNotes" class="form-control" placeholder="e.g. UTR / Txn ID #9823472">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Invoice History Modal -->
+  <div id="invoiceHistoryModal" class="modal-backdrop">
+    <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="invoiceHistoryTitle">
+      <div class="modal-header">
+        <h2 id="invoiceHistoryTitle" class="modal-title">Invoice Transactions</h2>
+        <button class="modal-close" data-modal-close aria-label="Close dialog">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div id="invoiceHistoryContent" class="modal-body">
+        <!-- Dynamic -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / Edit Expense Modal -->
+  <div id="expenseModal" class="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="expenseModalTitle">
+      <div class="modal-header">
+        <h2 id="expenseModalTitle" class="modal-title">Add Expense</h2>
+        <button class="modal-close" data-modal-close aria-label="Close dialog">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <form id="expenseForm">
+        <div class="modal-body">
+          <input type="hidden" id="expenseFormId">
+          <div class="form-grid">
+            <div class="form-group col-span-2">
+              <label for="expenseTitle" class="form-label">
+                Expense Title <span class="required-indicator">*</span>
+              </label>
+              <input type="text" id="expenseTitle" class="form-control" placeholder="e.g. Cloud Server Hosting" required>
+            </div>
+
+            <div class="form-group">
+              <label for="expenseCategory" class="form-label">
+                Category <span class="required-indicator">*</span>
+              </label>
+              <select id="expenseCategory" class="form-select" required>
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="expenseAmount" class="form-label">
+                Amount (₹) <span class="required-indicator">*</span>
+              </label>
+              <input type="number" id="expenseAmount" class="form-control" placeholder="12000" min="0.01" step="any" required>
+            </div>
+
+            <div class="form-group col-span-2">
+              <label for="expenseDate" class="form-label">
+                Date <span class="required-indicator">*</span>
+              </label>
+              <input type="date" id="expenseDate" class="form-control" required>
+            </div>
+
+            <div class="form-group col-span-2">
+              <label for="expenseDescription" class="form-label">Description / Notes</label>
+              <textarea id="expenseDescription" class="form-control form-textarea" placeholder="Optional expense notes..."></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Reusable Confirmation Modal -->
+  <div id="confirmModal" class="modal-backdrop">
+    <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+      <div class="modal-header">
+        <h2 id="confirmModalTitle" class="modal-title">Confirm Action</h2>
+        <button class="modal-close" data-modal-close aria-label="Close dialog">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmModalMessage" style="font-size:13.5px;color:var(--color-text-secondary);line-height:1.5;"></p>
+      </div>
+      <div class="modal-footer">
+        <button id="confirmModalCancelBtn" type="button" class="btn btn-secondary">Cancel</button>
+        <button id="confirmModalOkBtn" type="button" class="btn btn-primary">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Application Modules -->
+  <script src="js/utils.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/clients.js"></script>
+  <script src="js/payments.js"></script>
+  <script src="js/expenses.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/reports.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
