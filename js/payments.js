@@ -131,14 +131,18 @@ const Payments = {
       });
     }
 
-    // Auto update amount and due date when client or month is changed
+    // Auto update amount and due date when client, month, or type is changed
     const clientSelect = document.getElementById('createInvoiceClientId');
     const monthInput = document.getElementById('createInvoiceMonth');
+    const typeSelect = document.getElementById('createInvoiceType');
     if (clientSelect) {
       clientSelect.addEventListener('change', () => this.syncCreateInvoiceFields());
     }
     if (monthInput) {
       monthInput.addEventListener('change', () => this.syncCreateInvoiceFields());
+    }
+    if (typeSelect) {
+      typeSelect.addEventListener('change', () => this.syncCreateInvoiceFields());
     }
   },
 
@@ -212,8 +216,10 @@ const Payments = {
       invoices = invoices.filter((i) => {
         const clientMatch = i.clientName.toLowerCase().includes(this.activeSearchQuery);
         const invMatch = i.invoiceNumber && i.invoiceNumber.toLowerCase().includes(this.activeSearchQuery);
+        const serviceMatch = i.serviceName && i.serviceName.toLowerCase().includes(this.activeSearchQuery);
+        const notesMatch = i.notes && i.notes.toLowerCase().includes(this.activeSearchQuery);
         const monthMatch = Utils.formatMonth(i.billingMonth).toLowerCase().includes(this.activeSearchQuery);
-        return clientMatch || invMatch || monthMatch;
+        return clientMatch || invMatch || serviceMatch || notesMatch || monthMatch;
       });
     }
 
@@ -238,12 +244,12 @@ const Payments = {
               <div class="empty-state-text">
                 ${this.activeSearchQuery || this.activeStatusFilter !== 'all' || this.activeMonthFilter
                   ? 'No records match your selected filters.'
-                  : 'Create an invoice for an individual client or run monthly recurring generation.'}
+                  : 'Create an invoice or service charge for an individual client, or run monthly recurring generation.'}
               </div>
               ${!this.activeSearchQuery && this.activeStatusFilter === 'all'
                 ? `
                   <div style="display:flex;gap:var(--space-2);justify-content:center;flex-wrap:wrap;margin-top:var(--space-2);">
-                    <button class="btn btn-primary btn-sm" onclick="Payments.openCreateInvoiceModal()"><i data-lucide="plus"></i> New Invoice</button>
+                    <button class="btn btn-primary btn-sm" onclick="Payments.openCreateInvoiceModal(null, 'changes')"><i data-lucide="plus-circle"></i> + Add Service Charge / Changes</button>
                     <button class="btn btn-secondary btn-sm" onclick="Payments.openGenerateModal()"><i data-lucide="zap"></i> Generate Monthly Payments</button>
                   </div>
                 `
@@ -274,10 +280,24 @@ const Payments = {
         badgeHtml = `<span class="badge badge-neutral"><span class="badge-dot"></span>Pending</span>`;
       }
 
+      // Charge Type badge
+      let typeBadge = '';
+      if (inv.invoiceType === 'changes') {
+        typeBadge = `<span class="badge badge-warning" style="font-size:10.5px;padding:1px 6px;">Changes</span>`;
+      } else if (inv.invoiceType === 'custom') {
+        typeBadge = `<span class="badge badge-neutral" style="font-size:10.5px;padding:1px 6px;">Custom</span>`;
+      } else {
+        typeBadge = `<span class="badge badge-secondary" style="font-size:10.5px;padding:1px 6px;">Retainer</span>`;
+      }
+
       return `
         <tr>
           <td>
             <div style="font-weight: 600; color: var(--color-text-primary);">${Utils.escapeHtml(inv.clientName)}</div>
+            <div style="font-size: 12px; margin-top: 2px; display: inline-flex; align-items: center; gap: 4px;">
+              ${typeBadge}
+              <span style="font-weight:500;color:var(--color-text-secondary);">${Utils.escapeHtml(inv.serviceName || 'Monthly Retainer')}</span>
+            </div>
             <div class="table-subtext">${Utils.escapeHtml(inv.invoiceNumber)}</div>
           </td>
           <td>${Utils.formatMonth(inv.billingMonth)}</td>
@@ -313,7 +333,7 @@ const Payments = {
     Utils.refreshIcons();
   },
 
-  openCreateInvoiceModal(prefillClientId = null) {
+  openCreateInvoiceModal(prefillClientId = null, invoiceType = 'changes') {
     const clients = Storage.getClients();
     if (clients.length === 0) {
       Utils.showToast('No clients found. Please add a client first.', 'info');
@@ -328,10 +348,18 @@ const Payments = {
     }
 
     const clientSelect = document.getElementById('createInvoiceClientId');
+    const typeSelect = document.getElementById('createInvoiceType');
+    const serviceInput = document.getElementById('createInvoiceServiceName');
     const monthInput = document.getElementById('createInvoiceMonth');
+    const amountInput = document.getElementById('createInvoiceAmount');
+    const notesInput = document.getElementById('createInvoiceNotes');
 
     if (monthInput) {
       monthInput.value = Utils.getCurrentMonthString();
+    }
+
+    if (typeSelect) {
+      typeSelect.value = invoiceType || 'changes';
     }
 
     if (clientSelect) {
@@ -345,34 +373,69 @@ const Payments = {
       `;
     }
 
+    if (amountInput) {
+      delete amountInput.dataset.autoFilled;
+    }
+
     this.syncCreateInvoiceFields();
     Utils.openModal('createInvoiceModal');
   },
 
   syncCreateInvoiceFields() {
     const clientSelect = document.getElementById('createInvoiceClientId');
+    const typeSelect = document.getElementById('createInvoiceType');
+    const serviceInput = document.getElementById('createInvoiceServiceName');
     const monthInput = document.getElementById('createInvoiceMonth');
     const amountInput = document.getElementById('createInvoiceAmount');
     const dueDateInput = document.getElementById('createInvoiceDueDate');
 
-    if (!clientSelect || !monthInput || !amountInput || !dueDateInput) return;
+    if (!clientSelect || !amountInput || !dueDateInput) return;
 
     const clientId = clientSelect.value;
-    const month = monthInput.value || Utils.getCurrentMonthString();
+    const invType = typeSelect ? typeSelect.value : 'changes';
+    const month = (monthInput && monthInput.value) || Utils.getCurrentMonthString();
 
     if (!clientId) {
       amountInput.value = '';
       dueDateInput.value = '';
+      if (serviceInput) serviceInput.value = '';
       return;
     }
 
     const client = Storage.getClientById(clientId);
-    if (client) {
-      if (!amountInput.value || amountInput.dataset.autoFilled === 'true') {
-        amountInput.value = client.monthlyAmount || '';
-        amountInput.dataset.autoFilled = 'true';
+    if (!client) return;
+
+    dueDateInput.value = Utils.calculateDueDate(month, client.dueDay || 5);
+
+    if (invType === 'monthly') {
+      if (serviceInput) {
+        serviceInput.value = client.monthlyDescription || `Monthly Retainer - ${client.service}`;
       }
-      dueDateInput.value = Utils.calculateDueDate(month, client.dueDay || 5);
+      if (client.monthlyAmount > 0) {
+        amountInput.value = client.monthlyAmount;
+        amountInput.dataset.autoFilled = 'true';
+      } else {
+        amountInput.value = '';
+        delete amountInput.dataset.autoFilled;
+      }
+    } else if (invType === 'changes') {
+      if (serviceInput && (!serviceInput.value || serviceInput.value.startsWith('Monthly Retainer'))) {
+        serviceInput.value = '';
+        serviceInput.placeholder = 'e.g. Homepage Redesign Changes, Extra Bug Fixes, New Page Addition';
+      }
+      if (amountInput.dataset.autoFilled === 'true') {
+        amountInput.value = '';
+        delete amountInput.dataset.autoFilled;
+      }
+    } else if (invType === 'custom') {
+      if (serviceInput && (!serviceInput.value || serviceInput.value.startsWith('Monthly Retainer'))) {
+        serviceInput.value = '';
+        serviceInput.placeholder = 'e.g. Custom Web Development Project, Brand Design Package';
+      }
+      if (amountInput.dataset.autoFilled === 'true') {
+        amountInput.value = '';
+        delete amountInput.dataset.autoFilled;
+      }
     }
   },
 
@@ -381,30 +444,41 @@ const Payments = {
     Utils.clearFieldErrors(form);
 
     const clientSelect = document.getElementById('createInvoiceClientId');
+    const typeSelect = document.getElementById('createInvoiceType');
+    const serviceInput = document.getElementById('createInvoiceServiceName');
     const monthInput = document.getElementById('createInvoiceMonth');
     const amountInput = document.getElementById('createInvoiceAmount');
     const dueDateInput = document.getElementById('createInvoiceDueDate');
+    const notesInput = document.getElementById('createInvoiceNotes');
 
     let isValid = true;
-    const clientId = clientSelect.value;
+    const clientId = clientSelect ? clientSelect.value : '';
     if (!clientId) {
       Utils.setFieldError(clientSelect, 'Please select a client');
       isValid = false;
     }
 
-    const billingMonth = monthInput.value;
+    const serviceName = serviceInput ? serviceInput.value.trim() : '';
+    if (!serviceName) {
+      Utils.setFieldError(serviceInput, 'Service or change description is required');
+      isValid = false;
+    }
+
+    const billingMonth = monthInput ? monthInput.value : '';
     if (!billingMonth) {
       Utils.setFieldError(monthInput, 'Billing month is required');
       isValid = false;
     }
 
-    const amount = parseFloat(amountInput.value);
+    const amount = parseFloat(amountInput ? amountInput.value : 0);
     if (isNaN(amount) || amount <= 0) {
-      Utils.setFieldError(amountInput, 'Invoice amount must be greater than zero');
+      Utils.setFieldError(amountInput, 'Charge amount must be greater than zero');
       isValid = false;
     }
 
-    const dueDate = dueDateInput.value || Utils.calculateDueDate(billingMonth, 5);
+    const dueDate = (dueDateInput && dueDateInput.value) || Utils.calculateDueDate(billingMonth, 5);
+    const invoiceType = typeSelect ? typeSelect.value : 'changes';
+    const notes = notesInput ? notesInput.value.trim() : '';
 
     if (!isValid) return;
 
@@ -414,30 +488,35 @@ const Payments = {
       return;
     }
 
-    // Check duplicate
-    const existing = Storage.getInvoices().find(
-      (inv) => inv.clientId === clientId && inv.billingMonth === billingMonth
-    );
+    // Duplicate protection applies strictly if generating identical monthly retainer
+    if (invoiceType === 'monthly') {
+      const existing = Storage.getInvoices().find(
+        (inv) => inv.clientId === clientId && inv.billingMonth === billingMonth && inv.invoiceType === 'monthly'
+      );
 
-    if (existing) {
-      const proceed = await Utils.confirm({
-        title: 'Invoice Already Exists',
-        message: `An invoice (${existing.invoiceNumber}) already exists for ${client.name} for ${Utils.formatMonth(billingMonth)}. Do you want to generate another invoice?`,
-        confirmText: 'Create Additional Invoice',
-        confirmDanger: false
-      });
-      if (!proceed) return;
+      if (existing) {
+        const proceed = await Utils.confirm({
+          title: 'Monthly Retainer Already Exists',
+          message: `A monthly retainer invoice (${existing.invoiceNumber}) already exists for ${client.name} for ${Utils.formatMonth(billingMonth)}. Do you want to create an additional monthly invoice?`,
+          confirmText: 'Create Additional Invoice',
+          confirmDanger: false
+        });
+        if (!proceed) return;
+      }
     }
 
     Storage.addInvoice({
       clientId: client.id,
       clientName: client.name,
       billingMonth,
+      serviceName,
+      invoiceType,
+      notes,
       amount,
       dueDate
     });
 
-    Utils.showToast(`Invoice for ${client.name} created successfully`, 'success');
+    Utils.showToast(`Invoice for "${serviceName}" created successfully for ${client.name}`, 'success');
     Utils.closeModal('createInvoiceModal');
     this.activeMonthFilter = billingMonth;
     this.render();
@@ -482,11 +561,14 @@ const Payments = {
       const existing = existingMap.get(c.id);
       const isAlreadyBilled = !!existing;
       const isActive = c.status === 'active';
-      const shouldCheck = isActive && !isAlreadyBilled;
+      const hasRetainer = (parseFloat(c.monthlyAmount) || 0) > 0;
+      const canBill = isActive && !isAlreadyBilled && hasRetainer;
       const dueDate = Utils.calculateDueDate(billingMonth, c.dueDay || 5);
 
       let statusBadge = '';
-      if (isAlreadyBilled) {
+      if (!hasRetainer) {
+        statusBadge = `<span class="badge badge-neutral"><span class="badge-dot"></span>No Retainer Set</span>`;
+      } else if (isAlreadyBilled) {
         statusBadge = `<span class="badge badge-neutral"><span class="badge-dot"></span>Already Billed (${existing.invoiceNumber})</span>`;
       } else if (isActive) {
         statusBadge = `<span class="badge badge-success"><span class="badge-dot"></span>Ready to Bill</span>`;
@@ -495,20 +577,20 @@ const Payments = {
       }
 
       return `
-        <tr style="${isAlreadyBilled ? 'opacity:0.6;' : ''}">
+        <tr style="${isAlreadyBilled || !hasRetainer ? 'opacity:0.6;' : ''}">
           <td style="text-align:center;">
             <input type="checkbox" 
                    class="gen-client-checkbox" 
                    data-client-id="${c.id}" 
-                   data-amount="${c.monthlyAmount}"
+                   data-amount="${c.monthlyAmount || 0}"
                    data-due-date="${dueDate}"
-                   ${isAlreadyBilled ? 'disabled' : ''} 
-                   ${shouldCheck ? 'checked' : ''}>
+                   ${!canBill ? 'disabled' : ''} 
+                   ${canBill ? 'checked' : ''}>
           </td>
           <td style="font-weight:600;">${Utils.escapeHtml(c.name)}</td>
-          <td class="table-subtext">${Utils.escapeHtml(c.service)}</td>
-          <td class="tabular-nums" style="font-weight:600;">${Utils.formatCurrency(c.monthlyAmount)}</td>
-          <td class="tabular-nums">${Utils.formatDate(dueDate)}</td>
+          <td class="table-subtext">${c.monthlyDescription ? Utils.escapeHtml(c.monthlyDescription) : Utils.escapeHtml(c.service)}</td>
+          <td class="tabular-nums" style="font-weight:600;">${hasRetainer ? Utils.formatCurrency(c.monthlyAmount) : '—'}</td>
+          <td class="tabular-nums">${hasRetainer ? Utils.formatDate(dueDate) : '—'}</td>
           <td>${statusBadge}</td>
         </tr>
       `;
@@ -589,6 +671,8 @@ const Payments = {
           clientId: client.id,
           clientName: client.name,
           billingMonth,
+          serviceName: client.monthlyDescription || `Monthly Retainer - ${client.service}`,
+          invoiceType: 'monthly',
           amount,
           dueDate
         });
@@ -707,11 +791,24 @@ const Payments = {
     const container = document.getElementById('invoiceHistoryContent');
     if (!container) return;
 
+    let typeBadge = '';
+    if (invoice.invoiceType === 'changes') {
+      typeBadge = `<span class="badge badge-warning" style="font-size:10px;padding:1px 6px;">Changes</span>`;
+    } else if (invoice.invoiceType === 'custom') {
+      typeBadge = `<span class="badge badge-neutral" style="font-size:10px;padding:1px 6px;">Custom</span>`;
+    } else {
+      typeBadge = `<span class="badge badge-secondary" style="font-size:10px;padding:1px 6px;">Retainer</span>`;
+    }
+
     container.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--space-4);padding-bottom:var(--space-3);border-bottom:1px solid var(--color-border);">
         <div>
           <h4 style="font-size:16px;font-weight:600;">${Utils.escapeHtml(invoice.clientName)}</h4>
-          <div style="font-size:12px;color:var(--color-text-secondary);">${Utils.escapeHtml(invoice.invoiceNumber)} • Billing Month: ${Utils.formatMonth(invoice.billingMonth)}</div>
+          <div style="font-size:12.5px;color:var(--color-primary);font-weight:500;margin-top:2px;display:flex;align-items:center;gap:5px;">
+            ${typeBadge} <span>${Utils.escapeHtml(invoice.serviceName || 'Monthly Retainer')}</span>
+          </div>
+          ${invoice.notes ? `<div style="font-size:12px;color:var(--color-text-secondary);font-style:italic;margin-top:2px;">Ref: ${Utils.escapeHtml(invoice.notes)}</div>` : ''}
+          <div style="font-size:12px;color:var(--color-text-muted);margin-top:3px;">${Utils.escapeHtml(invoice.invoiceNumber)} • Billing Month: ${Utils.formatMonth(invoice.billingMonth)}</div>
         </div>
         <div style="text-align:right;">
           <div style="font-size:12px;color:var(--color-text-muted);">Invoice Amount</div>

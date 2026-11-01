@@ -325,10 +325,10 @@
               
             </div>
             <div class="page-actions">
-              <button class="btn btn-secondary" onclick="Payments.openCreateInvoiceModal()">
-                <i data-lucide="plus"></i> Create Invoice
+              <button class="btn btn-primary" onclick="Payments.openCreateInvoiceModal(null, 'changes')">
+                <i data-lucide="plus-circle"></i> + Add Service Charge / Changes
               </button>
-              <button id="generateInvoicesBtn" class="btn btn-primary">
+              <button id="generateInvoicesBtn" class="btn btn-secondary">
                 <i data-lucide="zap"></i> Generate Monthly Payments
               </button>
             </div>
@@ -368,13 +368,13 @@
           <div class="toolbar">
             <div class="search-input-wrapper">
               <i data-lucide="search" class="search-icon"></i>
-              <input type="text" id="paymentSearchInput" class="form-control" placeholder="Search by client name, invoice #, or month...">
+              <input type="text" id="paymentSearchInput" class="form-control" placeholder="Search by client name, invoice #, service, or month...">
             </div>
             <div class="filter-actions">
-              <select id="paymentMonthFilter" class="form-select" style="min-width:160px;" aria-label="Filter by billing month">
+              <select id="paymentMonthFilter" class="form-select payment-month-select" aria-label="Filter by billing month">
                 <!-- Dynamically populated -->
               </select>
-              <select id="paymentStatusFilter" class="form-select" style="width:130px;" aria-label="Filter by status">
+              <select id="paymentStatusFilter" class="form-select payment-status-select" aria-label="Filter by status">
                 <option value="all">All Statuses</option>
                 <option value="paid">Paid</option>
                 <option value="partial">Partial</option>
@@ -740,9 +740,9 @@
 
             <div class="form-group">
               <label for="clientService" class="form-label">
-                Service / Retainer <span class="required-indicator">*</span>
+                Primary Service / Work Type <span class="required-indicator">*</span>
               </label>
-              <input type="text" id="clientService" class="form-control" placeholder="Service or Retainer Description" required>
+              <input type="text" id="clientService" class="form-control" placeholder="e.g. Web Development, SEO, Graphic Design" required>
             </div>
 
             <div class="form-group">
@@ -757,16 +757,25 @@
 
             <div class="form-group">
               <label for="clientMonthlyAmount" class="form-label">
-                Monthly Charge (₹) <span class="required-indicator">*</span>
+                Monthly Retainer (₹) <span class="form-hint" style="display:inline;font-weight:normal;">(Optional)</span>
               </label>
-              <input type="number" id="clientMonthlyAmount" class="form-control" placeholder="Amount in Rupees" min="1" step="any" required>
+              <input type="number" id="clientMonthlyAmount" class="form-control" placeholder="0 if one-time / project based" min="0" step="any">
+              <span class="form-hint">Optional recurring monthly charge</span>
+            </div>
+
+            <div class="form-group">
+              <label for="clientMonthlyDescription" class="form-label">
+                Monthly Payment Purpose / Scope <span class="form-hint" style="display:inline;font-weight:normal;">(Optional)</span>
+              </label>
+              <input type="text" id="clientMonthlyDescription" class="form-control" placeholder="e.g. Monthly Maintenance, 4 Blogs/mo, Cloud Hosting">
+              <span class="form-hint">Monthly payment kis chiz ka set ho rha hai</span>
             </div>
 
             <div class="form-group">
               <label for="clientDueDay" class="form-label">
-                Billing Due Day <span class="required-indicator">*</span>
+                Billing Due Day <span class="form-hint" style="display:inline;font-weight:normal;">(If recurring)</span>
               </label>
-              <input type="number" id="clientDueDay" class="form-control" min="1" max="28" value="5" required>
+              <input type="number" id="clientDueDay" class="form-control" min="1" max="28" value="5">
               <span class="form-hint">Day of month (1 to 28)</span>
             </div>
 
@@ -777,7 +786,7 @@
               <input type="date" id="clientJoiningDate" class="form-control" required>
             </div>
 
-            <div class="form-group">
+            <div class="form-group col-span-2">
               <label for="clientStatus" class="form-label">Status</label>
               <select id="clientStatus" class="form-select">
                 <option value="active">Active</option>
@@ -812,11 +821,16 @@
     </div>
   </div>
 
-  <!-- Create Individual Invoice Modal -->
+  <!-- Create Individual Invoice / Add Service Charge Modal -->
   <div id="createInvoiceModal" class="modal-backdrop">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="createInvoiceTitle">
+    <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="createInvoiceTitle">
       <div class="modal-header">
-        <h2 id="createInvoiceTitle" class="modal-title">Create Client Invoice</h2>
+        <div>
+          <h2 id="createInvoiceTitle" class="modal-title">Create Invoice / Add Charge</h2>
+          <div style="font-size:12px;color:var(--color-text-muted);margin-top:2px;">
+            Bill monthly retainers, client change requests, or custom services
+          </div>
+        </div>
         <button class="modal-close" data-modal-close aria-label="Close dialog">
           <i data-lucide="x"></i>
         </button>
@@ -824,7 +838,7 @@
       <form id="createInvoiceForm" novalidate>
         <div class="modal-body">
           <div class="form-grid">
-            <div class="form-group col-span-2">
+            <div class="form-group">
               <label for="createInvoiceClientId" class="form-label">
                 Client <span class="required-indicator">*</span>
               </label>
@@ -834,32 +848,57 @@
             </div>
 
             <div class="form-group">
+              <label for="createInvoiceType" class="form-label">
+                Charge / Invoice Type <span class="required-indicator">*</span>
+              </label>
+              <select id="createInvoiceType" class="form-select">
+                <option value="changes">Extra Work / Change Request (Client Changes)</option>
+                <option value="monthly">Monthly Recurring Retainer</option>
+                <option value="custom">One-Time Project / Custom Service</option>
+              </select>
+            </div>
+
+            <div class="form-group col-span-2">
+              <label for="createInvoiceServiceName" class="form-label">
+                Service Name / Work Description <span class="required-indicator">*</span>
+              </label>
+              <input type="text" id="createInvoiceServiceName" class="form-control" placeholder="e.g. Homepage Redesign Changes, Bug Fixes, New Page Addition" required>
+              <span class="form-hint">Specify what work or changes are being charged</span>
+            </div>
+
+            <div class="form-group">
               <label for="createInvoiceMonth" class="form-label">
-                Billing Month <span class="required-indicator">*</span>
+                Billing Cycle / Month <span class="required-indicator">*</span>
               </label>
               <input type="month" id="createInvoiceMonth" class="form-control" required>
             </div>
 
             <div class="form-group">
               <label for="createInvoiceAmount" class="form-label">
-                Invoice Amount (₹) <span class="required-indicator">*</span>
+                Charge Amount (₹) <span class="required-indicator">*</span>
               </label>
               <input type="number" id="createInvoiceAmount" class="form-control" placeholder="Amount in Rupees" min="0.01" step="any" required>
             </div>
 
-            <div class="form-group col-span-2">
+            <div class="form-group">
               <label for="createInvoiceDueDate" class="form-label">
                 Payment Due Date <span class="required-indicator">*</span>
               </label>
               <input type="date" id="createInvoiceDueDate" class="form-control" required>
-              <span class="form-hint">Automatically calculated from client due day preference</span>
+            </div>
+
+            <div class="form-group">
+              <label for="createInvoiceNotes" class="form-label">
+                Notes / Reference (Optional)
+              </label>
+              <input type="text" id="createInvoiceNotes" class="form-control" placeholder="e.g. Approved via WhatsApp / 2 revisions">
             </div>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
           <button type="submit" class="btn btn-primary">
-            <i data-lucide="check"></i> Create Invoice
+            <i data-lucide="check"></i> Save Invoice / Charge
           </button>
         </div>
       </form>
