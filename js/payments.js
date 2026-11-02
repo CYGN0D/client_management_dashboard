@@ -297,7 +297,7 @@ const Payments = {
               <span class="tabular-nums" style="font-weight:500;">${Utils.escapeHtml(inv.invoiceNumber)}</span>
               <span style="opacity:0.5;"> • </span>
               <span style="color:var(--color-text-secondary);">${Utils.escapeHtml(inv.serviceName || 'Service')}</span>
-              ${inv.notes ? `<span title="${Utils.escapeHtml(inv.notes)}" style="cursor:help;margin-left:4px;">ℹ️</span>` : ''}
+              ${inv.notes ? `<span title="${Utils.escapeHtml(inv.notes)}" style="cursor:help;margin-left:4px;display:inline-flex;align-items:center;vertical-align:-2px;color:var(--color-text-muted);" aria-label="Notes: ${Utils.escapeHtml(inv.notes)}"><i data-lucide="info" style="width:13px;height:13px;"></i></span>` : ''}
             </div>
           </td>
           <td data-label="Billing Month">${Utils.formatMonth(inv.billingMonth)}</td>
