@@ -236,7 +236,7 @@ const Clients = {
     `.trim();
   },
 
-  renderServiceChips(serviceList, maxVisible = 2, clientName = '', isTiny = false) {
+  renderServiceChips(serviceList, maxVisible = 1, clientName = '', isTiny = false) {
     if (!serviceList || serviceList.length === 0) {
       return `<span class="table-secondary-text">—</span>`;
     }
@@ -251,13 +251,9 @@ const Clients = {
 
     const visibleTags = serviceList.slice(0, maxVisible).map((s) => `<span class="${tagClass}" title="${Utils.escapeHtml(s)}">${Utils.escapeHtml(s)}</span>`).join('');
     const extraCount = serviceList.length - maxVisible;
-    const moreTag = `
-      <button type="button" class="${moreClass}" data-table-popup="${Utils.escapeHtml(popupHtml)}" title="Click to view all ${serviceList.length} services" style="cursor:pointer;">
-        +${extraCount} more
-      </button>
-    `;
+    const moreTag = `<button type="button" class="${moreClass}" data-table-popup="${Utils.escapeHtml(popupHtml)}" title="Click to view all ${serviceList.length} services" style="cursor:pointer;">+${extraCount} more</button>`;
 
-    return `${visibleTags} ${moreTag}`;
+    return `${visibleTags}${moreTag}`;
   },
 
   renderTable() {
@@ -1372,30 +1368,42 @@ const Clients = {
         `;
       }
 
+      const retainerPopupHtml = hasMonthly ? `
+        <div class="table-data-popup-header">
+          <span class="table-data-popup-title">Monthly Retainer</span>
+          <span class="table-data-popup-badge">${client.retainerStatus === 'paused' ? 'Paused' : 'Active'}</span>
+        </div>
+        <div class="table-data-popup-row"><span>Monthly Rate</span><span>${Utils.formatCurrency(client.monthlyAmount)} / mo</span></div>
+        <div class="table-data-popup-row"><span>Billing Schedule</span><span>Day ${client.dueDay || 5} of every month</span></div>
+        <div class="table-data-popup-row"><span>Services Included</span><span>${serviceList.join(', ') || 'General Retainer'}</span></div>
+      `.trim() : '';
+
       return `
         <div class="table-responsive">
           <table class="table-streamlined">
             <thead>
               <tr>
-                <th style="min-width:160px;">Service / Plan</th>
-                <th style="min-width:140px;">Billing Schedule</th>
-                <th style="min-width:100px;">Status</th>
-                <th style="min-width:130px;text-align:right;">Rate / Fee</th>
-                <th style="min-width:80px;text-align:right;">Actions</th>
+                <th style="min-width:200px;">Service / Plan</th>
+                <th style="min-width:150px;">Billing Schedule</th>
+                <th style="min-width:90px;">Status</th>
+                <th style="min-width:120px;text-align:right;">Rate / Fee</th>
+                <th style="min-width:60px;text-align:right;">Actions</th>
               </tr>
             </thead>
             <tbody>
               ${hasMonthly ? `
                 <tr>
                   <td>
-                    <div class="table-single-line">
+                    <div class="table-single-line" data-table-popup="${Utils.escapeHtml(retainerPopupHtml)}">
                       <span style="font-weight:600;color:var(--color-text-primary);font-size:13px;">Retainer Agreement</span>
                       <span class="table-bullet">•</span>
-                      ${this.renderServiceChips(serviceList, 2, client.name, false)}
+                      ${this.renderServiceChips(serviceList, 1, client.name, false)}
                     </div>
                   </td>
                   <td>
-                    <div style="font-weight:500;">Day ${client.dueDay || 5} of every month</div>
+                    <div class="table-single-line">
+                      <span style="font-weight:500;">Day ${client.dueDay || 5} of every month</span>
+                    </div>
                   </td>
                   <td>
                     ${client.retainerStatus === 'paused' 
@@ -1438,7 +1446,7 @@ const Clients = {
               ${oneTimeServices.map((inv) => {
                 const remPaise = Utils.toPaise(inv.amount) - Utils.toPaise(inv.paidAmount || 0);
                 const isAdvance = inv.chargeType === 'project_advance' || (inv.notes && inv.notes.toLowerCase().includes('advance'));
-                const typeBadge = isAdvance ? 'Project Advance' : 'One-Time Charge';
+                const typeLabel = isAdvance ? 'Project Advance' : (inv.chargeType === 'one_time' ? 'One-Time Charge' : (inv.serviceName || 'Custom Service'));
 
                 let statusBadge = '';
                 if (inv.status === 'paid') {
@@ -1456,14 +1464,31 @@ const Clients = {
                   .map((s) => s.trim())
                   .filter(Boolean);
 
+                const invPopupHtml = `
+                  <div class="table-data-popup-header">
+                    <span class="table-data-popup-title">${Utils.escapeHtml(inv.invoiceNumber)}</span>
+                    <span class="table-data-popup-badge">${inv.status.toUpperCase()}</span>
+                  </div>
+                  <div class="table-data-popup-row"><span>Charge Type</span><span>${Utils.escapeHtml(typeLabel)}</span></div>
+                  <div class="table-data-popup-row"><span>Billing Month</span><span>${Utils.formatMonth(inv.billingMonth)}</span></div>
+                  <div class="table-data-popup-row"><span>Due Date</span><span>${Utils.formatDate(inv.dueDate)}</span></div>
+                  <div class="table-data-popup-row"><span>Amount</span><span>${Utils.formatCurrency(inv.amount)}</span></div>
+                  ${remPaise > 0 ? `<div class="table-data-popup-row"><span>Remaining Due</span><span>${Utils.formatCurrency(Utils.fromPaise(remPaise))}</span></div>` : ''}
+                  ${inv.notes ? `<div class="table-data-popup-row"><span>Notes</span><span>${Utils.escapeHtml(inv.notes)}</span></div>` : ''}
+                  <div class="table-data-popup-row"><span>Services</span><span>${invServiceList.join(', ')}</span></div>
+                `.trim();
+
                 return `
                   <tr>
                     <td>
-                      <div class="table-single-line">
+                      <div class="table-single-line" data-table-popup="${Utils.escapeHtml(invPopupHtml)}">
                         <span class="ledger-badge-code data-code-link" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice payment history">${Utils.escapeHtml(inv.invoiceNumber)}</span>
                         <span class="table-bullet">•</span>
-                        ${this.renderServiceChips(invServiceList, 2, inv.invoiceNumber, false)}
-                        ${inv.notes ? `<span class="table-bullet">•</span><span class="table-secondary-text" style="max-width:130px;" title="${Utils.escapeHtml(inv.notes)}">${Utils.escapeHtml(inv.notes)}</span>` : ''}
+                        <span style="font-weight:600;color:var(--color-text-primary);font-size:13px;">${Utils.escapeHtml(typeLabel)}</span>
+                        ${invServiceList.length > 0 ? `
+                          <span class="table-bullet">•</span>
+                          ${this.renderServiceChips(invServiceList, 1, inv.invoiceNumber, false)}
+                        ` : ''}
                       </div>
                     </td>
                     <td>
