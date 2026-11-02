@@ -336,7 +336,7 @@
              PAGE: CLIENT DETAILS & OVERVIEW (Dedicated Full Page)
              ================================================================== -->
         <section id="view-client-detail" class="page-view">
-          <div class="page-header" style="align-items:flex-start;">
+          <div class="page-header" style="align-items:center;">
             <div class="page-title-group">
               <button type="button" class="btn btn-secondary btn-sm" onclick="App.navigateTo('clients')" style="margin-bottom:var(--space-2);width:fit-content;display:inline-flex;align-items:center;gap:6px;">
                 <i data-lucide="arrow-left"></i> Back to Clients
@@ -347,7 +347,7 @@
               </div>
               <div id="clientDetailPageSubtitle" style="font-size:13px;color:var(--color-text-secondary);margin-top:2px;"></div>
             </div>
-            <div id="clientDetailPageActions" class="page-actions">
+            <div id="clientDetailPageActions" class="page-actions client-detail-actions">
               <!-- Rendered dynamically -->
             </div>
           </div>
@@ -541,28 +541,43 @@
           <!-- Reports Stat Grid (5 Metrics) -->
           <div class="stat-grid stat-grid-5">
             <div class="stat-card">
-              <div class="stat-label">Monthly Income</div>
-              <div id="reportMetricIncome" class="stat-value" style="font-size:20px;color:var(--color-success);">₹0.00</div>
+              <div class="stat-header">
+                <span class="stat-label">Monthly Income</span>
+                <div class="stat-icon" style="color:var(--color-success);"><i data-lucide="trending-up"></i></div>
+              </div>
+              <div id="reportMetricIncome" class="stat-value" style="color:var(--color-success);">₹0.00</div>
             </div>
 
             <div class="stat-card">
-              <div class="stat-label">Monthly Expenses</div>
-              <div id="reportMetricExpenses" class="stat-value" style="font-size:20px;">₹0.00</div>
+              <div class="stat-header">
+                <span class="stat-label">Monthly Expenses</span>
+                <div class="stat-icon"><i data-lucide="trending-down"></i></div>
+              </div>
+              <div id="reportMetricExpenses" class="stat-value">₹0.00</div>
             </div>
 
             <div class="stat-card">
-              <div class="stat-label">Net Profit</div>
-              <div id="reportMetricProfit" class="stat-value" style="font-size:20px;">₹0.00</div>
+              <div class="stat-header">
+                <span class="stat-label">Net Profit</span>
+                <div class="stat-icon"><i data-lucide="pie-chart"></i></div>
+              </div>
+              <div id="reportMetricProfit" class="stat-value">₹0.00</div>
             </div>
 
             <div class="stat-card">
-              <div class="stat-label">Received Payments</div>
-              <div id="reportMetricReceived" class="stat-value" style="font-size:20px;">0</div>
+              <div class="stat-header">
+                <span class="stat-label">Received Payments</span>
+                <div class="stat-icon" style="color:var(--color-success);"><i data-lucide="check-circle"></i></div>
+              </div>
+              <div id="reportMetricReceived" class="stat-value">0</div>
             </div>
 
             <div class="stat-card">
-              <div class="stat-label">Pending Payments</div>
-              <div id="reportMetricPending" class="stat-value" style="font-size:20px;color:var(--color-danger);">₹0.00</div>
+              <div class="stat-header">
+                <span class="stat-label">Pending Payments</span>
+                <div class="stat-icon" style="color:var(--color-danger);"><i data-lucide="clock"></i></div>
+              </div>
+              <div id="reportMetricPending" class="stat-value" style="color:var(--color-danger);">₹0.00</div>
             </div>
           </div>
 
@@ -844,22 +859,6 @@
               </select>
             </div>
 
-            <div class="form-group">
-              <label for="clientMonthlyAmount" class="form-label">
-                Monthly Retainer (₹) <span style="font-weight:normal;color:var(--color-text-muted);font-size:12px;">(Optional)</span>
-              </label>
-              <input type="number" id="clientMonthlyAmount" class="form-control" placeholder="0 (leave empty if none)" min="0" step="any">
-              <span class="form-hint">Optional: leave 0 if client is billed ad-hoc</span>
-            </div>
-
-            <div class="form-group" id="clientDueDayGroup" style="display:none;">
-              <label for="clientDueDay" class="form-label">
-                Billing Due Day <span style="font-weight:normal;color:var(--color-text-muted);font-size:12px;">(1–28)</span>
-              </label>
-              <input type="number" id="clientDueDay" class="form-control" min="1" max="28" value="5">
-              <span class="form-hint">Day of month (1 to 28) for recurring invoices</span>
-            </div>
-
             <div class="form-group col-span-2">
               <label for="clientStatus" class="form-label">Client Status</label>
               <select id="clientStatus" class="form-select">
@@ -884,7 +883,7 @@
 
   <!-- Create Individual Invoice / Add Charge Modal -->
   <div id="createInvoiceModal" class="modal-backdrop">
-    <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="createInvoiceTitle">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="createInvoiceTitle" style="max-width:540px;">
       <div class="modal-header">
         <h2 id="createInvoiceTitle" class="modal-title">Create Invoice / Add Charge</h2>
         <button class="modal-close" data-modal-close aria-label="Close dialog">
@@ -892,37 +891,41 @@
         </button>
       </div>
       <form id="createInvoiceForm" novalidate>
-        <div class="modal-body">
-          <div class="form-grid">
-            <div class="form-group col-span-2">
-              <label for="createInvoiceClientId" class="form-label">
-                Client <span class="required-indicator">*</span>
-              </label>
-              <select id="createInvoiceClientId" class="form-select" required>
-                <!-- Populated dynamically -->
-              </select>
-            </div>
+        <div class="modal-body" style="padding:var(--space-5);">
+          <!-- Top Segmented Pill Switcher -->
+          <div class="segmented-control" role="tablist" style="margin-bottom:var(--space-4);">
+            <button type="button" class="segmented-btn active" id="chargeModeOneTimeBtn" role="tab" aria-selected="true" onclick="Payments.setChargeMode('one_time')">
+              One-Time Charge
+            </button>
+            <button type="button" class="segmented-btn" id="chargeModeRetainerBtn" role="tab" aria-selected="false" onclick="Payments.setChargeMode('retainer')">
+              Monthly Retainer
+            </button>
+          </div>
 
+          <!-- Client Selection (Always visible at top) -->
+          <div class="form-group" style="margin-bottom:var(--space-4);">
+            <label for="createInvoiceClientId" class="form-label">
+              Client <span class="required-indicator">*</span>
+            </label>
+            <select id="createInvoiceClientId" class="form-select" required>
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+
+          <!-- ONE-TIME CHARGE FORM GRID -->
+          <div id="chargeModeOneTimeFields" class="form-grid">
             <div class="form-group col-span-2">
               <label for="createInvoiceService" class="form-label">
-                Service / Charge Purpose <span class="required-indicator">*</span>
+                Charge Purpose / Description <span class="required-indicator">*</span>
               </label>
-              <input type="text" id="createInvoiceService" class="form-control" placeholder="e.g. Website Changes (3 revisions), Banner Design, Monthly Retainer" required>
-              <span class="form-hint">Specify the service, feature, or requested changes being charged</span>
+              <input type="text" id="createInvoiceService" class="form-control" placeholder="e.g. Website Changes, Banner Design, Additional Revisions" required>
             </div>
 
             <div class="form-group">
               <label for="createInvoiceMonth" class="form-label">
-                Billing Month / Period <span class="required-indicator">*</span>
+                Billing Month <span class="required-indicator">*</span>
               </label>
               <input type="month" id="createInvoiceMonth" class="form-control" required>
-            </div>
-
-            <div class="form-group">
-              <label for="createInvoiceAmount" class="form-label">
-                Charge Amount (₹) <span class="required-indicator">*</span>
-              </label>
-              <input type="number" id="createInvoiceAmount" class="form-control" placeholder="Amount in Rupees" min="0.01" step="any" required>
             </div>
 
             <div class="form-group">
@@ -938,24 +941,99 @@
             </div>
 
             <div class="form-group">
-              <label for="createInvoiceChargeType" class="form-label">Charge Category</label>
+              <label for="createInvoiceAmount" class="form-label">
+                Amount (₹) <span class="required-indicator">*</span>
+              </label>
+              <input type="number" id="createInvoiceAmount" class="form-control" placeholder="0.00" min="0.01" step="any" required>
+            </div>
+
+            <div class="form-group">
+              <label for="createInvoiceChargeType" class="form-label">Category</label>
               <select id="createInvoiceChargeType" class="form-select">
                 <option value="custom_changes">Custom Work / Extra Changes</option>
-                <option value="retainer">Monthly Retainer</option>
                 <option value="one_time">One-Time Project</option>
                 <option value="consulting">Support / Maintenance</option>
               </select>
             </div>
 
             <div class="form-group col-span-2">
-              <label for="createInvoiceNotes" class="form-label">Work Details / Notes (Optional)</label>
-              <textarea id="createInvoiceNotes" class="form-control form-textarea" rows="2" placeholder="e.g. Added 2 landing page sections, updated mobile navigation, fixed contact form"></textarea>
+              <label for="createInvoiceNotes" class="form-label">Notes (Optional)</label>
+              <textarea id="createInvoiceNotes" class="form-control form-textarea" rows="2" placeholder="Brief notes or work details"></textarea>
+            </div>
+          </div>
+
+          <!-- MONTHLY RETAINER FORM GRID -->
+          <div id="chargeModeRetainerFields" class="form-grid" style="display:none;">
+            <!-- Current Retainer Status Banner (Visible when client already has a retainer configured) -->
+            <div id="createInvoiceRetainerStatusBox" class="col-span-2" style="display:none;background:var(--color-bg-secondary);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:12px 14px;box-sizing:border-box;">
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                <div>
+                  <div style="font-size:11px;font-weight:600;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.3px;">Recurring Retainer Plan</div>
+                  <div id="createInvoiceRetainerStatusDesc" style="font-size:13px;font-weight:600;color:var(--color-text-primary);display:flex;align-items:center;gap:8px;margin-top:2px;"></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                  <button type="button" id="createInvoiceRetainerPauseBtn" class="btn btn-secondary btn-sm" style="font-size:12px;height:30px;padding:0 10px;">
+                    <!-- Injected dynamically -->
+                  </button>
+                  <button type="button" id="createInvoiceRetainerDeleteBtn" class="btn btn-danger btn-sm" style="font-size:12px;height:30px;padding:0 10px;">
+                    <i data-lucide="trash-2"></i> Delete Plan
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group col-span-2">
+              <label for="createInvoiceRetainerService" class="form-label">
+                Retainer Package Name <span class="required-indicator">*</span>
+              </label>
+              <input type="text" id="createInvoiceRetainerService" class="form-control" placeholder="e.g. Monthly Website Maintenance & SEO">
+            </div>
+
+            <div class="form-group">
+              <label for="createInvoiceRetainerAmount" class="form-label">
+                Monthly Amount (₹) <span class="required-indicator">*</span>
+              </label>
+              <input type="number" id="createInvoiceRetainerAmount" class="form-control" placeholder="0.00" min="1" step="any">
+            </div>
+
+            <div class="form-group">
+              <label for="createInvoiceDueDay" class="form-label">
+                Monthly Due Day <span class="required-indicator">*</span>
+              </label>
+              <select id="createInvoiceDueDay" class="form-select">
+                <option value="1">Day 1 of every month</option>
+                <option value="5" selected>Day 5 of every month (Standard)</option>
+                <option value="10">Day 10 of every month</option>
+                <option value="15">Day 15 of every month</option>
+                <option value="20">Day 20 of every month</option>
+                <option value="25">Day 25 of every month</option>
+                <option value="28">Day 28 of every month</option>
+              </select>
+            </div>
+
+            <div class="form-group col-span-2">
+              <label for="createInvoiceRetainerMonth" class="form-label">
+                Starting Billing Month <span class="required-indicator">*</span>
+              </label>
+              <input type="month" id="createInvoiceRetainerMonth" class="form-control">
+            </div>
+
+            <div class="form-group col-span-2">
+              <label class="form-checkbox-label" style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;font-size:13px;font-weight:500;background:var(--color-bg-secondary);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:10px 14px;">
+                <input type="checkbox" id="createInvoiceGenStartingInv" checked style="width:16px;height:16px;cursor:pointer;">
+                <span>Generate invoice for starting month now</span>
+              </label>
+            </div>
+
+            <div class="form-group col-span-2">
+              <label for="createInvoiceRetainerNotes" class="form-label">Notes (Optional)</label>
+              <textarea id="createInvoiceRetainerNotes" class="form-control form-textarea" rows="2" placeholder="Retainer agreement notes"></textarea>
             </div>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
-          <button type="submit" class="btn btn-primary">
+          <button type="submit" id="createInvoiceSubmitBtn" class="btn btn-primary">
             <i data-lucide="check"></i> Create Invoice
           </button>
         </div>
@@ -963,7 +1041,7 @@
     </div>
   </div>
 
-  <!-- Generate Monthly Payments Modal (Client-Based) -->
+      <!-- Generate Monthly Payments Modal (Client-Based) -->
   <div id="generateInvoicesModal" class="modal-backdrop">
     <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="generateInvoicesTitle">
       <div class="modal-header">

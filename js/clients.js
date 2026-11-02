@@ -141,17 +141,7 @@ const Clients = {
       });
     }
 
-    // Toggle Billing Due Day group based on Monthly Retainer
-    const monthlyAmountInput = document.getElementById('clientMonthlyAmount');
-    if (monthlyAmountInput) {
-      monthlyAmountInput.addEventListener('input', () => {
-        const dueDayGroup = document.getElementById('clientDueDayGroup');
-        const val = parseFloat(monthlyAmountInput.value);
-        if (dueDayGroup) {
-          dueDayGroup.style.display = (val > 0) ? '' : 'none';
-        }
-      });
-    }
+
 
     // Close dropdowns on outside click
     document.addEventListener('click', (e) => {
@@ -235,8 +225,10 @@ const Clients = {
         ? `<span class="badge badge-success"><span class="badge-dot"></span>Active</span>`
         : `<span class="badge badge-neutral"><span class="badge-dot"></span>Inactive</span>`;
 
-      const monthlyDisplay = (client.monthlyAmount && client.monthlyAmount > 0)
-        ? `<span class="tabular-nums" style="font-weight: 500;">${Utils.formatCurrency(client.monthlyAmount)}</span>`
+      const hasRetainer = Boolean(client.monthlyAmount && client.monthlyAmount > 0);
+      const isRetainerPaused = hasRetainer && client.retainerStatus === 'paused';
+      const monthlyDisplay = hasRetainer
+        ? `<span class="tabular-nums" style="font-weight: 500;">${Utils.formatCurrency(client.monthlyAmount)}</span>${isRetainerPaused ? ' <span class="badge badge-warning" style="font-size:10px;padding:1px 5px;margin-left:4px;"><span class="badge-dot"></span>Paused</span>' : ''}`
         : `<span class="badge badge-neutral" style="font-size:11px;">No Retainer (Ad-hoc)</span>`;
 
       return `
@@ -303,9 +295,7 @@ const Clients = {
     const phoneInput = document.getElementById('clientPhone');
     const emailInput = document.getElementById('clientEmail');
     const serviceInput = document.getElementById('clientService');
-    const amountInput = document.getElementById('clientMonthlyAmount');
     const joiningDateInput = document.getElementById('clientJoiningDate');
-    const dueDayInput = document.getElementById('clientDueDay');
     const statusInput = document.getElementById('clientStatus');
 
     const initialAmountGroup = document.getElementById('clientInitialAmountGroup');
@@ -314,8 +304,6 @@ const Clients = {
     const initialPaymentInput = document.getElementById('clientInitialPayment');
     const initialStatusSelect = document.getElementById('clientInitialStatus');
     const initialMethodSelect = document.getElementById('clientInitialMethod');
-
-    const dueDayGroup = document.getElementById('clientDueDayGroup');
 
     if (clientId) {
       const client = Storage.getClientById(clientId);
@@ -326,11 +314,7 @@ const Clients = {
       phoneInput.value = client.phone || '';
       emailInput.value = client.email || '';
       serviceInput.value = client.service;
-      const hasMonthly = Boolean(client.monthlyAmount && client.monthlyAmount > 0);
-      amountInput.value = hasMonthly ? client.monthlyAmount : '';
       joiningDateInput.value = Utils.isoToDmy(client.joiningDate) || client.joiningDate || Utils.isoToDmy(Utils.getTodayString());
-      dueDayInput.value = client.dueDay || 5;
-      if (dueDayGroup) dueDayGroup.style.display = hasMonthly ? '' : 'none';
       statusInput.value = client.status || 'active';
 
       // Hide initial advance section when editing an established client
@@ -346,11 +330,7 @@ const Clients = {
       phoneInput.value = '';
       emailInput.value = '';
       serviceInput.value = '';
-      amountInput.value = '';
       joiningDateInput.value = Utils.isoToDmy(Utils.getTodayString());
-      const settings = Storage.getSettings();
-      dueDayInput.value = settings.billingPreference || 5;
-      if (dueDayGroup) dueDayGroup.style.display = 'none';
       statusInput.value = 'active';
 
       // Show initial advance section for onboarding new client
@@ -377,9 +357,7 @@ const Clients = {
     const phoneInput = document.getElementById('clientPhone');
     const emailInput = document.getElementById('clientEmail');
     const serviceInput = document.getElementById('clientService');
-    const amountInput = document.getElementById('clientMonthlyAmount');
     const joiningDateInput = document.getElementById('clientJoiningDate');
-    const dueDayInput = document.getElementById('clientDueDay');
     const statusInput = document.getElementById('clientStatus');
 
     let isValid = true;
@@ -398,24 +376,12 @@ const Clients = {
     }
 
     let amount = 0;
-    const amountVal = amountInput.value.trim();
-    if (amountVal !== '') {
-      amount = parseFloat(amountVal);
-      if (isNaN(amount) || amount < 0) {
-        Utils.setFieldError(amountInput, 'Monthly retainer must be 0 or greater');
-        isValid = false;
-      }
-    }
-
     let dueDay = null;
-    if (amount > 0) {
-      dueDay = 5;
-      const dueDayVal = parseInt(dueDayInput.value, 10);
-      if (!isNaN(dueDayVal) && dueDayVal >= 1 && dueDayVal <= 28) {
-        dueDay = dueDayVal;
-      } else if (dueDayInput.value.trim() !== '') {
-        Utils.setFieldError(dueDayInput, 'Due day must be between 1 and 28');
-        isValid = false;
+    if (id) {
+      const existingClient = Storage.getClientById(id);
+      if (existingClient) {
+        amount = existingClient.monthlyAmount || 0;
+        dueDay = existingClient.dueDay || null;
       }
     }
 
@@ -579,10 +545,10 @@ const Clients = {
       <div class="stat-grid stat-grid-3" style="margin-bottom:var(--space-6);">
         <div class="stat-card">
           <div class="stat-header">
-            <span class="stat-label">Monthly Retainer</span>
-            <div class="stat-icon"><i data-lucide="repeat"></i></div>
+            <span class="stat-label">Total Billed</span>
+            <div class="stat-icon"><i data-lucide="file-text"></i></div>
           </div>
-          <div class="stat-value">${hasMonthly ? Utils.formatCurrency(client.monthlyAmount) : 'Ad-hoc (No Retainer)'}</div>
+          <div class="stat-value">${Utils.formatCurrency(Utils.fromPaise(totalBilledPaise))}</div>
         </div>
         <div class="stat-card">
           <div class="stat-header">
@@ -625,12 +591,51 @@ const Clients = {
               <span class="detail-value">${Utils.formatDate(client.joiningDate)}</span>
             </div>
             <div class="detail-item">
+              <span class="detail-label">Monthly Retainer</span>
+              <div class="detail-value" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                ${hasMonthly 
+                  ? `
+                    <span class="tabular-nums" style="font-weight:600;">${Utils.formatCurrency(client.monthlyAmount)} / mo</span>
+                    ${client.retainerStatus === 'paused' 
+                      ? `<span class="badge badge-warning" style="font-size:11px;padding:2px 6px;"><span class="badge-dot"></span>Paused</span>` 
+                      : `<span class="badge badge-success" style="font-size:11px;padding:2px 6px;"><span class="badge-dot"></span>Active</span>`}
+                    <div style="display:inline-flex;align-items:center;gap:4px;margin-left:auto;flex-wrap:wrap;">
+                      ${client.retainerStatus === 'paused' ? `
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="Clients.toggleRetainerStatus('${client.id}')" title="Resume monthly retainer" style="padding:2px 8px;font-size:11px;height:24px;display:inline-flex;align-items:center;gap:4px;">
+                          <i data-lucide="play" style="width:12px;height:12px;"></i> Resume
+                        </button>
+                      ` : `
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="Clients.toggleRetainerStatus('${client.id}')" title="Pause monthly retainer" style="padding:2px 8px;font-size:11px;height:24px;display:inline-flex;align-items:center;gap:4px;">
+                          <i data-lucide="pause" style="width:12px;height:12px;"></i> Pause
+                        </button>
+                      `}
+                      <button type="button" class="btn btn-secondary btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}', '', 'retainer')" title="Edit monthly retainer plan" style="padding:2px 8px;font-size:11px;height:24px;display:inline-flex;align-items:center;gap:4px;">
+                        <i data-lucide="edit-2" style="width:12px;height:12px;"></i> Edit
+                      </button>
+                      <button type="button" class="btn btn-secondary btn-sm" onclick="Clients.removeRetainer('${client.id}')" title="Delete / remove monthly retainer plan" style="padding:2px 8px;font-size:11px;height:24px;color:var(--color-danger);display:inline-flex;align-items:center;gap:4px;">
+                        <i data-lucide="trash-2" style="width:12px;height:12px;"></i> Delete
+                      </button>
+                    </div>
+                  ` 
+                  : `
+                    <span style="color:var(--color-text-muted);">No Retainer (Ad-hoc)</span>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}', '', 'retainer')" style="padding:2px 8px;font-size:11px;height:24px;margin-left:auto;display:inline-flex;align-items:center;gap:4px;">
+                      <i data-lucide="plus" style="width:12px;height:12px;"></i> Set Retainer
+                    </button>
+                  `}
+              </div>
+            </div>
+            <div class="detail-item">
               <span class="detail-label">Billing Due Day</span>
-              <span class="detail-value">${(hasMonthly && client.dueDay) ? `Day ${client.dueDay} of every month` : '<span style="color:var(--color-text-muted);">—</span>'}</span>
+              <span class="detail-value">${(hasMonthly && client.dueDay) ? `Day ${client.dueDay} of every month` : 'Project / Ad-hoc'}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Total Invoices Billed</span>
               <span class="detail-value">${invoices.length}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Outstanding Balance</span>
+              <span class="detail-value" style="font-weight:600;color:${outstandingPaise > 0 ? 'var(--color-danger)' : 'var(--color-success)'};">${Utils.formatCurrency(Utils.fromPaise(outstandingPaise))}</span>
             </div>
           </div>
         </div>
@@ -676,15 +681,21 @@ const Clients = {
                       ${inv.status === 'paid' ? '<span class="badge badge-success"><span class="badge-dot"></span>Paid</span>' : (inv.status === 'partial' ? '<span class="badge badge-warning"><span class="badge-dot"></span>Partial</span>' : '<span class="badge badge-danger"><span class="badge-dot"></span>Pending</span>')}
                     </td>
                     <td style="text-align:right;white-space:nowrap;">
-                      ${remPaise > 0 ? `
-                        <button class="btn btn-primary btn-sm" onclick="Payments.openRecordPaymentModal('${inv.id}')">
-                          <i data-lucide="plus-circle"></i> Pay
-                        </button>
-                      ` : `
-                        <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="History">
+                      <div style="display:inline-flex;align-items:center;justify-content:flex-end;gap:4px;">
+                        ${remPaise > 0 ? `
+                          <button class="btn btn-primary btn-sm" onclick="Payments.openRecordPaymentModal('${inv.id}')" title="Record Payment">
+                            <i data-lucide="plus-circle"></i> Pay
+                          </button>
+                        ` : `
+                          <span class="badge badge-neutral" style="font-size:11px;">Settled</span>
+                        `}
+                        <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View History" aria-label="View history">
                           <i data-lucide="history"></i>
                         </button>
-                      `}
+                        <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.confirmDeleteInvoice('${inv.id}')" title="Delete Invoice / Bill" aria-label="Delete invoice" style="color:var(--color-danger);">
+                          <i data-lucide="trash-2"></i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 `;
@@ -708,12 +719,13 @@ const Clients = {
                 <th>Method</th>
                 <th>Invoice</th>
                 <th>Notes</th>
+                <th style="text-align:right;">Action</th>
               </tr>
             </thead>
             <tbody>
               ${payments.length === 0 ? `
                 <tr>
-                  <td colspan="5" style="text-align:center;color:var(--color-text-muted);padding:var(--space-6);">No payment transactions recorded for this client yet.</td>
+                  <td colspan="6" style="text-align:center;color:var(--color-text-muted);padding:var(--space-6);">No payment transactions recorded for this client yet.</td>
                 </tr>
               ` : payments.map((p) => `
                 <tr>
@@ -722,6 +734,11 @@ const Clients = {
                   <td style="white-space:nowrap;">${Utils.escapeHtml(p.paymentMethod)}</td>
                   <td style="white-space:nowrap;">${Utils.escapeHtml(p.invoiceNumber || p.billingMonth)}</td>
                   <td class="table-subtext table-cell-truncate" style="max-width:220px;" title="${Utils.escapeHtml(p.notes || '')}">${p.notes ? Utils.escapeHtml(p.notes) : '—'}</td>
+                  <td style="text-align:right;white-space:nowrap;">
+                    <button type="button" class="btn btn-secondary btn-icon btn-sm" onclick="Payments.confirmDeletePayment('${p.id}')" title="Delete Payment Transaction" style="color:var(--color-danger);height:26px;width:26px;padding:0;display:inline-flex;align-items:center;justify-content:center;">
+                      <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                    </button>
+                  </td>
                 </tr>
               `).join('')}
             </tbody>
@@ -766,6 +783,66 @@ const Clients = {
         this.renderClientDetailPage(clientId);
       }
     }
+  },
+
+  async toggleRetainerStatus(clientId) {
+    const client = Storage.getClientById(clientId);
+    if (!client || !client.monthlyAmount || client.monthlyAmount <= 0) return;
+
+    const isPaused = client.retainerStatus === 'paused';
+    const newStatus = isPaused ? 'active' : 'paused';
+
+    if (!isPaused) {
+      const confirmed = await Utils.confirm({
+        title: 'Pause Monthly Retainer?',
+        message: `Pause monthly recurring retainer (${Utils.formatCurrency(client.monthlyAmount)} / mo) for "${client.name}"? While paused, automated monthly billing will be temporarily suspended for this client.`,
+        confirmText: 'Pause Retainer',
+        confirmDanger: false
+      });
+      if (!confirmed) return;
+    }
+
+    Storage.updateClient(clientId, { retainerStatus: newStatus });
+    Utils.showToast(
+      newStatus === 'paused'
+        ? `Monthly retainer paused for ${client.name}`
+        : `Monthly retainer resumed for ${client.name}`,
+      'success'
+    );
+
+    this.render();
+    if (this.activeDetailClientId === clientId) {
+      this.renderClientDetailPage(clientId);
+    }
+    if (window.Payments) Payments.render();
+  },
+
+  async removeRetainer(clientId) {
+    const client = Storage.getClientById(clientId);
+    if (!client) return;
+
+    const confirmed = await Utils.confirm({
+      title: 'Delete Monthly Retainer Plan?',
+      message: `Are you sure you want to delete and remove the recurring monthly retainer (${Utils.formatCurrency(client.monthlyAmount)} / mo) for "${client.name}"? Existing invoices and payment history will remain intact, but future monthly recurring charges will no longer apply.`,
+      confirmText: 'Delete Retainer',
+      confirmDanger: true
+    });
+
+    if (!confirmed) return;
+
+    Storage.updateClient(clientId, {
+      monthlyAmount: 0,
+      dueDay: null,
+      retainerStatus: null
+    });
+
+    Utils.showToast(`Monthly retainer deleted for ${client.name}`, 'success');
+
+    this.render();
+    if (this.activeDetailClientId === clientId) {
+      this.renderClientDetailPage(clientId);
+    }
+    if (window.Payments) Payments.render();
   }
 };
 

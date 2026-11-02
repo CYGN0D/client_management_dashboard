@@ -109,11 +109,28 @@ const Payments = {
       });
     }
 
+    // Charge mode segmented buttons (One-Time vs Retainer)
+    const modeOneTimeBtn = document.getElementById('chargeModeOneTimeBtn');
+    const modeRetainerBtn = document.getElementById('chargeModeRetainerBtn');
+    if (modeOneTimeBtn) {
+      modeOneTimeBtn.addEventListener('click', () => this.setChargeMode('one_time'));
+    }
+    if (modeRetainerBtn) {
+      modeRetainerBtn.addEventListener('click', () => this.setChargeMode('retainer'));
+    }
+
+    const genStartingInvCb = document.getElementById('createInvoiceGenStartingInv');
+    if (genStartingInvCb) {
+      genStartingInvCb.addEventListener('change', () => this.updateSubmitButtonLabel());
+    }
+
     // Auto update amount and due date when client or month is changed
     const clientSelect = document.getElementById('createInvoiceClientId');
     const monthInput = document.getElementById('createInvoiceMonth');
     const serviceInput = document.getElementById('createInvoiceService');
     const amountInput = document.getElementById('createInvoiceAmount');
+    const retAmountInput = document.getElementById('createInvoiceRetainerAmount');
+    const retServiceInput = document.getElementById('createInvoiceRetainerService');
 
     if (clientSelect) {
       clientSelect.addEventListener('change', () => this.syncCreateInvoiceFields());
@@ -129,6 +146,16 @@ const Payments = {
     if (amountInput) {
       amountInput.addEventListener('input', () => {
         delete amountInput.dataset.autoFilled;
+      });
+    }
+    if (retAmountInput) {
+      retAmountInput.addEventListener('input', () => {
+        delete retAmountInput.dataset.autoFilled;
+      });
+    }
+    if (retServiceInput) {
+      retServiceInput.addEventListener('input', () => {
+        delete retServiceInput.dataset.autoFilled;
       });
     }
   },
@@ -302,6 +329,9 @@ const Payments = {
               <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View History" aria-label="View invoice payment history">
                 <i data-lucide="history"></i>
               </button>
+              <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.confirmDeleteInvoice('${inv.id}')" title="Delete Invoice / Bill" aria-label="Delete Invoice" style="color:var(--color-danger);">
+                <i data-lucide="trash-2"></i>
+              </button>
             </div>
           </td>
         </tr>
@@ -311,7 +341,49 @@ const Payments = {
     Utils.refreshIcons();
   },
 
-  openCreateInvoiceModal(prefillClientId = null, defaultService = '') {
+  setChargeMode(mode) {
+    this.activeChargeMode = mode === 'retainer' ? 'retainer' : 'one_time';
+    const isRetainer = this.activeChargeMode === 'retainer';
+
+    const oneTimeBtn = document.getElementById('chargeModeOneTimeBtn');
+    const retainerBtn = document.getElementById('chargeModeRetainerBtn');
+    const oneTimeFields = document.getElementById('chargeModeOneTimeFields');
+    const retainerFields = document.getElementById('chargeModeRetainerFields');
+
+    if (oneTimeBtn) {
+      oneTimeBtn.classList.toggle('active', !isRetainer);
+      oneTimeBtn.setAttribute('aria-selected', !isRetainer ? 'true' : 'false');
+    }
+    if (retainerBtn) {
+      retainerBtn.classList.toggle('active', isRetainer);
+      retainerBtn.setAttribute('aria-selected', isRetainer ? 'true' : 'false');
+    }
+
+    if (oneTimeFields) oneTimeFields.style.display = !isRetainer ? 'grid' : 'none';
+    if (retainerFields) retainerFields.style.display = isRetainer ? 'grid' : 'none';
+
+    this.updateSubmitButtonLabel();
+    this.syncCreateInvoiceFields();
+    Utils.refreshIcons();
+  },
+
+  updateSubmitButtonLabel() {
+    const submitBtn = document.getElementById('createInvoiceSubmitBtn');
+    if (!submitBtn) return;
+    if (this.activeChargeMode === 'retainer') {
+      const genStartingCb = document.getElementById('createInvoiceGenStartingInv');
+      if (genStartingCb && genStartingCb.checked) {
+        submitBtn.innerHTML = '<i data-lucide="check"></i> Save Retainer & Generate Invoice';
+      } else {
+        submitBtn.innerHTML = '<i data-lucide="check"></i> Save Retainer Plan';
+      }
+    } else {
+      submitBtn.innerHTML = '<i data-lucide="check"></i> Create Invoice';
+    }
+    Utils.refreshIcons();
+  },
+
+  openCreateInvoiceModal(prefillClientId = null, defaultService = '', defaultMode = null) {
     const clients = Storage.getClients();
     if (clients.length === 0) {
       Utils.showToast('No clients found. Please add a client first.', 'info');
@@ -328,7 +400,6 @@ const Payments = {
     const clientSelect = document.getElementById('createInvoiceClientId');
     const serviceInput = document.getElementById('createInvoiceService');
     const monthInput = document.getElementById('createInvoiceMonth');
-    const chargeTypeSelect = document.getElementById('createInvoiceChargeType');
 
     if (monthInput) {
       monthInput.value = Utils.getCurrentMonthString();
@@ -345,15 +416,23 @@ const Payments = {
       `;
     }
 
-    this.syncCreateInvoiceFields();
+    // Determine initial charge mode
+    let targetMode = defaultMode;
+    if (!targetMode) {
+      if (prefillClientId) {
+        const client = Storage.getClientById(prefillClientId);
+        // If client already has a retainer, default to one_time for additional charges
+        targetMode = 'one_time';
+      } else {
+        targetMode = 'one_time';
+      }
+    }
+
+    this.setChargeMode(targetMode);
 
     if (defaultService && serviceInput) {
       serviceInput.value = defaultService;
       delete serviceInput.dataset.autoFilled;
-    }
-
-    if (defaultService && chargeTypeSelect) {
-      chargeTypeSelect.value = 'custom_changes';
     }
 
     Utils.openModal('createInvoiceModal');
@@ -361,37 +440,109 @@ const Payments = {
 
   syncCreateInvoiceFields() {
     const clientSelect = document.getElementById('createInvoiceClientId');
-    const serviceInput = document.getElementById('createInvoiceService');
+    if (!clientSelect) return;
+
+    const clientId = clientSelect.value;
+    const client = clientId ? Storage.getClientById(clientId) : null;
+
     const monthInput = document.getElementById('createInvoiceMonth');
+    const serviceInput = document.getElementById('createInvoiceService');
     const amountInput = document.getElementById('createInvoiceAmount');
     const dueDateInput = document.getElementById('createInvoiceDueDate');
 
-    if (!clientSelect || !monthInput || !amountInput || !dueDateInput) return;
+    const retService = document.getElementById('createInvoiceRetainerService');
+    const retAmount = document.getElementById('createInvoiceRetainerAmount');
+    const retDueDay = document.getElementById('createInvoiceDueDay');
+    const retMonth = document.getElementById('createInvoiceRetainerMonth');
 
-    const clientId = clientSelect.value;
-    const month = monthInput.value || Utils.getCurrentMonthString();
+    const curMonth = Utils.getCurrentMonthString();
 
-    if (!clientId) {
+    if (!client) {
       if (serviceInput) serviceInput.value = '';
-      amountInput.value = '';
-      dueDateInput.value = '';
+      if (amountInput) amountInput.value = '';
+      if (dueDateInput) dueDateInput.value = '';
+      if (retService) retService.value = '';
+      if (retAmount) retAmount.value = '';
+      if (retMonth) retMonth.removeAttribute('min');
       return;
     }
 
-    const client = Storage.getClientById(clientId);
-    if (client) {
-      if (serviceInput && (!serviceInput.value || serviceInput.dataset.autoFilled === 'true')) {
-        serviceInput.value = client.service || 'Monthly Retainer';
-        serviceInput.dataset.autoFilled = 'true';
-      }
-      if (!amountInput.value || amountInput.dataset.autoFilled === 'true') {
-        amountInput.value = (client.monthlyAmount && client.monthlyAmount > 0) ? client.monthlyAmount : '';
-        amountInput.dataset.autoFilled = 'true';
-      }
+    const clientJoinMonth = (client.joiningDate || '').substring(0, 7);
+
+    // Sync One-Time fields
+    if (monthInput && !monthInput.value) {
+      monthInput.value = curMonth;
+    }
+    // Leave serviceInput clean so it doesn't force client's retainer service name into one-time custom changes
+    if (serviceInput && serviceInput.dataset.autoFilled === 'true') {
+      serviceInput.value = '';
+      delete serviceInput.dataset.autoFilled;
+    }
+    if (dueDateInput && (!dueDateInput.value || dueDateInput.dataset.autoFilled === 'true')) {
       const rawDue = (client.monthlyAmount && client.monthlyAmount > 0 && client.dueDay)
-        ? Utils.calculateDueDate(month, client.dueDay)
+        ? Utils.calculateDueDate(monthInput.value || curMonth, client.dueDay)
         : Utils.getTodayString();
       dueDateInput.value = Utils.isoToDmy(rawDue);
+      dueDateInput.dataset.autoFilled = 'true';
+    }
+
+    // Sync Retainer fields
+    if (retService && (!retService.value || retService.dataset.autoFilled === 'true')) {
+      retService.value = client.service || 'Monthly Retainer';
+      retService.dataset.autoFilled = 'true';
+    }
+    if (retAmount && (!retAmount.value || retAmount.dataset.autoFilled === 'true')) {
+      retAmount.value = (client.monthlyAmount && client.monthlyAmount > 0) ? client.monthlyAmount : '';
+      retAmount.dataset.autoFilled = 'true';
+    }
+    if (retDueDay) {
+      retDueDay.value = String(client.dueDay || 5);
+    }
+    if (retMonth) {
+      if (clientJoinMonth) {
+        retMonth.min = clientJoinMonth;
+        if (!retMonth.value || retMonth.value < clientJoinMonth) {
+          retMonth.value = curMonth >= clientJoinMonth ? curMonth : clientJoinMonth;
+        }
+      } else if (!retMonth.value) {
+        retMonth.value = curMonth;
+      }
+    }
+
+    // Retainer status banner handling
+    const retainerStatusBox = document.getElementById('createInvoiceRetainerStatusBox');
+    const retainerStatusDesc = document.getElementById('createInvoiceRetainerStatusDesc');
+    const retainerPauseBtn = document.getElementById('createInvoiceRetainerPauseBtn');
+    const retainerDeleteBtn = document.getElementById('createInvoiceRetainerDeleteBtn');
+
+    if (retainerStatusBox) {
+      const hasRetainer = Boolean(client.monthlyAmount && client.monthlyAmount > 0);
+      if (hasRetainer) {
+        retainerStatusBox.style.display = 'block';
+        const isPaused = client.retainerStatus === 'paused';
+        if (retainerStatusDesc) {
+          retainerStatusDesc.innerHTML = `
+            <span>${Utils.formatCurrency(client.monthlyAmount)} / mo</span>
+            <span style="opacity:0.4;">•</span>
+            <span>Due Day ${client.dueDay || 5}</span>
+            ${isPaused 
+              ? `<span class="badge badge-warning" style="font-size:11px;padding:2px 6px;"><span class="badge-dot"></span>Paused</span>` 
+              : `<span class="badge badge-success" style="font-size:11px;padding:2px 6px;"><span class="badge-dot"></span>Active</span>`}
+          `;
+        }
+        if (retainerPauseBtn) {
+          retainerPauseBtn.innerHTML = isPaused
+            ? `<i data-lucide="play" style="width:12px;height:12px;"></i> Resume Retainer`
+            : `<i data-lucide="pause" style="width:12px;height:12px;"></i> Pause Retainer`;
+          retainerPauseBtn.onclick = () => this.toggleClientRetainer(client.id);
+        }
+        if (retainerDeleteBtn) {
+          retainerDeleteBtn.onclick = () => this.deleteClientRetainer(client.id);
+        }
+        Utils.refreshIcons();
+      } else {
+        retainerStatusBox.style.display = 'none';
+      }
     }
   },
 
@@ -400,20 +551,141 @@ const Payments = {
     Utils.clearFieldErrors(form);
 
     const clientSelect = document.getElementById('createInvoiceClientId');
+    const clientId = clientSelect ? clientSelect.value : '';
+
+    if (!clientId) {
+      Utils.setFieldError(clientSelect, 'Please select a client');
+      return;
+    }
+
+    const client = Storage.getClientById(clientId);
+    if (!client) {
+      Utils.showToast('Selected client not found', 'error');
+      return;
+    }
+
+    const clientJoinMonth = (client.joiningDate || '').substring(0, 7);
+
+    // ==========================================================
+    // MODE 1: SETUP MONTHLY RETAINER (RECURRING)
+    // ==========================================================
+    if (this.activeChargeMode === 'retainer') {
+      const retServiceInput = document.getElementById('createInvoiceRetainerService');
+      const retAmountInput = document.getElementById('createInvoiceRetainerAmount');
+      const retDueDayInput = document.getElementById('createInvoiceDueDay');
+      const retMonthInput = document.getElementById('createInvoiceRetainerMonth');
+      const genStartingCb = document.getElementById('createInvoiceGenStartingInv');
+      const retNotesInput = document.getElementById('createInvoiceRetainerNotes');
+
+      let isValid = true;
+      const retainerService = retServiceInput ? retServiceInput.value.trim() : '';
+      if (!retainerService) {
+        Utils.setFieldError(retServiceInput, 'Please specify the retainer service / package name');
+        isValid = false;
+      }
+
+      const retainerAmount = parseFloat(retAmountInput.value);
+      if (isNaN(retainerAmount) || retainerAmount <= 0) {
+        Utils.setFieldError(retAmountInput, 'Monthly retainer amount must be greater than zero');
+        isValid = false;
+      }
+
+      const dueDay = parseInt(retDueDayInput.value, 10) || 5;
+      const startingMonth = retMonthInput.value;
+      if (!startingMonth) {
+        Utils.setFieldError(retMonthInput, 'Starting billing month is required');
+        isValid = false;
+      } else if (clientJoinMonth && startingMonth < clientJoinMonth) {
+        Utils.setFieldError(
+          retMonthInput,
+          `Starting billing month cannot be earlier than client joining date (${Utils.formatDate(client.joiningDate)})`
+        );
+        isValid = false;
+      }
+
+      if (!isValid) return;
+
+      // 1. Update client profile with recurring retainer details
+      Storage.updateClient(client.id, {
+        monthlyAmount: retainerAmount,
+        dueDay,
+        service: retainerService,
+        retainerStatus: 'active'
+      });
+
+      // 2. Generate starting month invoice if checked
+      const shouldGenerateInvoice = genStartingCb ? genStartingCb.checked : true;
+      if (shouldGenerateInvoice) {
+        let dueDate = Utils.calculateDueDate(startingMonth, dueDay);
+        if (startingMonth === clientJoinMonth && client.joiningDate && dueDate < client.joiningDate) {
+          dueDate = client.joiningDate;
+        }
+
+        // Check if invoice already exists for same client and month
+        const existing = Storage.getInvoices().find(
+          (inv) => inv.clientId === client.id && inv.billingMonth === startingMonth
+        );
+
+        if (existing) {
+          const proceed = await Utils.confirm({
+            title: 'Invoice Already Exists for this Month',
+            message: `An invoice (${existing.invoiceNumber} • ${existing.serviceName || 'Service'}) already exists for ${client.name} in ${Utils.formatMonth(startingMonth)}. Do you want to create an additional retainer invoice for this month?`,
+            confirmText: 'Create Additional Invoice',
+            confirmDanger: false
+          });
+          if (!proceed) {
+            Utils.showToast(`Monthly retainer plan of ${Utils.formatCurrency(retainerAmount)} saved for ${client.name}`, 'success');
+            Utils.closeModal('createInvoiceModal');
+            this.render();
+            if (window.Dashboard) window.Dashboard.render();
+            if (window.Clients) {
+              Clients.render();
+              if (Clients.activeDetailClientId === client.id) Clients.renderClientDetailPage(client.id);
+            }
+            return;
+          }
+        }
+
+        const notes = retNotesInput ? retNotesInput.value.trim() : '';
+        Storage.addInvoice({
+          clientId: client.id,
+          clientName: client.name,
+          serviceName: retainerService,
+          chargeType: 'retainer',
+          notes: notes || `Monthly Retainer for ${Utils.formatMonth(startingMonth)}`,
+          billingMonth: startingMonth,
+          amount: retainerAmount,
+          dueDate
+        });
+
+        Utils.showToast(`Monthly retainer of ${Utils.formatCurrency(retainerAmount)} set & ${Utils.formatMonth(startingMonth)} invoice generated!`, 'success');
+      } else {
+        Utils.showToast(`Monthly retainer plan of ${Utils.formatCurrency(retainerAmount)} saved for ${client.name}`, 'success');
+      }
+
+      Utils.closeModal('createInvoiceModal');
+      this.activeMonthFilter = startingMonth;
+      this.render();
+      if (window.Dashboard) window.Dashboard.render();
+      if (window.Reports) window.Reports.render();
+      if (window.Clients) {
+        Clients.render();
+        if (Clients.activeDetailClientId === client.id) Clients.renderClientDetailPage(client.id);
+      }
+      return;
+    }
+
+    // ==========================================================
+    // MODE 2: ONE-TIME / EXTRA CHANGES
+    // ==========================================================
     const serviceInput = document.getElementById('createInvoiceService');
     const monthInput = document.getElementById('createInvoiceMonth');
     const amountInput = document.getElementById('createInvoiceAmount');
     const dueDateInput = document.getElementById('createInvoiceDueDate');
-    const chargeTypeSelect = document.getElementById('createInvoiceChargeType');
+    const categorySelect = document.getElementById('createInvoiceCategory');
     const notesInput = document.getElementById('createInvoiceNotes');
 
     let isValid = true;
-    const clientId = clientSelect.value;
-    if (!clientId) {
-      Utils.setFieldError(clientSelect, 'Please select a client');
-      isValid = false;
-    }
-
     const serviceName = serviceInput ? serviceInput.value.trim() : '';
     if (!serviceName) {
       Utils.setFieldError(serviceInput, 'Please specify the service name or charge description');
@@ -437,12 +709,6 @@ const Payments = {
 
     if (!isValid) return;
 
-    const client = Storage.getClientById(clientId);
-    if (!client) {
-      Utils.showToast('Selected client not found', 'error');
-      return;
-    }
-
     // Check duplicate invoice for same client and month
     const existing = Storage.getInvoices().find(
       (inv) => inv.clientId === clientId && inv.billingMonth === billingMonth
@@ -458,11 +724,12 @@ const Payments = {
       if (!proceed) return;
     }
 
+    const chargeCategory = categorySelect ? categorySelect.value : 'custom_changes';
     const newInvoice = Storage.addInvoice({
       clientId: client.id,
       clientName: client.name,
       serviceName,
-      chargeType: chargeTypeSelect ? chargeTypeSelect.value : 'custom_changes',
+      chargeType: chargeCategory,
       notes: notesInput ? notesInput.value.trim() : '',
       billingMonth,
       amount,
@@ -475,10 +742,13 @@ const Payments = {
     this.render();
     if (window.Dashboard) window.Dashboard.render();
     if (window.Reports) window.Reports.render();
-    if (window.Clients) Clients.render();
+    if (window.Clients) {
+      Clients.render();
+      if (Clients.activeDetailClientId === client.id) Clients.renderClientDetailPage(client.id);
+    }
   },
 
-  openGenerateModal() {
+    openGenerateModal() {
     const monthInput = document.getElementById('generateBillingMonth');
     if (monthInput) {
       monthInput.value = this.activeMonthFilter || Utils.getCurrentMonthString();
@@ -516,14 +786,30 @@ const Payments = {
       const isAlreadyBilled = !!existing;
       const isActive = c.status === 'active';
       const hasRetainer = c.monthlyAmount && c.monthlyAmount > 0;
-      const canBill = isActive && hasRetainer && !isAlreadyBilled;
-      const dueDate = Utils.calculateDueDate(billingMonth, c.dueDay || 5);
+      const isRetainerPaused = hasRetainer && c.retainerStatus === 'paused';
+      const clientJoinMonth = (c.joiningDate || '').substring(0, 7);
+      const isPriorToJoining = !!(clientJoinMonth && billingMonth < clientJoinMonth);
+      const canBill = isActive && hasRetainer && !isRetainerPaused && !isAlreadyBilled && !isPriorToJoining;
+      let dueDate = Utils.calculateDueDate(billingMonth, c.dueDay || 5);
+      if (c.joiningDate && dueDate < c.joiningDate) {
+        dueDate = c.joiningDate;
+      }
 
       let statusBadge = '';
       if (isAlreadyBilled) {
         statusBadge = `<span class="badge badge-neutral"><span class="badge-dot"></span>Already Billed (${existing.invoiceNumber})</span>`;
       } else if (!isActive) {
         statusBadge = `<span class="badge badge-warning"><span class="badge-dot"></span>Inactive</span>`;
+      } else if (isRetainerPaused) {
+        statusBadge = `
+          <div style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span class="badge badge-warning" title="Monthly retainer is paused"><span class="badge-dot"></span>Retainer Paused</span>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="Payments.quickToggleRetainer('${c.id}', true)" style="padding:2px 8px;font-size:11px;height:24px;">Resume</button>
+          </div>
+        `;
+      } else if (isPriorToJoining) {
+        const formattedJoin = c.joiningDate ? Utils.formatDate(c.joiningDate) : 'Joining Date';
+        statusBadge = `<span class="badge badge-neutral" title="Client joined on ${formattedJoin}"><span class="badge-dot"></span>Not Yet Joined (${formattedJoin})</span>`;
       } else if (!hasRetainer) {
         statusBadge = `<span class="badge badge-neutral" title="No recurring monthly retainer configured"><span class="badge-dot"></span>No Retainer (Ad-hoc)</span>`;
       } else {
@@ -547,7 +833,7 @@ const Payments = {
             <div class="table-subtext">Monthly Recurring</div>
           </td>
           <td class="tabular-nums" style="font-weight:600;">${hasRetainer ? Utils.formatCurrency(c.monthlyAmount) : '<span class="table-subtext">—</span>'}</td>
-          <td class="tabular-nums">${Utils.formatDate(dueDate)}</td>
+          <td class="tabular-nums">${isPriorToJoining ? '<span class="table-subtext">—</span>' : Utils.formatDate(dueDate)}</td>
           <td>${statusBadge}</td>
         </tr>
       `;
@@ -624,6 +910,10 @@ const Payments = {
       const client = Storage.getClientById(clientId);
 
       if (client) {
+        const clientJoinMonth = (client.joiningDate || '').substring(0, 7);
+        if (clientJoinMonth && billingMonth < clientJoinMonth) {
+          return;
+        }
         Storage.addInvoice({
           clientId: client.id,
           clientName: client.name,
@@ -785,12 +1075,13 @@ const Payments = {
               <th>Amount</th>
               <th>Method</th>
               <th>Notes</th>
+              <th style="text-align:right;">Action</th>
             </tr>
           </thead>
           <tbody>
             ${payments.length === 0 ? `
               <tr>
-                <td colspan="4" style="text-align:center;color:var(--color-text-muted);padding:var(--space-3);">No payments recorded yet for this invoice.</td>
+                <td colspan="5" style="text-align:center;color:var(--color-text-muted);padding:var(--space-3);">No payments recorded yet for this invoice.</td>
               </tr>
             ` : payments.map((p) => `
               <tr>
@@ -798,15 +1089,194 @@ const Payments = {
                 <td class="tabular-nums" style="font-weight:600;color:var(--color-success);">${Utils.formatCurrency(p.amount)}</td>
                 <td>${Utils.escapeHtml(p.paymentMethod)}</td>
                 <td class="table-subtext">${p.notes ? Utils.escapeHtml(p.notes) : '—'}</td>
+                <td style="text-align:right;">
+                  <button type="button" class="btn btn-secondary btn-icon btn-sm" onclick="Payments.confirmDeletePayment('${p.id}')" title="Delete Payment Transaction" style="color:var(--color-danger);height:26px;width:26px;padding:0;display:inline-flex;align-items:center;justify-content:center;">
+                    <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                  </button>
+                </td>
               </tr>
             `).join('')}
           </tbody>
         </table>
       </div>
+
+      <div style="margin-top:var(--space-5);padding-top:var(--space-4);border-top:1px solid var(--color-border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <button type="button" class="btn btn-danger btn-sm" onclick="Payments.confirmDeleteInvoice('${invoice.id}', true)">
+          <i data-lucide="trash-2"></i> Delete This Invoice
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" data-modal-close>Close</button>
+      </div>
     `;
 
     Utils.openModal('invoiceHistoryModal');
     Utils.refreshIcons();
+  },
+
+  async confirmDeleteInvoice(invoiceId, isFromModal = false) {
+    const invoice = Storage.getInvoiceById(invoiceId);
+    if (!invoice) return;
+
+    const payments = Storage.getPaymentsByInvoiceId(invoiceId);
+    const paidPaise = Utils.toPaise(invoice.paidAmount || 0);
+
+    let message = `Are you sure you want to delete invoice ${invoice.invoiceNumber} (${Utils.escapeHtml(invoice.serviceName || 'Service')}) for ${Utils.escapeHtml(invoice.clientName)} (${Utils.formatCurrency(invoice.amount)})?`;
+    if (payments.length > 0) {
+      message = `Invoice ${invoice.invoiceNumber} has ${payments.length} recorded payment transaction(s) totaling ${Utils.formatCurrency(Utils.fromPaise(paidPaise))}. Deleting this invoice will also permanently remove these transaction records and update all revenue totals. Are you sure you want to proceed?`;
+    }
+
+    const confirmed = await Utils.confirm({
+      title: 'Delete Invoice / Bill?',
+      message: message,
+      confirmText: 'Delete Invoice',
+      confirmDanger: true
+    });
+
+    if (!confirmed) return;
+
+    if (isFromModal) {
+      Utils.closeModal('invoiceHistoryModal');
+    }
+
+    Storage.deleteInvoice(invoiceId);
+    Utils.showToast(`Invoice ${invoice.invoiceNumber} deleted successfully`, 'success');
+
+    this.render();
+    if (window.Dashboard) window.Dashboard.render();
+    if (window.Reports) window.Reports.render();
+    if (window.Clients) {
+      Clients.render();
+      if (Clients.activeDetailClientId === invoice.clientId) {
+        Clients.renderClientDetailPage(invoice.clientId);
+      }
+    }
+  },
+
+  async confirmDeletePayment(paymentId) {
+    const payments = Storage.getPayments();
+    const payment = payments.find((p) => p.id === paymentId);
+    if (!payment) return;
+
+    const confirmed = await Utils.confirm({
+      title: 'Delete Payment Transaction?',
+      message: `Delete recorded payment of ${Utils.formatCurrency(payment.amount)} (${payment.paymentMethod || 'Payment'}) on ${Utils.formatDate(payment.paymentDate)}? Outstanding invoice balance will be updated accordingly.`,
+      confirmText: 'Delete Payment',
+      confirmDanger: true
+    });
+
+    if (!confirmed) return;
+
+    Storage.deletePayment(paymentId);
+    Utils.showToast(`Payment of ${Utils.formatCurrency(payment.amount)} deleted`, 'success');
+
+    if (payment.invoiceId) {
+      const inv = Storage.getInvoiceById(payment.invoiceId);
+      if (inv) {
+        this.viewInvoiceHistory(payment.invoiceId);
+      } else {
+        Utils.closeModal('invoiceHistoryModal');
+      }
+    }
+
+    this.render();
+    if (window.Dashboard) window.Dashboard.render();
+    if (window.Reports) window.Reports.render();
+    if (window.Clients) {
+      Clients.render();
+      if (Clients.activeDetailClientId === payment.clientId) {
+        Clients.renderClientDetailPage(payment.clientId);
+      }
+    }
+  },
+
+  async toggleClientRetainer(clientId) {
+    const client = Storage.getClientById(clientId);
+    if (!client || !client.monthlyAmount || client.monthlyAmount <= 0) return;
+
+    const isPaused = client.retainerStatus === 'paused';
+    const newStatus = isPaused ? 'active' : 'paused';
+
+    if (!isPaused) {
+      const confirmed = await Utils.confirm({
+        title: 'Pause Monthly Retainer?',
+        message: `Pause monthly recurring retainer (${Utils.formatCurrency(client.monthlyAmount)} / mo) for "${client.name}"? While paused, automated monthly billing will be suspended for this client.`,
+        confirmText: 'Pause Retainer',
+        confirmDanger: false
+      });
+      if (!confirmed) return;
+    }
+
+    Storage.updateClient(clientId, { retainerStatus: newStatus });
+    Utils.showToast(
+      newStatus === 'paused'
+        ? `Monthly retainer paused for ${client.name}`
+        : `Monthly retainer resumed for ${client.name}`,
+      'success'
+    );
+
+    this.syncCreateInvoiceFields();
+    this.render();
+    if (window.Clients) {
+      Clients.render();
+      if (Clients.activeDetailClientId === clientId) Clients.renderClientDetailPage(clientId);
+    }
+  },
+
+  async deleteClientRetainer(clientId) {
+    const client = Storage.getClientById(clientId);
+    if (!client) return;
+
+    const confirmed = await Utils.confirm({
+      title: 'Delete Monthly Retainer Plan?',
+      message: `Are you sure you want to delete and remove the recurring monthly retainer (${Utils.formatCurrency(client.monthlyAmount)} / mo) for "${client.name}"? Existing invoices and payment history will remain intact, but future monthly recurring charges will no longer apply.`,
+      confirmText: 'Delete Retainer',
+      confirmDanger: true
+    });
+
+    if (!confirmed) return;
+
+    Storage.updateClient(clientId, {
+      monthlyAmount: 0,
+      dueDay: null,
+      retainerStatus: null
+    });
+
+    // Reset retainer inputs in modal
+    const retAmount = document.getElementById('createInvoiceRetainerAmount');
+    if (retAmount) retAmount.value = '';
+
+    Utils.showToast(`Monthly retainer deleted for ${client.name}`, 'success');
+
+    this.syncCreateInvoiceFields();
+    this.render();
+    if (window.Clients) {
+      Clients.render();
+      if (Clients.activeDetailClientId === clientId) Clients.renderClientDetailPage(clientId);
+    }
+  },
+
+  async quickToggleRetainer(clientId, refreshGenerateModal = false) {
+    const client = Storage.getClientById(clientId);
+    if (!client || !client.monthlyAmount || client.monthlyAmount <= 0) return;
+
+    const isPaused = client.retainerStatus === 'paused';
+    const newStatus = isPaused ? 'active' : 'paused';
+
+    Storage.updateClient(clientId, { retainerStatus: newStatus });
+    Utils.showToast(
+      newStatus === 'paused'
+        ? `Monthly retainer paused for ${client.name}`
+        : `Monthly retainer resumed for ${client.name}`,
+      'success'
+    );
+
+    if (refreshGenerateModal) {
+      this.renderGenerateClientsList();
+    }
+    this.render();
+    if (window.Clients) {
+      Clients.render();
+      if (Clients.activeDetailClientId === clientId) Clients.renderClientDetailPage(clientId);
+    }
   }
 };
 

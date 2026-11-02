@@ -68,6 +68,7 @@ const Storage = {
   addClient(clientData) {
     const clients = this.getClients();
     const monthlyAmount = parseFloat(clientData.monthlyAmount) || 0;
+    const retainerStatus = monthlyAmount > 0 ? (clientData.retainerStatus || 'active') : null;
     const newClient = {
       id: Utils.generateId('cli'),
       name: clientData.name.trim(),
@@ -75,6 +76,7 @@ const Storage = {
       email: (clientData.email || '').trim(),
       service: clientData.service.trim(),
       monthlyAmount,
+      retainerStatus,
       joiningDate: clientData.joiningDate || Utils.getTodayString(),
       dueDay: monthlyAmount > 0 ? (parseInt(clientData.dueDay, 10) || 5) : null,
       status: clientData.status || 'active', // 'active' | 'inactive'
@@ -93,8 +95,10 @@ const Storage = {
 
     const monthlyAmount = clientData.monthlyAmount !== undefined ? parseFloat(clientData.monthlyAmount) : clients[idx].monthlyAmount;
     let dueDay = null;
+    let retainerStatus = null;
     if (monthlyAmount > 0) {
       dueDay = clientData.dueDay !== undefined ? (parseInt(clientData.dueDay, 10) || 5) : (clients[idx].dueDay || 5);
+      retainerStatus = clientData.retainerStatus !== undefined ? clientData.retainerStatus : (clients[idx].retainerStatus || 'active');
     }
 
     clients[idx] = {
@@ -106,6 +110,7 @@ const Storage = {
       monthlyAmount,
       joiningDate: clientData.joiningDate || clients[idx].joiningDate,
       dueDay,
+      retainerStatus,
       status: clientData.status || clients[idx].status,
       updatedAt: new Date().toISOString()
     };
@@ -196,6 +201,15 @@ const Storage = {
     return newInvoice;
   },
 
+  deleteInvoice(id) {
+    const invoices = this._get(this.KEYS.INVOICES, []).filter((inv) => inv.id !== id);
+    this.saveInvoices(invoices);
+    // Also remove associated payment transactions
+    const payments = this.getPayments().filter((p) => p.invoiceId !== id);
+    this.savePayments(payments);
+    return true;
+  },
+
   /* ---------------- Payments / Transactions ---------------- */
   getPayments() {
     return this._get(this.KEYS.PAYMENTS, []);
@@ -266,6 +280,37 @@ const Storage = {
 
   getPaymentsByClientId(clientId) {
     return this.getPayments().filter((p) => p.clientId === clientId);
+  },
+
+  deletePayment(id) {
+    const payments = this.getPayments();
+    const pIndex = payments.findIndex((p) => p.id === id);
+    if (pIndex === -1) return false;
+
+    const payment = payments[pIndex];
+    payments.splice(pIndex, 1);
+    this.savePayments(payments);
+
+    // Recompute invoice paidAmount and status if linked to an invoice
+    if (payment.invoiceId) {
+      const invoices = this._get(this.KEYS.INVOICES, []);
+      const inv = invoices.find((i) => i.id === payment.invoiceId);
+      if (inv) {
+        const remainingPayments = payments.filter((p) => p.invoiceId === payment.invoiceId);
+        const totalPaidPaise = remainingPayments.reduce((acc, p) => acc + Utils.toPaise(p.amount), 0);
+        inv.paidAmount = Utils.fromPaise(totalPaidPaise);
+        const invPaise = Utils.toPaise(inv.amount);
+        if (totalPaidPaise >= invPaise && invPaise > 0) {
+          inv.status = 'paid';
+        } else if (totalPaidPaise > 0) {
+          inv.status = 'partial';
+        } else {
+          inv.status = 'pending';
+        }
+        this.saveInvoices(invoices);
+      }
+    }
+    return true;
   },
 
   /* ---------------- Expenses ---------------- */

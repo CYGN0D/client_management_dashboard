@@ -28,6 +28,7 @@ const Reports = {
     this.renderIncomeExpenseChart();
     this.renderMonthlySummaryTable();
     this.renderPendingPaymentsTable();
+    Utils.refreshIcons();
   },
 
   populatePeriodFilter() {
@@ -395,9 +396,15 @@ const Reports = {
           <td data-label="Due Date" class="tabular-nums" style="${inv.isOverdue ? 'color:var(--color-danger);font-weight:500;' : ''} white-space:nowrap;">${Utils.formatDate(inv.dueDate)}</td>
           <td data-label="Status">${badgeHtml}</td>
           <td class="actions-col" data-label="Action">
-            <div style="display:flex;align-items:center;justify-content:flex-end;width:100%;">
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);width:100%;">
               <button class="btn btn-primary btn-sm" onclick="Payments.openRecordPaymentModal('${inv.id}')" title="Record Payment">
                 <i data-lucide="plus-circle"></i> Pay
+              </button>
+              <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View History" aria-label="View invoice payment history">
+                <i data-lucide="history"></i>
+              </button>
+              <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.confirmDeleteInvoice('${inv.id}')" title="Delete Invoice / Bill" aria-label="Delete Invoice" style="color:var(--color-danger);">
+                <i data-lucide="trash-2"></i>
               </button>
             </div>
           </td>
