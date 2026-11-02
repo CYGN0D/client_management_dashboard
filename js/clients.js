@@ -7,6 +7,7 @@
 const Clients = {
   activeSearchQuery: '',
   activeStatusFilter: 'all',
+  activeDetailClientId: null,
 
   init() {
     this.bindEvents();
@@ -140,6 +141,18 @@ const Clients = {
       });
     }
 
+    // Toggle Billing Due Day group based on Monthly Retainer
+    const monthlyAmountInput = document.getElementById('clientMonthlyAmount');
+    if (monthlyAmountInput) {
+      monthlyAmountInput.addEventListener('input', () => {
+        const dueDayGroup = document.getElementById('clientDueDayGroup');
+        const val = parseFloat(monthlyAmountInput.value);
+        if (dueDayGroup) {
+          dueDayGroup.style.display = (val > 0) ? '' : 'none';
+        }
+      });
+    }
+
     // Close dropdowns on outside click
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.dropdown')) {
@@ -153,6 +166,9 @@ const Clients = {
   render() {
     this.renderStats();
     this.renderTable();
+    if (this.activeDetailClientId && window.App && App.activePage === 'client-detail') {
+      this.renderClientDetailPage(this.activeDetailClientId);
+    }
   },
 
   renderStats() {
@@ -226,7 +242,7 @@ const Clients = {
       return `
         <tr class="table-card-row">
           <td class="table-card-main">
-            <div class="table-cell-truncate" style="font-weight: 600; color: var(--color-text-primary); font-size: 14px; max-width: 220px;" title="${Utils.escapeHtml(client.name)}">${Utils.escapeHtml(client.name)}</div>
+            <div class="table-cell-truncate" style="font-weight: 600; color: var(--color-text-primary); font-size: 14px; max-width: 220px; cursor: pointer;" onclick="Clients.viewClientDetails('${client.id}')" title="View ${Utils.escapeHtml(client.name)}">${Utils.escapeHtml(client.name)}</div>
             ${client.email ? `<div class="table-subtext table-cell-truncate" style="max-width: 220px;" title="${Utils.escapeHtml(client.email)}">${Utils.escapeHtml(client.email)}</div>` : ''}
           </td>
           <td data-label="Phone" style="white-space:nowrap;">${client.phone ? Utils.escapeHtml(client.phone) : '<span class="table-subtext">—</span>'}</td>
@@ -234,7 +250,7 @@ const Clients = {
             <div class="table-cell-truncate" style="max-width: 200px;" title="${Utils.escapeHtml(client.service)}">${Utils.escapeHtml(client.service)}</div>
           </td>
           <td data-label="Monthly Charge" style="white-space:nowrap;">${monthlyDisplay}</td>
-          <td data-label="Due Date" style="white-space:nowrap;">Day ${client.dueDay} of month</td>
+          <td data-label="Due Date" style="white-space:nowrap;">${(client.monthlyAmount && client.monthlyAmount > 0 && client.dueDay) ? `Day ${client.dueDay} of month` : '<span class="table-subtext">—</span>'}</td>
           <td data-label="Status">${statusBadge}</td>
           <td class="actions-col" data-label="Actions">
             <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);width:100%;">
@@ -299,6 +315,8 @@ const Clients = {
     const initialStatusSelect = document.getElementById('clientInitialStatus');
     const initialMethodSelect = document.getElementById('clientInitialMethod');
 
+    const dueDayGroup = document.getElementById('clientDueDayGroup');
+
     if (clientId) {
       const client = Storage.getClientById(clientId);
       if (!client) return;
@@ -308,9 +326,11 @@ const Clients = {
       phoneInput.value = client.phone || '';
       emailInput.value = client.email || '';
       serviceInput.value = client.service;
-      amountInput.value = (client.monthlyAmount && client.monthlyAmount > 0) ? client.monthlyAmount : '';
+      const hasMonthly = Boolean(client.monthlyAmount && client.monthlyAmount > 0);
+      amountInput.value = hasMonthly ? client.monthlyAmount : '';
       joiningDateInput.value = Utils.isoToDmy(client.joiningDate) || client.joiningDate || Utils.isoToDmy(Utils.getTodayString());
       dueDayInput.value = client.dueDay || 5;
+      if (dueDayGroup) dueDayGroup.style.display = hasMonthly ? '' : 'none';
       statusInput.value = client.status || 'active';
 
       // Hide initial advance section when editing an established client
@@ -330,6 +350,7 @@ const Clients = {
       joiningDateInput.value = Utils.isoToDmy(Utils.getTodayString());
       const settings = Storage.getSettings();
       dueDayInput.value = settings.billingPreference || 5;
+      if (dueDayGroup) dueDayGroup.style.display = 'none';
       statusInput.value = 'active';
 
       // Show initial advance section for onboarding new client
@@ -386,13 +407,16 @@ const Clients = {
       }
     }
 
-    let dueDay = 5;
-    const dueDayVal = parseInt(dueDayInput.value, 10);
-    if (!isNaN(dueDayVal) && dueDayVal >= 1 && dueDayVal <= 28) {
-      dueDay = dueDayVal;
-    } else if (dueDayInput.value.trim() !== '') {
-      Utils.setFieldError(dueDayInput, 'Due day must be between 1 and 28');
-      isValid = false;
+    let dueDay = null;
+    if (amount > 0) {
+      dueDay = 5;
+      const dueDayVal = parseInt(dueDayInput.value, 10);
+      if (!isNaN(dueDayVal) && dueDayVal >= 1 && dueDayVal <= 28) {
+        dueDay = dueDayVal;
+      } else if (dueDayInput.value.trim() !== '') {
+        Utils.setFieldError(dueDayInput, 'Due day must be between 1 and 28');
+        isValid = false;
+      }
     }
 
     const email = emailInput.value.trim();
@@ -489,10 +513,58 @@ const Clients = {
     const client = Storage.getClientById(clientId);
     if (!client) return;
 
-    const container = document.getElementById('clientDetailContent');
-    if (!container) return;
+    this.activeDetailClientId = clientId;
+    if (window.App) {
+      App.navigateTo('client-detail');
+    } else {
+      this.renderClientDetailPage(clientId);
+    }
+  },
 
-    // Calculate client metrics
+  renderClientDetailPage(clientId) {
+    if (!clientId) return;
+    const client = Storage.getClientById(clientId);
+    if (!client) {
+      if (window.App) App.navigateTo('clients');
+      return;
+    }
+
+    const titleEl = document.getElementById('clientDetailPageTitle');
+    const badgeEl = document.getElementById('clientDetailPageBadge');
+    const subtitleEl = document.getElementById('clientDetailPageSubtitle');
+    const actionsEl = document.getElementById('clientDetailPageActions');
+    const contentEl = document.getElementById('clientDetailPageContent');
+    if (!contentEl) return;
+
+    if (titleEl) {
+      titleEl.textContent = client.name;
+    }
+
+    const isStatusActive = client.status === 'active';
+    const statusBadge = isStatusActive
+      ? '<span class="badge badge-success"><span class="badge-dot"></span>Active</span>'
+      : '<span class="badge badge-neutral"><span class="badge-dot"></span>Inactive</span>';
+
+    if (badgeEl) {
+      badgeEl.innerHTML = statusBadge;
+    }
+
+    if (subtitleEl) {
+      subtitleEl.textContent = `${client.service || 'Client'} · Joined ${Utils.formatDate(client.joiningDate)}`;
+    }
+
+    if (actionsEl) {
+      actionsEl.innerHTML = `
+        <button class="btn btn-secondary" onclick="Clients.openAddEditModal('${client.id}')">
+          <i data-lucide="edit-2"></i> Edit Client
+        </button>
+        <button class="btn btn-primary" onclick="Payments.openCreateInvoiceModal('${client.id}')">
+          <i data-lucide="plus"></i> Add Charge
+        </button>
+      `;
+    }
+
+    // Invoices and payments
     const invoices = Storage.getInvoices().filter((inv) => inv.clientId === clientId);
     const payments = Storage.getPayments().filter((p) => p.clientId === clientId);
 
@@ -500,48 +572,39 @@ const Clients = {
     const totalPaidPaise = payments.reduce((acc, p) => acc + Utils.toPaise(p.amount), 0);
     const outstandingPaise = Math.max(totalBilledPaise - totalPaidPaise, 0);
 
-    const isStatusActive = client.status === 'active';
-    const statusBadge = isStatusActive
-      ? `<span class="badge badge-success"><span class="badge-dot"></span>Active</span>`
-      : `<span class="badge badge-neutral"><span class="badge-dot"></span>Inactive</span>`;
+    const hasMonthly = Boolean(client.monthlyAmount && client.monthlyAmount > 0);
 
-    container.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--space-5);">
-        <div>
-          <h3 style="font-size:18px;font-weight:600;margin-bottom:4px;">${Utils.escapeHtml(client.name)}</h3>
-          <div style="font-size:13px;color:var(--color-text-secondary);">${Utils.escapeHtml(client.service)}</div>
-        </div>
-        <div>${statusBadge}</div>
-      </div>
-
+    contentEl.innerHTML = `
       <!-- Financial Summary Cards -->
       <div class="stat-grid stat-grid-3" style="margin-bottom:var(--space-6);">
-        <div class="stat-card" style="padding:var(--space-3) var(--space-4);">
-          <div class="stat-label">Monthly Retainer</div>
-          <div class="stat-value" style="font-size:18px;">${(client.monthlyAmount && client.monthlyAmount > 0) ? Utils.formatCurrency(client.monthlyAmount) : 'Ad-hoc (No Retainer)'}</div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Monthly Retainer</span>
+            <div class="stat-icon"><i data-lucide="repeat"></i></div>
+          </div>
+          <div class="stat-value">${hasMonthly ? Utils.formatCurrency(client.monthlyAmount) : 'Ad-hoc (No Retainer)'}</div>
         </div>
-        <div class="stat-card" style="padding:var(--space-3) var(--space-4);">
-          <div class="stat-label">Total Paid</div>
-          <div class="stat-value" style="font-size:18px;color:var(--color-success);">${Utils.formatCurrency(Utils.fromPaise(totalPaidPaise))}</div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Total Paid</span>
+            <div class="stat-icon" style="color:var(--color-success);"><i data-lucide="check-circle"></i></div>
+          </div>
+          <div class="stat-value" style="color:var(--color-success);">${Utils.formatCurrency(Utils.fromPaise(totalPaidPaise))}</div>
         </div>
-        <div class="stat-card" style="padding:var(--space-3) var(--space-4);">
-          <div class="stat-label">Outstanding Balance</div>
-          <div class="stat-value" style="font-size:18px;color:${outstandingPaise > 0 ? 'var(--color-danger)' : 'var(--color-text-primary)'};">${Utils.formatCurrency(Utils.fromPaise(outstandingPaise))}</div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Outstanding Balance</span>
+            <div class="stat-icon" style="color:${outstandingPaise > 0 ? 'var(--color-danger)' : 'var(--color-text-primary)'};"><i data-lucide="alert-circle"></i></div>
+          </div>
+          <div class="stat-value" style="color:${outstandingPaise > 0 ? 'var(--color-danger)' : 'var(--color-text-primary)'};">${Utils.formatCurrency(Utils.fromPaise(outstandingPaise))}</div>
         </div>
       </div>
 
-      <!-- Profile Details -->
+      <!-- Client Profile Details Card -->
       <div class="card" style="margin-bottom:var(--space-6);">
-        <div class="card-header client-overview-header">
-          <div class="card-title">Client Details</div>
-          <div class="client-overview-actions">
-            <button class="btn btn-primary btn-sm" onclick="Utils.closeModal('clientDetailModal'); Payments.openCreateInvoiceModal('${client.id}')">
-              <i data-lucide="plus"></i> Add Charge
-            </button>
-            <button class="btn btn-secondary btn-sm" onclick="Clients.openAddEditModal('${client.id}')">
-              <i data-lucide="edit-2"></i> Edit Client
-            </button>
-          </div>
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <div class="card-title">Client Information</div>
+          <div>${statusBadge}</div>
         </div>
         <div class="card-body">
           <div class="detail-grid">
@@ -551,11 +614,11 @@ const Clients = {
             </div>
             <div class="detail-item">
               <span class="detail-label">Phone</span>
-              <span class="detail-value">${client.phone ? Utils.escapeHtml(client.phone) : '—'}</span>
+              <span class="detail-value">${client.phone ? `<a href="tel:${Utils.escapeHtml(client.phone)}" style="color:inherit;text-decoration:none;font-weight:500;">${Utils.escapeHtml(client.phone)}</a>` : '<span style="color:var(--color-text-muted);">—</span>'}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Email</span>
-              <span class="detail-value">${client.email ? Utils.escapeHtml(client.email) : '—'}</span>
+              <span class="detail-value">${client.email ? `<a href="mailto:${Utils.escapeHtml(client.email)}" style="color:inherit;text-decoration:none;font-weight:500;">${Utils.escapeHtml(client.email)}</a>` : '<span style="color:var(--color-text-muted);">—</span>'}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Joining Date</span>
@@ -563,7 +626,11 @@ const Clients = {
             </div>
             <div class="detail-item">
               <span class="detail-label">Billing Due Day</span>
-              <span class="detail-value">Day ${client.dueDay} of every month</span>
+              <span class="detail-value">${(hasMonthly && client.dueDay) ? `Day ${client.dueDay} of every month` : '<span style="color:var(--color-text-muted);">—</span>'}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Total Invoices Billed</span>
+              <span class="detail-value">${invoices.length}</span>
             </div>
           </div>
         </div>
@@ -571,9 +638,9 @@ const Clients = {
 
       <!-- Invoices & Charges History -->
       <div class="card" style="margin-bottom:var(--space-6);">
-        <div class="card-header">
-          <div class="card-title">Invoices & Billed Charges (${invoices.length})</div>
-          <button class="btn btn-secondary btn-sm" onclick="Utils.closeModal('clientDetailModal'); Payments.openCreateInvoiceModal('${client.id}')">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-2);">
+          <div class="card-title">Invoices & Charges (${invoices.length})</div>
+          <button class="btn btn-secondary btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}')">
             <i data-lucide="plus"></i> New Charge
           </button>
         </div>
@@ -592,7 +659,7 @@ const Clients = {
             <tbody>
               ${invoices.length === 0 ? `
                 <tr>
-                  <td colspan="6" style="text-align:center;color:var(--color-text-muted);padding:var(--space-4);">No invoices or charges recorded for this client yet.</td>
+                  <td colspan="6" style="text-align:center;color:var(--color-text-muted);padding:var(--space-6);">No invoices or charges recorded for this client yet.</td>
                 </tr>
               ` : invoices.map((inv) => {
                 const remPaise = Utils.toPaise(inv.amount) - Utils.toPaise(inv.paidAmount || 0);
@@ -600,8 +667,8 @@ const Clients = {
                   <tr>
                     <td class="tabular-nums" style="font-weight:600;white-space:nowrap;">${inv.invoiceNumber}</td>
                     <td>
-                      <div class="table-cell-truncate" style="font-weight:500;max-width:180px;" title="${Utils.escapeHtml(inv.serviceName || 'Service')}">${Utils.escapeHtml(inv.serviceName || 'Service')}</div>
-                      ${inv.notes ? `<div class="table-subtext table-cell-truncate" style="max-width:180px;" title="${Utils.escapeHtml(inv.notes)}">${Utils.escapeHtml(inv.notes)}</div>` : ''}
+                      <div class="table-cell-truncate" style="font-weight:500;max-width:220px;" title="${Utils.escapeHtml(inv.serviceName || 'Service')}">${Utils.escapeHtml(inv.serviceName || 'Service')}</div>
+                      ${inv.notes ? `<div class="table-subtext table-cell-truncate" style="max-width:220px;" title="${Utils.escapeHtml(inv.notes)}">${Utils.escapeHtml(inv.notes)}</div>` : ''}
                     </td>
                     <td style="white-space:nowrap;">${Utils.formatMonth(inv.billingMonth)}</td>
                     <td class="tabular-nums" style="font-weight:600;white-space:nowrap;">${Utils.formatCurrency(inv.amount)}</td>
@@ -610,11 +677,11 @@ const Clients = {
                     </td>
                     <td style="text-align:right;white-space:nowrap;">
                       ${remPaise > 0 ? `
-                        <button class="btn btn-primary btn-sm" onclick="Utils.closeModal('clientDetailModal'); Payments.openRecordPaymentModal('${inv.id}')">
+                        <button class="btn btn-primary btn-sm" onclick="Payments.openRecordPaymentModal('${inv.id}')">
                           <i data-lucide="plus-circle"></i> Pay
                         </button>
                       ` : `
-                        <button class="btn btn-secondary btn-icon btn-sm" onclick="Utils.closeModal('clientDetailModal'); Payments.viewInvoiceHistory('${inv.id}')" title="History">
+                        <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="History">
                           <i data-lucide="history"></i>
                         </button>
                       `}
@@ -628,7 +695,7 @@ const Clients = {
       </div>
 
       <!-- Payment Transactions History -->
-      <div class="card">
+      <div class="card" style="margin-bottom:var(--space-6);">
         <div class="card-header">
           <div class="card-title">Payment History (${payments.length})</div>
         </div>
@@ -646,7 +713,7 @@ const Clients = {
             <tbody>
               ${payments.length === 0 ? `
                 <tr>
-                  <td colspan="5" style="text-align:center;color:var(--color-text-muted);padding:var(--space-4);">No payment transactions recorded for this client yet.</td>
+                  <td colspan="5" style="text-align:center;color:var(--color-text-muted);padding:var(--space-6);">No payment transactions recorded for this client yet.</td>
                 </tr>
               ` : payments.map((p) => `
                 <tr>
@@ -654,7 +721,7 @@ const Clients = {
                   <td class="tabular-nums" style="font-weight:600;color:var(--color-success);white-space:nowrap;">${Utils.formatCurrency(p.amount)}</td>
                   <td style="white-space:nowrap;">${Utils.escapeHtml(p.paymentMethod)}</td>
                   <td style="white-space:nowrap;">${Utils.escapeHtml(p.invoiceNumber || p.billingMonth)}</td>
-                  <td class="table-subtext table-cell-truncate" style="max-width:180px;" title="${Utils.escapeHtml(p.notes || '')}">${p.notes ? Utils.escapeHtml(p.notes) : '—'}</td>
+                  <td class="table-subtext table-cell-truncate" style="max-width:220px;" title="${Utils.escapeHtml(p.notes || '')}">${p.notes ? Utils.escapeHtml(p.notes) : '—'}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -663,7 +730,6 @@ const Clients = {
       </div>
     `;
 
-    Utils.openModal('clientDetailModal');
     Utils.refreshIcons();
   },
 
@@ -691,6 +757,14 @@ const Clients = {
       this.render();
       if (window.Dashboard) window.Dashboard.render();
       if (window.Payments) window.Payments.render();
+
+      if (res.action === 'deleted') {
+        if (window.App && App.activePage === 'client-detail') {
+          App.navigateTo('clients');
+        }
+      } else if (this.activeDetailClientId === clientId) {
+        this.renderClientDetailPage(clientId);
+      }
     }
   }
 };

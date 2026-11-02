@@ -732,6 +732,7 @@
   box-shadow: var(--shadow-dropdown);
   width: 100%;
   max-width: 580px;
+  min-width: 0;
   max-height: calc(100vh - 36px);
   display: flex;
   flex-direction: column;
@@ -746,6 +747,7 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -797,6 +799,7 @@
   -webkit-overflow-scrolling: touch;
   flex: 1;
   min-height: 0;
+  min-width: 0;
   max-height: 100%;
 }
 

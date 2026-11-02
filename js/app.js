@@ -42,13 +42,31 @@ const App = {
     this.bindMobileDrawer();
 
     // 6. Route to initial page from URL hash or default to dashboard
-    const initialHash = window.location.hash.replace('#', '') || 'dashboard';
-    this.navigateTo(initialHash, false);
+    const handleHashRouting = (updateHash = false) => {
+      const rawHash = window.location.hash.replace('#', '') || 'dashboard';
+      if (rawHash.startsWith('client-detail')) {
+        let clientId = null;
+        if (rawHash.includes(':')) {
+          clientId = rawHash.split(':')[1];
+        } else if (rawHash.includes('?id=')) {
+          clientId = rawHash.split('?id=')[1];
+        } else if (rawHash.includes('/')) {
+          clientId = rawHash.split('/')[1];
+        }
+        if (clientId && window.Clients) {
+          Clients.activeDetailClientId = clientId;
+        }
+        this.navigateTo('client-detail', updateHash);
+      } else {
+        this.navigateTo(rawHash, updateHash);
+      }
+    };
+
+    handleHashRouting(false);
 
     // 7. Handle browser back/forward buttons
     window.addEventListener('hashchange', () => {
-      const page = window.location.hash.replace('#', '') || 'dashboard';
-      this.navigateTo(page, false);
+      handleHashRouting(false);
     });
 
     // 8. Refresh Lucide icons
@@ -213,12 +231,18 @@ const App = {
   },
 
   navigateTo(pageId, updateHash = true) {
-    const validPages = ['dashboard', 'clients', 'payments', 'expenses', 'reports', 'settings'];
+    const validPages = ['dashboard', 'clients', 'payments', 'expenses', 'reports', 'settings', 'client-detail'];
     const page = validPages.includes(pageId) ? pageId : 'dashboard';
     this.activePage = page;
 
-    if (updateHash && window.location.hash !== `#${page}`) {
-      window.location.hash = `#${page}`;
+    if (updateHash) {
+      if (page === 'client-detail' && window.Clients && Clients.activeDetailClientId) {
+        if (window.location.hash !== `#client-detail:${Clients.activeDetailClientId}`) {
+          window.location.hash = `#client-detail:${Clients.activeDetailClientId}`;
+        }
+      } else if (window.location.hash !== `#${page}`) {
+        window.location.hash = `#${page}`;
+      }
     }
 
     // Toggle active page view
@@ -233,7 +257,8 @@ const App = {
 
     // Toggle active nav link
     document.querySelectorAll('.nav-item').forEach((item) => {
-      if (item.getAttribute('data-nav-page') === page) {
+      const navTarget = item.getAttribute('data-nav-page');
+      if (navTarget === page || (page === 'client-detail' && navTarget === 'clients')) {
         item.classList.add('active');
       } else {
         item.classList.remove('active');
@@ -246,6 +271,7 @@ const App = {
       const titles = {
         dashboard: 'Dashboard Overview',
         clients: 'Client Management',
+        'client-detail': 'Client Overview',
         payments: 'Monthly Invoicing & Payments',
         expenses: 'Operating Expenses',
         reports: 'Financial Reports & Profitability',
@@ -261,6 +287,11 @@ const App = {
         break;
       case 'clients':
         if (window.Clients) Clients.render();
+        break;
+      case 'client-detail':
+        if (window.Clients && Clients.activeDetailClientId) {
+          Clients.renderClientDetailPage(Clients.activeDetailClientId);
+        }
         break;
       case 'payments':
         if (window.Payments) Payments.render();

@@ -163,13 +163,23 @@
     align-items: flex-start;
   }
 
-  .modal {
+  .modal,
+  .modal-lg,
+  .modal-sm {
+    width: 100%;
     max-width: calc(100vw - 20px);
+    min-width: 0;
+    box-sizing: border-box;
     margin: 10px auto;
     max-height: calc(100vh - 20px);
   }
 
   .modal-body {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
     padding: var(--space-4);
     max-height: calc(100vh - 130px);
   }
@@ -420,60 +430,153 @@
 
   /* Client Overview in Modal on Mobile */
   .client-overview-header {
+    display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-3);
+    align-items: stretch;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-3);
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .client-overview-header .card-title {
     white-space: nowrap;
     width: 100%;
+    font-size: 15px;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .client-overview-actions {
     width: 100%;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: row;
     gap: var(--space-2);
+    box-sizing: border-box;
   }
 
   .client-overview-actions .btn {
+    flex: 1 1 0;
+    min-width: 0;
     width: 100%;
+    height: 36px;
     justify-content: center;
-    padding: var(--space-2);
-    font-size: 12px;
+    padding: 0 var(--space-2);
+    font-size: 12.5px;
     white-space: nowrap;
+    box-sizing: border-box;
   }
 
   /* Modals on Mobile */
   .modal-backdrop {
     padding: 8px;
     align-items: flex-start;
+    box-sizing: border-box;
   }
 
-  .modal {
+  .modal,
+  .modal-lg,
+  .modal-sm {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 4px auto;
+    max-height: calc(100dvh - 12px);
+    overflow: hidden;
+    box-sizing: border-box;
+    border-radius: var(--radius-lg);
+  }
+
+  .modal > form {
+    width: 100%;
     max-width: 100%;
-    margin: 6px auto;
-    max-height: calc(100vh - 12px);
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .modal-header {
+    padding: var(--space-3) var(--space-4);
+    box-sizing: border-box;
+    flex-shrink: 0;
+    min-width: 0;
+  }
+
+  .modal-title {
+    font-size: 15.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .modal-body {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     padding: var(--space-3) var(--space-4);
-    max-height: calc(100vh - 120px);
+    max-height: calc(100dvh - 125px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
   }
 
   .modal-footer {
-    flex-direction: row;
+    display: flex;
+    flex-direction: column-reverse;
     gap: var(--space-2);
     width: 100%;
     padding: var(--space-3) var(--space-4);
+    box-sizing: border-box;
+    flex-shrink: 0;
   }
 
   .modal-footer .btn {
-    flex: 1;
-    width: auto;
-    height: 38px;
+    width: 100% !important;
+    height: 40px;
     justify-content: center;
+    flex: none;
+    box-sizing: border-box;
+    margin: 0;
+    font-size: 13.5px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  .modal .card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    margin-bottom: var(--space-4);
+  }
+
+  .modal .card-header {
+    padding: var(--space-3) var(--space-3);
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .modal .card-body {
+    padding: var(--space-3) var(--space-3);
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .modal .table-responsive {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    box-sizing: border-box;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -506,5 +609,10 @@
   .responsive-card-table td {
     font-size: 12.5px;
     padding: 5px 0;
+  }
+
+  .client-overview-actions .btn {
+    font-size: 11.5px;
+    padding: 0 var(--space-1);
   }
 }

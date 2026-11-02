@@ -67,15 +67,16 @@ const Storage = {
 
   addClient(clientData) {
     const clients = this.getClients();
+    const monthlyAmount = parseFloat(clientData.monthlyAmount) || 0;
     const newClient = {
       id: Utils.generateId('cli'),
       name: clientData.name.trim(),
       phone: (clientData.phone || '').trim(),
       email: (clientData.email || '').trim(),
       service: clientData.service.trim(),
-      monthlyAmount: parseFloat(clientData.monthlyAmount) || 0,
+      monthlyAmount,
       joiningDate: clientData.joiningDate || Utils.getTodayString(),
-      dueDay: parseInt(clientData.dueDay, 10) || 5,
+      dueDay: monthlyAmount > 0 ? (parseInt(clientData.dueDay, 10) || 5) : null,
       status: clientData.status || 'active', // 'active' | 'inactive'
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -90,15 +91,21 @@ const Storage = {
     const idx = clients.findIndex((c) => c.id === id);
     if (idx === -1) return null;
 
+    const monthlyAmount = clientData.monthlyAmount !== undefined ? parseFloat(clientData.monthlyAmount) : clients[idx].monthlyAmount;
+    let dueDay = null;
+    if (monthlyAmount > 0) {
+      dueDay = clientData.dueDay !== undefined ? (parseInt(clientData.dueDay, 10) || 5) : (clients[idx].dueDay || 5);
+    }
+
     clients[idx] = {
       ...clients[idx],
       name: clientData.name !== undefined ? clientData.name.trim() : clients[idx].name,
       phone: clientData.phone !== undefined ? clientData.phone.trim() : clients[idx].phone,
       email: clientData.email !== undefined ? clientData.email.trim() : clients[idx].email,
       service: clientData.service !== undefined ? clientData.service.trim() : clients[idx].service,
-      monthlyAmount: clientData.monthlyAmount !== undefined ? parseFloat(clientData.monthlyAmount) : clients[idx].monthlyAmount,
+      monthlyAmount,
       joiningDate: clientData.joiningDate || clients[idx].joiningDate,
-      dueDay: clientData.dueDay !== undefined ? parseInt(clientData.dueDay, 10) : clients[idx].dueDay,
+      dueDay,
       status: clientData.status || clients[idx].status,
       updatedAt: new Date().toISOString()
     };

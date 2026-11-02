@@ -388,7 +388,10 @@ const Payments = {
         amountInput.value = (client.monthlyAmount && client.monthlyAmount > 0) ? client.monthlyAmount : '';
         amountInput.dataset.autoFilled = 'true';
       }
-      dueDateInput.value = Utils.calculateDueDate(month, client.dueDay || 5);
+      const rawDue = (client.monthlyAmount && client.monthlyAmount > 0 && client.dueDay)
+        ? Utils.calculateDueDate(month, client.dueDay)
+        : Utils.getTodayString();
+      dueDateInput.value = Utils.isoToDmy(rawDue);
     }
   },
 
@@ -429,7 +432,8 @@ const Payments = {
       isValid = false;
     }
 
-    const dueDate = dueDateInput.value || Utils.calculateDueDate(billingMonth, 5);
+    const rawDueDate = dueDateInput.value.trim();
+    const dueDate = Utils.dmyToIso(rawDueDate) || rawDueDate || Utils.calculateDueDate(billingMonth, 5);
 
     if (!isValid) return;
 
@@ -592,7 +596,7 @@ const Payments = {
         submitBtn.innerHTML = `<i data-lucide="zap"></i> Select Clients to Bill`;
       } else {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = `<i data-lucide="zap"></i> Generate ${selectedCount} Invoice(s) (${Utils.formatCurrency(Utils.fromPaise(totalPaise))})`;
+        submitBtn.innerHTML = `<i data-lucide="zap"></i> Generate (${selectedCount}) · ${Utils.formatCurrency(Utils.fromPaise(totalPaise))}`;
       }
     }
   },

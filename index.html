@@ -333,6 +333,31 @@
         </section>
 
         <!-- ==================================================================
+             PAGE: CLIENT DETAILS & OVERVIEW (Dedicated Full Page)
+             ================================================================== -->
+        <section id="view-client-detail" class="page-view">
+          <div class="page-header" style="align-items:flex-start;">
+            <div class="page-title-group">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="App.navigateTo('clients')" style="margin-bottom:var(--space-2);width:fit-content;display:inline-flex;align-items:center;gap:6px;">
+                <i data-lucide="arrow-left"></i> Back to Clients
+              </button>
+              <div style="display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;">
+                <h1 id="clientDetailPageTitle" class="page-title">Client Overview</h1>
+                <span id="clientDetailPageBadge"></span>
+              </div>
+              <div id="clientDetailPageSubtitle" style="font-size:13px;color:var(--color-text-secondary);margin-top:2px;"></div>
+            </div>
+            <div id="clientDetailPageActions" class="page-actions">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <div id="clientDetailPageContent">
+            <!-- Rendered dynamically by clients.js -->
+          </div>
+        </section>
+
+        <!-- ==================================================================
              PAGE 3: MONTHLY PAYMENTS
              ================================================================== -->
         <section id="view-payments" class="page-view">
@@ -611,12 +636,7 @@
             <div class="page-title-group">
               <h1 class="page-title">Settings</h1>
             </div>
-            <div class="page-actions">
-              <button type="button" id="logoutBtn" class="btn btn-secondary btn-sm" style="color:var(--color-danger);border-color:var(--color-border);" title="Log Out">
-                <i data-lucide="log-out"></i> Log Out
-              </button>
             </div>
-          </div>
 
           <!-- Business Profile & Preferences Form -->
           <div class="card" style="margin-bottom:var(--space-6);">
@@ -832,7 +852,7 @@
               <span class="form-hint">Optional: leave 0 if client is billed ad-hoc</span>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="clientDueDayGroup" style="display:none;">
               <label for="clientDueDay" class="form-label">
                 Billing Due Day <span style="font-weight:normal;color:var(--color-text-muted);font-size:12px;">(1–28)</span>
               </label>
@@ -860,23 +880,7 @@
     </div>
   </div>
 
-  <!-- Client Details Modal -->
-  <div id="clientDetailModal" class="modal-backdrop">
-    <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="clientDetailTitle">
-      <div class="modal-header">
-        <h2 id="clientDetailTitle" class="modal-title">Client Overview</h2>
-        <button class="modal-close" data-modal-close aria-label="Close dialog">
-          <i data-lucide="x"></i>
-        </button>
-      </div>
-      <div id="clientDetailContent" class="modal-body">
-        <!-- Rendered dynamically by clients.js -->
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
-      </div>
-    </div>
-  </div>
+  <!-- Client Details opened on full page view #view-client-detail -->
 
   <!-- Create Individual Invoice / Add Charge Modal -->
   <div id="createInvoiceModal" class="modal-backdrop">
@@ -952,7 +956,7 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
           <button type="submit" class="btn btn-primary">
-            <i data-lucide="check"></i> Create Invoice & Add Charge
+            <i data-lucide="check"></i> Create Invoice
           </button>
         </div>
       </form>
@@ -1014,7 +1018,7 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
           <button type="submit" id="genSubmitBtn" class="btn btn-primary">
-            <i data-lucide="zap"></i> Generate Selected Invoices
+            <i data-lucide="zap"></i> Generate Invoices
           </button>
         </div>
       </form>
