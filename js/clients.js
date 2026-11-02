@@ -143,14 +143,24 @@ const Clients = {
 
 
 
-    // Close dropdowns on outside click
+    // Close dropdowns on outside click or scroll
+    const closeAllDropdowns = () => {
+      document.querySelectorAll('.dropdown-menu.show').forEach((menu) => {
+        menu.classList.remove('show');
+        menu.style.position = '';
+        menu.style.top = '';
+        menu.style.left = '';
+      });
+    };
+
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.dropdown')) {
-        document.querySelectorAll('.dropdown-menu.show').forEach((menu) => {
-          menu.classList.remove('show');
-        });
+        closeAllDropdowns();
       }
     });
+
+    window.addEventListener('scroll', closeAllDropdowns, { passive: true });
+    window.addEventListener('resize', closeAllDropdowns);
   },
 
   render() {
@@ -245,19 +255,27 @@ const Clients = {
           <td data-label="Due Date" style="white-space:nowrap;">${(client.monthlyAmount && client.monthlyAmount > 0 && client.dueDay) ? `Day ${client.dueDay} of month` : '<span class="table-subtext">—</span>'}</td>
           <td data-label="Status">${statusBadge}</td>
           <td class="actions-col" data-label="Actions">
-            <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);width:100%;">
-              <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}')" title="Add Charge / Invoice" aria-label="Add Charge / Invoice">
-                <i data-lucide="receipt"></i>
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;width:100%;">
+              <button class="btn btn-secondary btn-icon btn-sm" onclick="Clients.viewClientDetails('${client.id}')" title="View Details" aria-label="View Details" style="width:28px;height:28px;">
+                <i data-lucide="eye" style="width:14px;height:14px;"></i>
               </button>
-              <button class="btn btn-secondary btn-icon btn-sm" onclick="Clients.viewClientDetails('${client.id}')" title="View Details" aria-label="View Details">
-                <i data-lucide="eye"></i>
-              </button>
-              <button class="btn btn-secondary btn-icon btn-sm" onclick="Clients.openAddEditModal('${client.id}')" title="Edit Client" aria-label="Edit Client">
-                <i data-lucide="edit-2"></i>
-              </button>
-              <button class="btn ${isStatusActive ? 'btn-secondary' : 'btn-danger'} btn-icon btn-sm" onclick="Clients.confirmDeleteClient('${client.id}')" title="${isStatusActive ? 'Deactivate Client' : 'Delete Client'}" aria-label="${isStatusActive ? 'Deactivate Client' : 'Delete Client'}">
-                <i data-lucide="${isStatusActive ? 'user-x' : 'trash-2'}"></i>
-              </button>
+              <div class="dropdown">
+                <button type="button" class="btn btn-secondary btn-icon btn-sm" onclick="Clients.toggleActionMenu(event, '${client.id}')" title="More options" aria-label="More options" style="width:28px;height:28px;">
+                  <i data-lucide="more-vertical" style="width:14px;height:14px;"></i>
+                </button>
+                <div id="clientActionsMenu_${client.id}" class="dropdown-menu">
+                  <button type="button" class="dropdown-item" onclick="Payments.openCreateInvoiceModal('${client.id}')">
+                    <i data-lucide="receipt"></i> Add Charge / Invoice
+                  </button>
+                  <button type="button" class="dropdown-item" onclick="Clients.openAddEditModal('${client.id}')">
+                    <i data-lucide="edit-2"></i> Edit Client Profile
+                  </button>
+                  <div class="dropdown-divider"></div>
+                  <button type="button" class="dropdown-item text-danger" onclick="Clients.confirmDeleteClient('${client.id}')">
+                    <i data-lucide="${isStatusActive ? 'user-x' : 'trash-2'}"></i> ${isStatusActive ? 'Deactivate Client' : 'Delete Client'}
+                  </button>
+                </div>
+              </div>
             </div>
           </td>
         </tr>
@@ -267,17 +285,48 @@ const Clients = {
     Utils.refreshIcons();
   },
 
-  toggleActionMenu(event, clientId) {
+  toggleActionMenu(event, targetId) {
     event.stopPropagation();
-    const menuId = `clientActionsMenu_${clientId}`;
+    const menuId = (typeof targetId === 'string' && (targetId.includes('_') || targetId.startsWith('menu')))
+      ? targetId
+      : `clientActionsMenu_${targetId}`;
     const targetMenu = document.getElementById(menuId);
+    if (!targetMenu) return;
+
     const isOpen = targetMenu.classList.contains('show');
 
     // Close all other dropdowns
-    document.querySelectorAll('.dropdown-menu.show').forEach((m) => m.classList.remove('show'));
+    document.querySelectorAll('.dropdown-menu.show').forEach((m) => {
+      m.classList.remove('show');
+      m.style.position = '';
+      m.style.top = '';
+      m.style.left = '';
+    });
 
     if (!isOpen) {
       targetMenu.classList.add('show');
+
+      // Floating position coordinates so dropdown is never clipped by table or card boundary
+      const triggerBtn = event.currentTarget || event.target.closest('button');
+      if (triggerBtn) {
+        const rect = triggerBtn.getBoundingClientRect();
+        const menuWidth = 185;
+        const menuHeight = targetMenu.offsetHeight || 160;
+
+        let left = rect.right - menuWidth;
+        if (left < 10) left = 10;
+        if (left + menuWidth > window.innerWidth - 10) left = window.innerWidth - menuWidth - 10;
+
+        let top = rect.bottom + 4;
+        if (top + menuHeight > window.innerHeight - 10 && rect.top - menuHeight - 4 > 10) {
+          top = rect.top - menuHeight - 4;
+        }
+
+        targetMenu.style.position = 'fixed';
+        targetMenu.style.top = `${top}px`;
+        targetMenu.style.left = `${left}px`;
+        targetMenu.style.zIndex = '1050';
+      }
     }
   },
 
@@ -539,6 +588,8 @@ const Clients = {
     const outstandingPaise = Math.max(totalBilledPaise - totalPaidPaise, 0);
 
     const hasMonthly = Boolean(client.monthlyAmount && client.monthlyAmount > 0);
+    const oneTimeServices = invoices.filter((inv) => inv.chargeType !== 'retainer');
+    const totalServicesCount = (hasMonthly ? 1 : 0) + oneTimeServices.length;
 
     contentEl.innerHTML = `
       <!-- Financial Summary Cards -->
@@ -592,38 +643,11 @@ const Clients = {
             </div>
             <div class="detail-item">
               <span class="detail-label">Monthly Retainer</span>
-              <div class="detail-value" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span class="detail-value" style="display:flex;align-items:center;gap:8px;">
                 ${hasMonthly 
-                  ? `
-                    <span class="tabular-nums" style="font-weight:600;">${Utils.formatCurrency(client.monthlyAmount)} / mo</span>
-                    ${client.retainerStatus === 'paused' 
-                      ? `<span class="badge badge-warning" style="font-size:11px;padding:2px 6px;"><span class="badge-dot"></span>Paused</span>` 
-                      : `<span class="badge badge-success" style="font-size:11px;padding:2px 6px;"><span class="badge-dot"></span>Active</span>`}
-                    <div style="display:inline-flex;align-items:center;gap:4px;margin-left:auto;flex-wrap:wrap;">
-                      ${client.retainerStatus === 'paused' ? `
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="Clients.toggleRetainerStatus('${client.id}')" title="Resume monthly retainer" style="padding:2px 8px;font-size:11px;height:24px;display:inline-flex;align-items:center;gap:4px;">
-                          <i data-lucide="play" style="width:12px;height:12px;"></i> Resume
-                        </button>
-                      ` : `
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="Clients.toggleRetainerStatus('${client.id}')" title="Pause monthly retainer" style="padding:2px 8px;font-size:11px;height:24px;display:inline-flex;align-items:center;gap:4px;">
-                          <i data-lucide="pause" style="width:12px;height:12px;"></i> Pause
-                        </button>
-                      `}
-                      <button type="button" class="btn btn-secondary btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}', '', 'retainer')" title="Edit monthly retainer plan" style="padding:2px 8px;font-size:11px;height:24px;display:inline-flex;align-items:center;gap:4px;">
-                        <i data-lucide="edit-2" style="width:12px;height:12px;"></i> Edit
-                      </button>
-                      <button type="button" class="btn btn-secondary btn-sm" onclick="Clients.removeRetainer('${client.id}')" title="Delete / remove monthly retainer plan" style="padding:2px 8px;font-size:11px;height:24px;color:var(--color-danger);display:inline-flex;align-items:center;gap:4px;">
-                        <i data-lucide="trash-2" style="width:12px;height:12px;"></i> Delete
-                      </button>
-                    </div>
-                  ` 
-                  : `
-                    <span style="color:var(--color-text-muted);">No Retainer (Ad-hoc)</span>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}', '', 'retainer')" style="padding:2px 8px;font-size:11px;height:24px;margin-left:auto;display:inline-flex;align-items:center;gap:4px;">
-                      <i data-lucide="plus" style="width:12px;height:12px;"></i> Set Retainer
-                    </button>
-                  `}
-              </div>
+                  ? `<span class="tabular-nums" style="font-weight:600;">${Utils.formatCurrency(client.monthlyAmount)} / mo</span> ${client.retainerStatus === 'paused' ? '<span class="badge badge-warning" style="font-size:11px;padding:2px 6px;"><span class="badge-dot"></span>Paused</span>' : '<span class="badge badge-success" style="font-size:11px;padding:2px 6px;"><span class="badge-dot"></span>Active</span>'}` 
+                  : '<span style="color:var(--color-text-muted);">No Retainer (Ad-hoc)</span>'}
+              </span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Billing Due Day</span>
@@ -638,6 +662,160 @@ const Clients = {
               <span class="detail-value" style="font-weight:600;color:${outstandingPaise > 0 ? 'var(--color-danger)' : 'var(--color-success)'};">${Utils.formatCurrency(Utils.fromPaise(outstandingPaise))}</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Services & Billing Plans Section -->
+      <div class="card" style="margin-bottom:var(--space-6);">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-2);">
+          <div>
+            <div class="card-title">Services & Billing Plans (${totalServicesCount})</div>
+            <div style="font-size:12px;color:var(--color-text-secondary);margin-top:2px;">Configured recurring retainer subscriptions and one-time service charges</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;">
+            ${!hasMonthly ? `
+              <button class="btn btn-secondary btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}', '', 'retainer')">
+                <i data-lucide="repeat"></i> Set Monthly Retainer
+              </button>
+            ` : ''}
+            <button class="btn btn-primary btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}', '', 'one_time')">
+              <i data-lucide="plus"></i> Add Charge / Service
+            </button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Service / Description</th>
+                <th>Type</th>
+                <th>Billing Schedule / Due</th>
+                <th>Rate / Amount</th>
+                <th>Status</th>
+                <th style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${totalServicesCount === 0 ? `
+                <tr>
+                  <td colspan="6" style="text-align:center;color:var(--color-text-muted);padding:var(--space-6);">
+                    No services or billing charges configured yet for this client.
+                  </td>
+                </tr>
+              ` : `
+                ${hasMonthly ? `
+                  <tr>
+                    <td>
+                      <div class="table-cell-truncate" style="font-weight:600;color:var(--color-text-primary);max-width:240px;" title="${Utils.escapeHtml(client.service || 'Monthly Retainer')}">${Utils.escapeHtml(client.service || 'Monthly Retainer')}</div>
+                      <div class="table-subtext">Recurring Monthly Retainer Agreement</div>
+                    </td>
+                    <td style="white-space:nowrap;">
+                      <span class="badge badge-primary"><span class="badge-dot"></span>Monthly Retainer</span>
+                    </td>
+                    <td style="white-space:nowrap;">
+                      <span style="font-weight:500;">Day ${client.dueDay || 5} of every month</span>
+                    </td>
+                    <td class="tabular-nums" style="font-weight:600;white-space:nowrap;">
+                      ${Utils.formatCurrency(client.monthlyAmount)} / mo
+                    </td>
+                    <td style="white-space:nowrap;">
+                      ${client.retainerStatus === 'paused' 
+                        ? `<span class="badge badge-warning"><span class="badge-dot"></span>Paused</span>` 
+                        : `<span class="badge badge-success"><span class="badge-dot"></span>Active</span>`}
+                    </td>
+                    <td style="text-align:right;white-space:nowrap;">
+                      <div class="dropdown">
+                        <button type="button" class="btn btn-secondary btn-icon btn-sm" onclick="Clients.toggleActionMenu(event, 'svcActionsMenu_retainer_${client.id}')" title="Service Actions" aria-label="Service actions" style="width:30px;height:30px;">
+                          <i data-lucide="more-vertical" style="width:16px;height:16px;"></i>
+                        </button>
+                        <div id="svcActionsMenu_retainer_${client.id}" class="dropdown-menu">
+                          ${client.retainerStatus === 'paused' ? `
+                            <button type="button" class="dropdown-item" onclick="Clients.toggleRetainerStatus('${client.id}')">
+                              <i data-lucide="play"></i> Resume Retainer
+                            </button>
+                          ` : `
+                            <button type="button" class="dropdown-item" onclick="Clients.toggleRetainerStatus('${client.id}')">
+                              <i data-lucide="pause"></i> Pause Retainer
+                            </button>
+                          `}
+                          <button type="button" class="dropdown-item" onclick="Payments.openCreateInvoiceModal('${client.id}', '', 'retainer')">
+                            <i data-lucide="edit-2"></i> Edit Plan & Rate
+                          </button>
+                          <div class="dropdown-divider"></div>
+                          <button type="button" class="dropdown-item text-danger" onclick="Clients.removeRetainer('${client.id}')">
+                            <i data-lucide="trash-2"></i> Delete Retainer Plan
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ` : ''}
+
+                ${oneTimeServices.map((inv) => {
+                  const remPaise = Utils.toPaise(inv.amount) - Utils.toPaise(inv.paidAmount || 0);
+                  const isAdvance = inv.chargeType === 'project_advance' || (inv.notes && inv.notes.toLowerCase().includes('advance'));
+                  const typeBadge = isAdvance ? 'Project Advance' : 'One-Time Charge';
+
+                  let statusBadge = '';
+                  if (inv.status === 'paid') {
+                    statusBadge = '<span class="badge badge-success"><span class="badge-dot"></span>Settled</span>';
+                  } else if (inv.status === 'partial') {
+                    statusBadge = '<span class="badge badge-warning"><span class="badge-dot"></span>Partial</span>';
+                  } else if (inv.status === 'overdue') {
+                    statusBadge = '<span class="badge badge-danger"><span class="badge-dot"></span>Overdue</span>';
+                  } else {
+                    statusBadge = '<span class="badge badge-neutral"><span class="badge-dot"></span>Pending</span>';
+                  }
+
+                  return `
+                    <tr>
+                      <td>
+                        <div class="table-cell-truncate" style="font-weight:600;color:var(--color-text-primary);max-width:240px;" title="${Utils.escapeHtml(inv.serviceName || 'Service')}">${Utils.escapeHtml(inv.serviceName || 'Service')}</div>
+                        <div class="table-subtext table-cell-truncate" style="max-width:240px;">
+                          <span>${Utils.escapeHtml(inv.invoiceNumber)}</span>
+                          ${inv.notes ? ` • <span title="${Utils.escapeHtml(inv.notes)}">${Utils.escapeHtml(inv.notes)}</span>` : ''}
+                        </div>
+                      </td>
+                      <td style="white-space:nowrap;">
+                        <span class="badge badge-neutral"><span class="badge-dot"></span>${typeBadge}</span>
+                      </td>
+                      <td style="white-space:nowrap;">
+                        <span>${Utils.formatMonth(inv.billingMonth)}</span>
+                        <span class="table-subtext" style="display:block;">Due ${Utils.formatDate(inv.dueDate)}</span>
+                      </td>
+                      <td class="tabular-nums" style="font-weight:600;white-space:nowrap;">
+                        ${Utils.formatCurrency(inv.amount)}
+                      </td>
+                      <td style="white-space:nowrap;">
+                        ${statusBadge}
+                      </td>
+                      <td style="text-align:right;white-space:nowrap;">
+                        <div class="dropdown">
+                          <button type="button" class="btn btn-secondary btn-icon btn-sm" onclick="Clients.toggleActionMenu(event, 'svcActionsMenu_inv_${inv.id}')" title="Service Actions" aria-label="Service actions" style="width:30px;height:30px;">
+                            <i data-lucide="more-vertical" style="width:16px;height:16px;"></i>
+                          </button>
+                          <div id="svcActionsMenu_inv_${inv.id}" class="dropdown-menu">
+                            ${remPaise > 0 ? `
+                              <button type="button" class="dropdown-item" onclick="Payments.openRecordPaymentModal('${inv.id}')">
+                                <i data-lucide="plus-circle"></i> Record Payment
+                              </button>
+                            ` : ''}
+                            <button type="button" class="dropdown-item" onclick="Payments.viewInvoiceHistory('${inv.id}')">
+                              <i data-lucide="history"></i> Payment History
+                            </button>
+                            <div class="dropdown-divider"></div>
+                            <button type="button" class="dropdown-item text-danger" onclick="Payments.confirmDeleteInvoice('${inv.id}')">
+                              <i data-lucide="trash-2"></i> Delete Charge / Bill
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              `}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -681,20 +859,28 @@ const Clients = {
                       ${inv.status === 'paid' ? '<span class="badge badge-success"><span class="badge-dot"></span>Paid</span>' : (inv.status === 'partial' ? '<span class="badge badge-warning"><span class="badge-dot"></span>Partial</span>' : '<span class="badge badge-danger"><span class="badge-dot"></span>Pending</span>')}
                     </td>
                     <td style="text-align:right;white-space:nowrap;">
-                      <div style="display:inline-flex;align-items:center;justify-content:flex-end;gap:4px;">
+                      <div style="display:inline-flex;align-items:center;justify-content:flex-end;gap:6px;">
                         ${remPaise > 0 ? `
-                          <button class="btn btn-primary btn-sm" onclick="Payments.openRecordPaymentModal('${inv.id}')" title="Record Payment">
-                            <i data-lucide="plus-circle"></i> Pay
+                          <button class="btn btn-primary btn-sm" onclick="Payments.openRecordPaymentModal('${inv.id}')" title="Record Payment" style="padding:2px 10px;height:28px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                            <i data-lucide="plus-circle" style="width:13px;height:13px;"></i> Pay
                           </button>
                         ` : `
                           <span class="badge badge-neutral" style="font-size:11px;">Settled</span>
                         `}
-                        <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View History" aria-label="View history">
-                          <i data-lucide="history"></i>
-                        </button>
-                        <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.confirmDeleteInvoice('${inv.id}')" title="Delete Invoice / Bill" aria-label="Delete invoice" style="color:var(--color-danger);">
-                          <i data-lucide="trash-2"></i>
-                        </button>
+                        <div class="dropdown">
+                          <button type="button" class="btn btn-secondary btn-icon btn-sm" onclick="Clients.toggleActionMenu(event, 'invActionMenu_${inv.id}')" title="More options" aria-label="More options" style="width:28px;height:28px;">
+                            <i data-lucide="more-vertical" style="width:14px;height:14px;"></i>
+                          </button>
+                          <div id="invActionMenu_${inv.id}" class="dropdown-menu">
+                            <button type="button" class="dropdown-item" onclick="Payments.viewInvoiceHistory('${inv.id}')">
+                              <i data-lucide="history"></i> View History
+                            </button>
+                            <div class="dropdown-divider"></div>
+                            <button type="button" class="dropdown-item text-danger" onclick="Payments.confirmDeleteInvoice('${inv.id}')">
+                              <i data-lucide="trash-2"></i> Delete Invoice
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </td>
                   </tr>

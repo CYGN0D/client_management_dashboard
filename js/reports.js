@@ -396,16 +396,24 @@ const Reports = {
           <td data-label="Due Date" class="tabular-nums" style="${inv.isOverdue ? 'color:var(--color-danger);font-weight:500;' : ''} white-space:nowrap;">${Utils.formatDate(inv.dueDate)}</td>
           <td data-label="Status">${badgeHtml}</td>
           <td class="actions-col" data-label="Action">
-            <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);width:100%;">
-              <button class="btn btn-primary btn-sm" onclick="Payments.openRecordPaymentModal('${inv.id}')" title="Record Payment">
-                <i data-lucide="plus-circle"></i> Pay
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;width:100%;">
+              <button class="btn btn-primary btn-sm" onclick="Payments.openRecordPaymentModal('${inv.id}')" title="Record Payment" style="padding:2px 10px;height:28px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                <i data-lucide="plus-circle" style="width:13px;height:13px;"></i> Pay
               </button>
-              <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View History" aria-label="View invoice payment history">
-                <i data-lucide="history"></i>
-              </button>
-              <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.confirmDeleteInvoice('${inv.id}')" title="Delete Invoice / Bill" aria-label="Delete Invoice" style="color:var(--color-danger);">
-                <i data-lucide="trash-2"></i>
-              </button>
+              <div class="dropdown">
+                <button type="button" class="btn btn-secondary btn-icon btn-sm" onclick="Clients.toggleActionMenu(event, 'reportPayActionMenu_${inv.id}')" title="More options" aria-label="More options" style="width:28px;height:28px;">
+                  <i data-lucide="more-vertical" style="width:14px;height:14px;"></i>
+                </button>
+                <div id="reportPayActionMenu_${inv.id}" class="dropdown-menu">
+                  <button type="button" class="dropdown-item" onclick="Payments.viewInvoiceHistory('${inv.id}')">
+                    <i data-lucide="history"></i> View History
+                  </button>
+                  <div class="dropdown-divider"></div>
+                  <button type="button" class="dropdown-item text-danger" onclick="Payments.confirmDeleteInvoice('${inv.id}')">
+                    <i data-lucide="trash-2"></i> Delete Invoice
+                  </button>
+                </div>
+              </div>
             </div>
           </td>
         </tr>
