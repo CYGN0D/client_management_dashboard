@@ -476,7 +476,108 @@ const Utils = {
         el.outerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-${name}">${icons[name]}</svg>`;
       }
     });
+  },
+
+  /**
+   * Universal Interactive Data Popup Tooltip for tables
+   */
+  initTablePopups() {
+    if (this._tablePopupsInitialized) return;
+    this._tablePopupsInitialized = true;
+
+    let popupEl = document.getElementById('tableDataPopup');
+    if (!popupEl) {
+      popupEl = document.createElement('div');
+      popupEl.id = 'tableDataPopup';
+      popupEl.className = 'table-data-popup';
+      document.body.appendChild(popupEl);
+    }
+
+    let hideTimeout = null;
+
+    const showPopup = (target) => {
+      const content = target.getAttribute('data-table-popup');
+      if (!content) return;
+
+      clearTimeout(hideTimeout);
+      popupEl.innerHTML = content;
+      popupEl.classList.add('show');
+
+      const rect = target.getBoundingClientRect();
+      const popupRect = popupEl.getBoundingClientRect();
+
+      let top = rect.top - popupRect.height - 8;
+      let left = rect.left + (rect.width / 2) - (popupRect.width / 2);
+
+      // Flip below if not enough room above
+      if (top < 10) {
+        top = rect.bottom + 8;
+      }
+
+      // Check right & left bounds
+      if (left < 10) left = 10;
+      if (left + popupRect.width > window.innerWidth - 10) {
+        left = window.innerWidth - popupRect.width - 10;
+      }
+
+      popupEl.style.top = `${top}px`;
+      popupEl.style.left = `${left}px`;
+    };
+
+    const hidePopup = () => {
+      hideTimeout = setTimeout(() => {
+        popupEl.classList.remove('show');
+      }, 100);
+    };
+
+    document.addEventListener('mouseover', (e) => {
+      const target = e.target.closest('[data-table-popup]');
+      if (target) {
+        showPopup(target);
+      } else if (!e.target.closest('#tableDataPopup')) {
+        hidePopup();
+      }
+    });
+
+    document.addEventListener('mouseout', (e) => {
+      const target = e.target.closest('[data-table-popup]');
+      if (target) {
+        hidePopup();
+      }
+    });
+
+    popupEl.addEventListener('mouseenter', () => {
+      clearTimeout(hideTimeout);
+    });
+
+    popupEl.addEventListener('mouseleave', () => {
+      hidePopup();
+    });
+
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('[data-table-popup]');
+      if (target) {
+        showPopup(target);
+      } else if (!e.target.closest('#tableDataPopup')) {
+        popupEl.classList.remove('show');
+      }
+    });
+
+    window.addEventListener('scroll', () => {
+      if (popupEl.classList.contains('show')) {
+        popupEl.classList.remove('show');
+      }
+    }, { passive: true });
   }
 };
+
+// Auto-initialize when document is ready
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => Utils.initTablePopups());
+  } else {
+    Utils.initTablePopups();
+  }
+}
 
 window.Utils = Utils;

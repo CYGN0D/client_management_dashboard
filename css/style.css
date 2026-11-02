@@ -181,13 +181,15 @@ body,
   box-shadow: 0 0 0 1px #FFFFFF;
 }
 
-[data-theme="dark"] .data-table th {
+[data-theme="dark"] .data-table th,
+[data-theme="dark"] .table-streamlined th {
   background-color: #14161C;
   color: #9CA3AF;
   border-bottom-color: var(--color-border);
 }
 
-[data-theme="dark"] .data-table tbody tr:hover {
+[data-theme="dark"] .data-table tbody tr:hover,
+[data-theme="dark"] .table-streamlined tbody tr:hover td {
   background-color: #171A21;
 }
 

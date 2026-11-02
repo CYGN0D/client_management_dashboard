@@ -203,33 +203,47 @@ const Expenses = {
       return;
     }
 
-    tbody.innerHTML = expenses.map((exp) => `
-      <tr class="table-card-row">
-        <td class="table-card-main">
-          <div class="table-cell-truncate" style="font-weight: 600; color: var(--color-text-primary); font-size: 14px; max-width: 220px;" title="${Utils.escapeHtml(exp.title)}">${Utils.escapeHtml(exp.title)}</div>
-        </td>
-        <td data-label="Category" style="white-space:nowrap;">
-          <span class="badge badge-neutral">${Utils.escapeHtml(exp.category)}</span>
-        </td>
-        <td data-label="Amount" class="tabular-nums" style="font-weight: 600; color: var(--color-text-primary); white-space:nowrap;">
-          ${Utils.formatCurrency(exp.amount)}
-        </td>
-        <td data-label="Date" style="white-space:nowrap;">${Utils.formatDate(exp.date)}</td>
-        <td data-label="Description" class="table-subtext table-cell-truncate" style="max-width: 240px;" title="${Utils.escapeHtml(exp.description || '')}">
-          ${exp.description ? Utils.escapeHtml(exp.description) : '—'}
-        </td>
-        <td class="actions-col" data-label="Actions">
-          <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);width:100%;">
-            <button class="btn btn-secondary btn-icon btn-sm" onclick="Expenses.openAddEditModal('${exp.id}')" title="Edit Expense" aria-label="Edit Expense">
-              <i data-lucide="edit-2"></i>
-            </button>
-            <button class="btn btn-danger btn-icon btn-sm" onclick="Expenses.confirmDeleteExpense('${exp.id}')" title="Delete Expense" aria-label="Delete Expense">
-              <i data-lucide="trash-2"></i>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = expenses.map((exp) => {
+      const expPopupHtml = `
+        <div class="table-data-popup-header">
+          <span class="table-data-popup-title">${Utils.escapeHtml(exp.title)}</span>
+          <span class="table-data-popup-badge">${Utils.escapeHtml(exp.category)}</span>
+        </div>
+        <div class="table-data-popup-row"><span>Amount</span><span>${Utils.formatCurrency(exp.amount)}</span></div>
+        <div class="table-data-popup-row"><span>Date</span><span>${Utils.formatDate(exp.date)}</span></div>
+        ${exp.description ? `<div class="table-data-popup-row"><span>Description</span><span>${Utils.escapeHtml(exp.description)}</span></div>` : ''}
+      `.trim();
+
+      return `
+        <tr class="table-card-row">
+          <td class="table-card-main">
+            <div class="table-single-line" data-table-popup="${Utils.escapeHtml(expPopupHtml)}" style="font-weight: 600; color: var(--color-text-primary); font-size: 13.5px;" title="${Utils.escapeHtml(exp.title)}">${Utils.escapeHtml(exp.title)}</div>
+          </td>
+          <td data-label="Category" style="white-space:nowrap;">
+            <span class="badge badge-neutral">${Utils.escapeHtml(exp.category)}</span>
+          </td>
+          <td data-label="Amount" class="tabular-nums" style="font-weight: 600; color: var(--color-text-primary); white-space:nowrap;">
+            ${Utils.formatCurrency(exp.amount)}
+          </td>
+          <td data-label="Date" style="white-space:nowrap;">${Utils.formatDate(exp.date)}</td>
+          <td data-label="Description">
+            <div class="table-single-line table-secondary-text" style="max-width: 240px;" title="${Utils.escapeHtml(exp.description || '')}">
+              ${exp.description ? Utils.escapeHtml(exp.description) : '—'}
+            </div>
+          </td>
+          <td class="actions-col" data-label="Actions">
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);width:100%;">
+              <button class="btn btn-secondary btn-icon btn-sm" onclick="Expenses.openAddEditModal('${exp.id}')" title="Edit Expense" aria-label="Edit Expense">
+                <i data-lucide="edit-2"></i>
+              </button>
+              <button class="btn btn-danger btn-icon btn-sm" onclick="Expenses.confirmDeleteExpense('${exp.id}')" title="Delete Expense" aria-label="Delete Expense">
+                <i data-lucide="trash-2"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
 
     Utils.refreshIcons();
   },

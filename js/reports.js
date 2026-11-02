@@ -388,13 +388,28 @@ const Reports = {
         badgeHtml = `<span class="badge badge-neutral"><span class="badge-dot"></span>Pending</span>`;
       }
 
+      const repPopupHtml = `
+        <div class="table-data-popup-header">
+          <span class="table-data-popup-title">${Utils.escapeHtml(inv.invoiceNumber)}</span>
+          <span class="table-data-popup-badge">${inv.status.toUpperCase()}</span>
+        </div>
+        <div class="table-data-popup-row"><span>Client</span><span>${Utils.escapeHtml(inv.clientName)}</span></div>
+        <div class="table-data-popup-row"><span>Service</span><span>${Utils.escapeHtml(inv.serviceName || 'Service')}</span></div>
+        <div class="table-data-popup-row"><span>Billing Month</span><span>${Utils.formatMonth(inv.billingMonth)}</span></div>
+        <div class="table-data-popup-row"><span>Due Date</span><span>${Utils.formatDate(inv.dueDate)}</span></div>
+        <div class="table-data-popup-row"><span>Invoice Amount</span><span>${Utils.formatCurrency(inv.amount)}</span></div>
+        <div class="table-data-popup-row"><span>Paid Amount</span><span>${Utils.formatCurrency(Utils.fromPaise(paidPaise))}</span></div>
+        <div class="table-data-popup-row"><span>Remaining Due</span><span>${Utils.formatCurrency(Utils.fromPaise(remPaise))}</span></div>
+      `.trim();
+
       return `
         <tr class="table-card-row">
           <td class="table-card-main">
-            <div class="table-cell-truncate data-link" style="font-weight: 600; color: var(--color-text-primary); font-size: 14px; max-width: 200px; cursor: pointer;" onclick="Clients.viewClientDetails('${inv.clientId}')" title="View client dossier">${Utils.escapeHtml(inv.clientName)}</div>
-            <div class="table-subtext table-cell-truncate" style="max-width: 200px;">
-              <span class="data-link" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice history">${Utils.escapeHtml(inv.serviceName || inv.invoiceNumber)}</span>
-              <span class="data-code-link" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice history" style="margin-left:4px;font-family:monospace;font-size:11px;">(${Utils.escapeHtml(inv.invoiceNumber)})</span>
+            <div class="table-single-line" data-table-popup="${Utils.escapeHtml(repPopupHtml)}" title="${Utils.escapeHtml(inv.clientName)} • ${Utils.escapeHtml(inv.invoiceNumber)} (${Utils.escapeHtml(inv.serviceName || 'Service')})">
+              <span class="data-link" style="font-weight: 600; color: var(--color-text-primary); font-size: 13.5px; cursor: pointer;" onclick="Clients.viewClientDetails('${inv.clientId}')" title="View client dossier">${Utils.escapeHtml(inv.clientName)}</span>
+              <span class="table-bullet">•</span>
+              <span class="ledger-badge-code data-code-link" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice history">${Utils.escapeHtml(inv.invoiceNumber)}</span>
+              <span class="table-secondary-text" style="max-width:130px;">(${Utils.escapeHtml(inv.serviceName || 'Service')})</span>
             </div>
           </td>
           <td data-label="Billing Month" style="white-space:nowrap;">${Utils.formatMonth(inv.billingMonth)}</td>

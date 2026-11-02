@@ -222,34 +222,41 @@ const Dashboard = {
       return;
     }
 
-    tbody.innerHTML = payments.map((p) => `
-      <tr>
-        <td>
-          <div class="table-cell-truncate data-link" style="font-weight:600;max-width:180px;cursor:pointer;" onclick="Clients.viewClientDetails('${p.clientId}')" title="View client dossier">
-            ${Utils.escapeHtml(p.clientName)}
-          </div>
-          ${p.invoiceId ? `
-            <div class="table-subtext" style="margin-top:2px;">
-              <span class="data-code-link" onclick="Payments.viewInvoiceHistory('${p.invoiceId}')" title="View invoice history" style="font-size:11px;font-family:monospace;cursor:pointer;">
-                ${Utils.escapeHtml(p.invoiceNumber || 'Invoice')}
-              </span>
+    tbody.innerHTML = payments.map((p) => {
+      const payPopupHtml = `
+        <div class="table-data-popup-header">
+          <span class="table-data-popup-title">Settlement Record</span>
+          <span class="table-data-popup-badge">${Utils.escapeHtml(p.paymentMethod)}</span>
+        </div>
+        <div class="table-data-popup-row"><span>Client</span><span>${Utils.escapeHtml(p.clientName)}</span></div>
+        <div class="table-data-popup-row"><span>Amount</span><span>+ ${Utils.formatCurrency(p.amount)}</span></div>
+        <div class="table-data-popup-row"><span>Date</span><span>${Utils.formatDate(p.paymentDate)}</span></div>
+        ${p.invoiceNumber ? `<div class="table-data-popup-row"><span>Linked Invoice</span><span>${Utils.escapeHtml(p.invoiceNumber)}</span></div>` : ''}
+      `.trim();
+
+      return `
+        <tr>
+          <td>
+            <div class="table-single-line" data-table-popup="${Utils.escapeHtml(payPopupHtml)}" title="${Utils.escapeHtml(p.clientName)}${p.invoiceNumber ? ` • ${Utils.escapeHtml(p.invoiceNumber)}` : ''}">
+              <span class="data-link" style="font-weight:600;color:var(--color-text-primary);" onclick="Clients.viewClientDetails('${p.clientId}')" title="View client dossier">${Utils.escapeHtml(p.clientName)}</span>
+              ${p.invoiceId ? `<span class="table-bullet">•</span><span class="ledger-badge-code data-code-link" onclick="Payments.viewInvoiceHistory('${p.invoiceId}')" title="View invoice history">${Utils.escapeHtml(p.invoiceNumber || 'Invoice')}</span>` : ''}
             </div>
-          ` : ''}
-        </td>
-        <td class="tabular-nums" style="font-weight:600;color:var(--color-success);white-space:nowrap;">${Utils.formatCurrency(p.amount)}</td>
-        <td style="white-space:nowrap;">${Utils.formatDate(p.paymentDate)}</td>
-        <td style="white-space:nowrap;"><span class="badge badge-neutral">${Utils.escapeHtml(p.paymentMethod)}</span></td>
-        <td style="white-space:nowrap;">
-          ${p.invoiceId ? `
-            <span class="badge badge-success data-link" onclick="Payments.viewInvoiceHistory('${p.invoiceId}')" title="View invoice history" style="cursor:pointer;">
-              <span class="badge-dot"></span>Received
-            </span>
-          ` : `
-            <span class="badge badge-success"><span class="badge-dot"></span>Received</span>
-          `}
-        </td>
-      </tr>
-    `).join('');
+          </td>
+          <td class="tabular-nums" style="font-weight:600;color:var(--color-success);white-space:nowrap;">+ ${Utils.formatCurrency(p.amount)}</td>
+          <td style="white-space:nowrap;">${Utils.formatDate(p.paymentDate)}</td>
+          <td style="white-space:nowrap;"><span class="badge badge-neutral">${Utils.escapeHtml(p.paymentMethod)}</span></td>
+          <td style="white-space:nowrap;">
+            ${p.invoiceId ? `
+              <span class="badge badge-success data-link" onclick="Payments.viewInvoiceHistory('${p.invoiceId}')" title="View invoice history" style="cursor:pointer;">
+                <span class="badge-dot"></span>Received
+              </span>
+            ` : `
+              <span class="badge badge-success"><span class="badge-dot"></span>Received</span>
+            `}
+          </td>
+        </tr>
+      `;
+    }).join('');
     Utils.refreshIcons();
   },
 
@@ -314,13 +321,25 @@ const Dashboard = {
         badgeHtml = `<span class="badge badge-neutral"><span class="badge-dot"></span>Due Soon</span>`;
       }
 
+      const upPopupHtml = `
+        <div class="table-data-popup-header">
+          <span class="table-data-popup-title">${Utils.escapeHtml(inv.invoiceNumber)}</span>
+          <span class="table-data-popup-badge">${inv.status.toUpperCase()}</span>
+        </div>
+        <div class="table-data-popup-row"><span>Client</span><span>${Utils.escapeHtml(inv.clientName)}</span></div>
+        <div class="table-data-popup-row"><span>Service</span><span>${Utils.escapeHtml(inv.serviceName || 'Service')}</span></div>
+        <div class="table-data-popup-row"><span>Due Date</span><span>${Utils.formatDate(inv.dueDate)}</span></div>
+        <div class="table-data-popup-row"><span>Amount Due</span><span>${Utils.formatCurrency(Utils.fromPaise(remPaise))}</span></div>
+      `.trim();
+
       return `
         <tr class="table-card-row">
           <td class="table-card-main">
-            <div class="table-cell-truncate data-link" style="font-weight: 600; color: var(--color-text-primary); font-size: 14px; max-width: 200px; cursor: pointer;" onclick="Clients.viewClientDetails('${inv.clientId}')" title="View client dossier">${Utils.escapeHtml(inv.clientName)}</div>
-            <div class="table-subtext table-cell-truncate" style="max-width: 200px;">
-              <span class="data-link" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice history">${Utils.escapeHtml(inv.serviceName || inv.invoiceNumber)}</span>
-              <span class="data-code-link" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice history" style="margin-left:4px;font-family:monospace;font-size:11px;">(${Utils.escapeHtml(inv.invoiceNumber)})</span>
+            <div class="table-single-line" data-table-popup="${Utils.escapeHtml(upPopupHtml)}" title="${Utils.escapeHtml(inv.clientName)} • ${Utils.escapeHtml(inv.invoiceNumber)} (${Utils.escapeHtml(inv.serviceName || 'Service')})">
+              <span class="data-link" style="font-weight: 600; color: var(--color-text-primary); font-size: 13.5px; cursor: pointer;" onclick="Clients.viewClientDetails('${inv.clientId}')" title="View client dossier">${Utils.escapeHtml(inv.clientName)}</span>
+              <span class="table-bullet">•</span>
+              <span class="ledger-badge-code data-code-link" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice history">${Utils.escapeHtml(inv.invoiceNumber)}</span>
+              <span class="table-secondary-text" style="max-width:130px;">(${Utils.escapeHtml(inv.serviceName || 'Service')})</span>
             </div>
           </td>
           <td data-label="Amount Due" class="tabular-nums" style="font-weight:600;color:var(--color-primary);white-space:nowrap;">${Utils.formatCurrency(Utils.fromPaise(remPaise))}</td>

@@ -16,8 +16,11 @@ const App = {
       Auth.init();
     }
 
-    // 3. Initialize modal accessibility triggers
+    // 3. Initialize modal accessibility triggers & universal table popups
     Utils.initModalListeners();
+    if (typeof Utils.initTablePopups === 'function') {
+      Utils.initTablePopups();
+    }
 
     // 3. Initialize dark/light theme preference
     this.initTheme();

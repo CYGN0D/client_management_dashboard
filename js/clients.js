@@ -255,9 +255,6 @@ const Clients = {
 
       const hasRetainer = Boolean(client.monthlyAmount && client.monthlyAmount > 0);
       const isRetainerPaused = hasRetainer && client.retainerStatus === 'paused';
-      const monthlyDisplay = hasRetainer
-        ? `<span class="tabular-nums font-semibold" style="color:var(--color-text-primary);font-size:13.5px;">${Utils.formatCurrency(client.monthlyAmount)}</span> <span style="font-size:11.5px;color:var(--color-text-muted);">/ mo</span>${isRetainerPaused ? ' <span class="badge badge-warning" style="font-size:10px;padding:1px 5px;margin-left:4px;"><span class="badge-dot"></span>Paused</span>' : ''}`
-        : `<span class="badge badge-neutral" style="font-size:11px;">Ad-hoc Project</span>`;
 
       const initials = this.getClientInitials(client.name);
       const avatarColor = this.getAvatarColor(client.name);
@@ -267,32 +264,87 @@ const Clients = {
         .map((s) => s.trim())
         .filter(Boolean);
 
+      const contactParts = [client.company, client.email, client.phone].filter(Boolean);
+
+      // Rich data popups for extra details inspection
+      const clientPopupHtml = `
+        <div class="table-data-popup-header">
+          <span class="table-data-popup-title">${Utils.escapeHtml(client.name)}</span>
+          <span class="table-data-popup-badge">${isStatusActive ? 'Active Client' : 'Inactive'}</span>
+        </div>
+        ${client.company ? `<div class="table-data-popup-row"><span>Company</span><span>${Utils.escapeHtml(client.company)}</span></div>` : ''}
+        ${client.email ? `<div class="table-data-popup-row"><span>Email</span><span>${Utils.escapeHtml(client.email)}</span></div>` : ''}
+        ${client.phone ? `<div class="table-data-popup-row"><span>Phone</span><span>${Utils.escapeHtml(client.phone)}</span></div>` : ''}
+        ${client.joiningDate ? `<div class="table-data-popup-row"><span>Joined</span><span>${Utils.formatDate(client.joiningDate)}</span></div>` : ''}
+        ${serviceList.length ? `<div class="table-data-popup-tags">${serviceList.map((s) => `<span class="table-data-popup-tag">${Utils.escapeHtml(s)}</span>`).join('')}</div>` : ''}
+      `.trim();
+
+      const servicesPopupHtml = `
+        <div class="table-data-popup-header">
+          <span class="table-data-popup-title">${Utils.escapeHtml(client.name)}</span>
+          <span class="table-data-popup-badge">${serviceList.length} Services</span>
+        </div>
+        <div class="table-data-popup-tags">
+          ${serviceList.map((s) => `<span class="table-data-popup-tag">${Utils.escapeHtml(s)}</span>`).join('')}
+        </div>
+      `.trim();
+
+      const retainerPopupHtml = hasRetainer ? `
+        <div class="table-data-popup-header">
+          <span class="table-data-popup-title">Monthly Retainer</span>
+          <span class="table-data-popup-badge">${isRetainerPaused ? 'Paused' : 'Active'}</span>
+        </div>
+        <div class="table-data-popup-row"><span>Monthly Rate</span><span>${Utils.formatCurrency(client.monthlyAmount)} / mo</span></div>
+        <div class="table-data-popup-row"><span>Billing Schedule</span><span>Day ${client.dueDay || 5} of every month</span></div>
+        <div class="table-data-popup-row"><span>Status</span><span>${isRetainerPaused ? 'Subscription Paused' : 'Subscription Active'}</span></div>
+      `.trim() : '';
+
+      let servicesCellHtml = '';
+      if (serviceList.length === 0) {
+        servicesCellHtml = `<span class="table-secondary-text">—</span>`;
+      } else if (serviceList.length === 1) {
+        servicesCellHtml = `
+          <div class="table-tags-line">
+            <span class="client-service-tag" title="${Utils.escapeHtml(serviceList[0])}">${Utils.escapeHtml(serviceList[0])}</span>
+          </div>
+        `;
+      } else {
+        servicesCellHtml = `
+          <div class="table-tags-line">
+            <span class="client-service-tag" title="${Utils.escapeHtml(serviceList[0])}">${Utils.escapeHtml(serviceList[0])}</span>
+            <span class="client-service-tag client-service-more" data-table-popup="${Utils.escapeHtml(servicesPopupHtml)}" title="${Utils.escapeHtml(serviceList.join(', '))}">+${serviceList.length - 1} more</span>
+          </div>
+        `;
+      }
+
+      const monthlyCellHtml = hasRetainer ? `
+        <div class="table-single-line" style="cursor:pointer;" onclick="Clients.viewClientDetails('${client.id}', 'services')" data-table-popup="${Utils.escapeHtml(retainerPopupHtml)}" title="${Utils.formatCurrency(client.monthlyAmount)} / mo • Day ${client.dueDay || 5}">
+          <span class="tabular-nums font-semibold" style="color:var(--color-text-primary);font-size:13.5px;">${Utils.formatCurrency(client.monthlyAmount)}</span>
+          <span style="font-size:11.5px;color:var(--color-text-muted);">/ mo</span>
+          <span class="table-bullet">•</span>
+          <span class="table-subtext-inline">Day ${client.dueDay || 5}</span>
+          ${isRetainerPaused ? ' <span class="badge badge-warning" style="font-size:10px;padding:1px 5px;margin-left:2px;"><span class="badge-dot"></span>Paused</span>' : ''}
+        </div>
+      ` : `
+        <span class="badge badge-neutral" style="font-size:11px;">Ad-hoc Project</span>
+      `;
+
       return `
         <tr>
           <td>
-            <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="Clients.viewClientDetails('${client.id}')">
-              <div style="width:34px;height:34px;border-radius:8px;background:${avatarColor.bg};color:${avatarColor.text};border:1px solid ${avatarColor.border};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">
+            <div class="table-single-line" style="cursor:pointer;" onclick="Clients.viewClientDetails('${client.id}')" data-table-popup="${Utils.escapeHtml(clientPopupHtml)}" title="${Utils.escapeHtml(client.name + (contactParts.length ? ` • ${contactParts.join(' • ')}` : ''))}">
+              <div class="table-avatar-sm" style="background:${avatarColor.bg};color:${avatarColor.text};border:1px solid ${avatarColor.border};">
                 ${initials}
               </div>
-              <div style="min-width:0;">
-                <div class="table-cell-truncate" style="font-weight:600;color:var(--color-text-primary);font-size:13.5px;max-width:200px;" title="${Utils.escapeHtml(client.name)}">
-                  ${Utils.escapeHtml(client.name)}
-                </div>
-                <div class="table-subtext table-cell-truncate" style="max-width:200px;" title="${Utils.escapeHtml(client.company || client.email || '')}">
-                  ${Utils.escapeHtml(client.company || client.email || client.phone || 'No contact')}
-                </div>
-              </div>
+              <span style="font-weight:600;color:var(--color-text-primary);font-size:13.5px;">${Utils.escapeHtml(client.name)}</span>
+              ${client.company ? `<span class="table-bullet">•</span><span class="table-secondary-text" style="max-width:140px;">${Utils.escapeHtml(client.company)}</span>` : ''}
             </div>
           </td>
           <td>
-            <div style="display:flex;flex-wrap:wrap;gap:4px;max-width:180px;">
-              ${serviceList.slice(0, 2).map((s) => `<span class="client-service-tag" style="font-size:11px;padding:1px 6px;">${Utils.escapeHtml(s)}</span>`).join('')}
-              ${serviceList.length > 2 ? `<span class="client-service-tag" style="font-size:10.5px;padding:1px 4px;color:var(--color-text-muted);">+${serviceList.length - 2}</span>` : ''}
-            </div>
+            ${servicesCellHtml}
           </td>
           <td>
-            <div style="cursor:pointer;" onclick="Clients.viewClientDetails('${client.id}', 'services')" title="View retainer plan & services">${monthlyDisplay}</div>
-            ${hasRetainer && client.dueDay ? `<div class="table-subtext" style="cursor:pointer;" onclick="Clients.viewClientDetails('${client.id}', 'services')" title="View retainer plan & services">Due Day ${client.dueDay}</div>` : ''}
+            ${monthlyCellHtml}
           </td>
           <td>
             ${statusBadge}
@@ -982,24 +1034,46 @@ const Clients = {
                   badgeHtml = '<span class="badge badge-neutral"><span class="badge-dot"></span>Pending</span>';
                 }
 
+                const invPopupHtml = `
+                  <div class="table-data-popup-header">
+                    <span class="table-data-popup-title">${Utils.escapeHtml(inv.invoiceNumber)}</span>
+                    <span class="table-data-popup-badge">${inv.status.toUpperCase()}</span>
+                  </div>
+                  <div class="table-data-popup-row"><span>Service</span><span>${Utils.escapeHtml(inv.serviceName || 'Service')}</span></div>
+                  <div class="table-data-popup-row"><span>Billing Month</span><span>${Utils.formatMonth(inv.billingMonth)}</span></div>
+                  <div class="table-data-popup-row"><span>Due Date</span><span>${Utils.formatDate(inv.dueDate)}</span></div>
+                  <div class="table-data-popup-row"><span>Total Amount</span><span>${Utils.formatCurrency(inv.amount)}</span></div>
+                  <div class="table-data-popup-row"><span>Paid</span><span>${Utils.formatCurrency(inv.paidAmount || 0)}</span></div>
+                  <div class="table-data-popup-row"><span>Remaining Due</span><span>${Utils.formatCurrency(Utils.fromPaise(remPaise))}</span></div>
+                  ${inv.notes ? `<div class="table-data-popup-row"><span>Notes</span><span>${Utils.escapeHtml(inv.notes)}</span></div>` : ''}
+                `.trim();
+
                 return `
                   <tr>
                     <td>
-                      <div class="ledger-badge-code data-code-link" style="display:inline-block;cursor:pointer;" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice payment history">${Utils.escapeHtml(inv.invoiceNumber)}</div>
-                      <div class="table-subtext table-cell-truncate" style="max-width:200px;margin-top:2px;" title="${Utils.escapeHtml(inv.serviceName || 'Service')}">${Utils.escapeHtml(inv.serviceName || 'Service')}</div>
+                      <div class="table-single-line" data-table-popup="${Utils.escapeHtml(invPopupHtml)}" title="${Utils.escapeHtml(inv.invoiceNumber)} • ${Utils.escapeHtml(inv.serviceName || 'Service')}">
+                        <span class="ledger-badge-code data-code-link" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice payment history">${Utils.escapeHtml(inv.invoiceNumber)}</span>
+                        <span class="table-bullet">•</span>
+                        <span class="table-secondary-text" style="max-width:180px;">${Utils.escapeHtml(inv.serviceName || 'Service')}</span>
+                      </div>
                     </td>
                     <td>
-                      <div style="font-weight:500;">${Utils.formatMonth(inv.billingMonth)}</div>
-                      <div class="table-subtext ${inv.isOverdue ? 'text-danger' : ''}">Due ${Utils.formatDate(inv.dueDate)}</div>
+                      <div class="table-single-line" title="Billing: ${Utils.formatMonth(inv.billingMonth)} • Due: ${Utils.formatDate(inv.dueDate)}">
+                        <span style="font-weight:500;">${Utils.formatMonth(inv.billingMonth)}</span>
+                        <span class="table-bullet">•</span>
+                        <span class="table-subtext-inline ${inv.isOverdue ? 'text-danger font-semibold' : ''}">Due ${Utils.formatDate(inv.dueDate)}</span>
+                      </div>
                     </td>
                     <td>
                       ${badgeHtml}
                     </td>
                     <td style="text-align:right;">
-                      <div class="tabular-nums" style="font-weight:700;color:var(--color-text-primary);font-size:13.5px;">${Utils.formatCurrency(inv.amount)}</div>
-                      ${remPaise > 0 && paidPaise > 0 
-                        ? `<div class="table-subtext text-warning" style="font-size:11px;">${Utils.formatCurrency(Utils.fromPaise(remPaise))} due</div>`
-                        : ''}
+                      <div class="table-single-line" style="justify-content:flex-end;">
+                        <span class="tabular-nums" style="font-weight:700;color:var(--color-text-primary);font-size:13.5px;">${Utils.formatCurrency(inv.amount)}</span>
+                        ${remPaise > 0 && paidPaise > 0 
+                          ? `<span class="table-subtext-inline text-warning font-semibold" style="margin-left:4px;">(${Utils.formatCurrency(Utils.fromPaise(remPaise))} due)</span>` 
+                          : ''}
+                      </div>
                     </td>
                     <td style="text-align:right;">
                       <div style="display:inline-flex;align-items:center;justify-content:flex-end;gap:6px;">
@@ -1154,32 +1228,45 @@ const Clients = {
               </tr>
             </thead>
             <tbody>
-              ${payments.map((p) => `
-                <tr>
-                  <td>
-                    <div class="tabular-nums" style="font-weight:600;color:var(--color-text-primary);font-size:13px;">${Utils.formatDate(p.paymentDate)}</div>
-                    <div class="table-subtext table-cell-truncate" style="max-width:220px;" title="${Utils.escapeHtml(p.notes || '')}">
-                      ${p.notes ? Utils.escapeHtml(p.notes) : '<span style="color:var(--color-text-muted);">Standard settlement</span>'}
-                    </div>
-                  </td>
-                  <td>
-                    <span class="ledger-badge-code data-code-link" style="cursor:pointer;" onclick="${p.invoiceId ? `Payments.viewInvoiceHistory('${p.invoiceId}')` : `Clients.switchDetailTab('invoices')`}" title="View linked invoice details">${Utils.escapeHtml(p.invoiceNumber || p.billingMonth)}</span>
-                  </td>
-                  <td>
-                    <span class="badge badge-neutral">${Utils.escapeHtml(p.paymentMethod)}</span>
-                  </td>
-                  <td style="text-align:right;">
-                    <span class="tabular-nums" style="font-weight:700;color:var(--color-success);font-size:13.5px;white-space:nowrap;">
-                      + ${Utils.formatCurrency(p.amount)}
-                    </span>
-                  </td>
-                  <td style="text-align:right;">
-                    <button type="button" class="btn btn-secondary btn-icon btn-sm" onclick="Payments.confirmDeletePayment('${p.id}')" title="Delete Payment Record" style="color:var(--color-danger);height:26px;width:26px;">
-                      <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
-                    </button>
-                  </td>
-                </tr>
-              `).join('')}
+              ${payments.map((p) => {
+                const payPopupHtml = `
+                  <div class="table-data-popup-header">
+                    <span class="table-data-popup-title">Settlement Record</span>
+                    <span class="table-data-popup-badge">${Utils.escapeHtml(p.paymentMethod)}</span>
+                  </div>
+                  <div class="table-data-popup-row"><span>Payment Date</span><span>${Utils.formatDate(p.paymentDate)}</span></div>
+                  <div class="table-data-popup-row"><span>Amount Received</span><span>+ ${Utils.formatCurrency(p.amount)}</span></div>
+                  <div class="table-data-popup-row"><span>Linked Invoice</span><span>${Utils.escapeHtml(p.invoiceNumber || p.billingMonth)}</span></div>
+                  ${p.notes ? `<div class="table-data-popup-row"><span>Notes</span><span>${Utils.escapeHtml(p.notes)}</span></div>` : ''}
+                `.trim();
+
+                return `
+                  <tr>
+                    <td>
+                      <div class="table-single-line" data-table-popup="${Utils.escapeHtml(payPopupHtml)}" title="${Utils.formatDate(p.paymentDate)}${p.notes ? ` • ${Utils.escapeHtml(p.notes)}` : ''}">
+                        <span class="tabular-nums" style="font-weight:600;color:var(--color-text-primary);font-size:13px;">${Utils.formatDate(p.paymentDate)}</span>
+                        ${p.notes ? `<span class="table-bullet">•</span><span class="table-secondary-text" style="max-width:200px;">${Utils.escapeHtml(p.notes)}</span>` : ''}
+                      </div>
+                    </td>
+                    <td>
+                      <span class="ledger-badge-code data-code-link" style="cursor:pointer;" onclick="${p.invoiceId ? `Payments.viewInvoiceHistory('${p.invoiceId}')` : `Clients.switchDetailTab('invoices')`}" title="View linked invoice details">${Utils.escapeHtml(p.invoiceNumber || p.billingMonth)}</span>
+                    </td>
+                    <td>
+                      <span class="badge badge-neutral">${Utils.escapeHtml(p.paymentMethod)}</span>
+                    </td>
+                    <td style="text-align:right;">
+                      <span class="tabular-nums font-semibold" style="color:var(--color-success);font-size:13.5px;white-space:nowrap;">
+                        + ${Utils.formatCurrency(p.amount)}
+                      </span>
+                    </td>
+                    <td style="text-align:right;">
+                      <button type="button" class="btn btn-secondary btn-icon btn-sm" onclick="Payments.confirmDeletePayment('${p.id}')" title="Delete Payment Record" style="color:var(--color-danger);height:26px;width:26px;">
+                        <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                      </button>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
             </tbody>
           </table>
         </div>
@@ -1270,8 +1357,11 @@ const Clients = {
               ${hasMonthly ? `
                 <tr>
                   <td>
-                    <div style="font-weight:600;color:var(--color-text-primary);font-size:13px;">${Utils.escapeHtml(client.service || 'Monthly Retainer')}</div>
-                    <div class="table-subtext">Recurring Monthly Retainer Agreement</div>
+                    <div class="table-single-line" title="${Utils.escapeHtml(client.service || 'Monthly Retainer')} • Recurring Retainer">
+                      <span style="font-weight:600;color:var(--color-text-primary);font-size:13px;">${Utils.escapeHtml(client.service || 'Monthly Retainer')}</span>
+                      <span class="table-bullet">•</span>
+                      <span class="table-secondary-text">Recurring Retainer</span>
+                    </div>
                   </td>
                   <td>
                     <div style="font-weight:500;">Day ${client.dueDay || 5} of every month</div>
@@ -1333,15 +1423,19 @@ const Clients = {
                 return `
                   <tr>
                     <td>
-                      <div class="table-cell-truncate" style="font-weight:600;color:var(--color-text-primary);max-width:220px;" title="${Utils.escapeHtml(inv.serviceName || 'Service')}">${Utils.escapeHtml(inv.serviceName || 'Service')}</div>
-                      <div class="table-subtext table-cell-truncate" style="max-width:220px;">
-                        <span class="data-code-link" style="cursor:pointer;font-family:monospace;" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice payment history">${Utils.escapeHtml(inv.invoiceNumber)}</span>
-                        ${inv.notes ? ` • <span>${Utils.escapeHtml(inv.notes)}</span>` : ''}
+                      <div class="table-single-line" title="${Utils.escapeHtml(inv.serviceName || 'Service')} • ${Utils.escapeHtml(inv.invoiceNumber)}">
+                        <span style="font-weight:600;color:var(--color-text-primary);font-size:13px;">${Utils.escapeHtml(inv.serviceName || 'Service')}</span>
+                        <span class="table-bullet">•</span>
+                        <span class="ledger-badge-code data-code-link" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice payment history">${Utils.escapeHtml(inv.invoiceNumber)}</span>
+                        ${inv.notes ? `<span class="table-bullet">•</span><span class="table-secondary-text" style="max-width:130px;" title="${Utils.escapeHtml(inv.notes)}">${Utils.escapeHtml(inv.notes)}</span>` : ''}
                       </div>
                     </td>
                     <td>
-                      <div style="font-weight:500;">${Utils.formatMonth(inv.billingMonth)}</div>
-                      <div class="table-subtext">Due ${Utils.formatDate(inv.dueDate)}</div>
+                      <div class="table-single-line" title="Billing: ${Utils.formatMonth(inv.billingMonth)} • Due: ${Utils.formatDate(inv.dueDate)}">
+                        <span style="font-weight:500;">${Utils.formatMonth(inv.billingMonth)}</span>
+                        <span class="table-bullet">•</span>
+                        <span class="table-subtext-inline">Due ${Utils.formatDate(inv.dueDate)}</span>
+                      </div>
                     </td>
                     <td>
                       ${statusBadge}

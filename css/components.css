@@ -610,31 +610,52 @@
 }
 
 .data-table th {
-  padding: 10px 14px;
+  height: 40px;
+  padding: 0 14px;
   background-color: var(--color-bg-secondary);
   color: var(--color-text-secondary);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11.5px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.04em;
   border-bottom: 1px solid var(--color-border);
   white-space: nowrap;
-}
-
-.data-table td {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-text-primary);
   vertical-align: middle;
   box-sizing: border-box;
 }
 
+.data-table td {
+  height: 48px;
+  max-height: 48px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  vertical-align: middle;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
 .data-table tbody tr {
+  height: 48px;
+  max-height: 48px;
+  box-sizing: border-box;
   transition: background-color var(--transition-fast);
 }
 
 .data-table tbody tr:hover {
   background-color: #FAFAFA;
+}
+
+/* Empty state row override so message isn't clipped to 48px */
+.data-table tbody tr:has(td[colspan]),
+.data-table tbody td[colspan] {
+  height: auto !important;
+  max-height: none !important;
+  white-space: normal !important;
+  padding: 24px 16px !important;
 }
 
 .data-table td.actions-col {
@@ -652,6 +673,207 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Universal Single Line Table Elements */
+.table-single-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.table-cell-single-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-bullet {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  opacity: 0.6;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.table-secondary-text {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-subtext-inline {
+  color: var(--color-text-muted);
+  font-size: 11.5px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.table-avatar-sm {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.table-tags-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.client-service-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.client-service-tag.clickable,
+.client-service-tag[data-table-popup] {
+  cursor: pointer;
+}
+.client-service-tag[data-table-popup]:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.client-service-more {
+  background-color: #EEF2F6;
+  color: var(--color-text-muted);
+  border-color: #E2E8F0;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .client-service-more {
+  background-color: #1E232B;
+  color: #9CA3AF;
+  border-color: #2D333F;
+}
+
+/* Interactive Dark SaaS Data Popup Tooltip */
+.table-data-popup {
+  position: fixed;
+  z-index: 99999;
+  background: #0F172A;
+  color: #F8FAFC;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.25);
+  max-width: 320px;
+  min-width: 180px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  white-space: normal;
+  word-wrap: break-word;
+  line-height: 1.45;
+}
+
+.table-data-popup.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.table-data-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.table-data-popup-title {
+  font-weight: 600;
+  color: #FFFFFF;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-data-popup-badge {
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #E2E8F0;
+  flex-shrink: 0;
+}
+
+.table-data-popup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: #94A3B8;
+}
+
+.table-data-popup-row span:last-child {
+  color: #F1F5F9;
+  font-weight: 500;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 190px;
+}
+
+.table-data-popup-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.table-data-popup-tag {
+  background: rgba(255, 255, 255, 0.1);
+  color: #E2E8F0;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
 }
 
 .client-overview-header {
@@ -1681,23 +1903,40 @@ a.client-meta-item:hover,
 }
 
 .table-streamlined th {
+  height: 40px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-muted);
-  padding: 12px 16px;
+  padding: 0 16px;
   background: var(--color-bg-secondary);
   border-bottom: 1px solid var(--color-border);
   white-space: nowrap;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.table-streamlined tbody tr {
+  height: 48px;
+  max-height: 48px;
+  box-sizing: border-box;
+  transition: background-color var(--transition-fast);
 }
 
 .table-streamlined td {
-  padding: 13px 16px;
+  height: 48px;
+  max-height: 48px;
+  padding: 0 16px;
   vertical-align: middle;
   border-bottom: 1px solid var(--color-border-subtle);
   font-size: 13px;
   color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+  line-height: 1.25;
 }
 
 .table-streamlined tr:last-child td {
@@ -1706,6 +1945,15 @@ a.client-meta-item:hover,
 
 .table-streamlined tr:hover td {
   background: var(--color-bg-secondary);
+}
+
+/* Empty state row override */
+.table-streamlined tbody tr:has(td[colspan]),
+.table-streamlined tbody td[colspan] {
+  height: auto !important;
+  max-height: none !important;
+  white-space: normal !important;
+  padding: 24px 16px !important;
 }
 
 /* Main Clients Grid View (Senior SaaS Caliber) */

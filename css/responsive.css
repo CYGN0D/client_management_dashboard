@@ -760,6 +760,8 @@
 
   .responsive-card-table tr.table-card-row {
     display: block;
+    height: auto !important;
+    max-height: none !important;
     background-color: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
@@ -769,6 +771,8 @@
 
   .responsive-card-table tr:not(.table-card-row) {
     display: block;
+    height: auto !important;
+    max-height: none !important;
     background-color: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
@@ -777,6 +781,8 @@
 
   .responsive-card-table tr:not(.table-card-row) td {
     display: block;
+    height: auto !important;
+    max-height: none !important;
     padding: 0;
     border-bottom: none;
   }
@@ -787,6 +793,8 @@
 
   .responsive-card-table td {
     display: flex;
+    height: auto !important;
+    max-height: none !important;
     align-items: center;
     justify-content: space-between;
     padding: 6px 0;

@@ -294,15 +294,30 @@ const Payments = {
         badgeHtml = `<span class="badge badge-neutral"><span class="badge-dot"></span>Pending</span>`;
       }
 
+      // Rich data popup for extra details inspection
+      const invPopupHtml = `
+        <div class="table-data-popup-header">
+          <span class="table-data-popup-title">${Utils.escapeHtml(inv.invoiceNumber)}</span>
+          <span class="table-data-popup-badge">${inv.status.toUpperCase()}</span>
+        </div>
+        <div class="table-data-popup-row"><span>Client</span><span>${Utils.escapeHtml(inv.clientName)}</span></div>
+        <div class="table-data-popup-row"><span>Service</span><span>${Utils.escapeHtml(inv.serviceName || 'Service')}</span></div>
+        <div class="table-data-popup-row"><span>Billing Month</span><span>${Utils.formatMonth(inv.billingMonth)}</span></div>
+        <div class="table-data-popup-row"><span>Due Date</span><span>${Utils.formatDate(inv.dueDate)}</span></div>
+        <div class="table-data-popup-row"><span>Total Amount</span><span>${Utils.formatCurrency(inv.amount)}</span></div>
+        <div class="table-data-popup-row"><span>Paid Amount</span><span>${Utils.formatCurrency(inv.paidAmount || 0)}</span></div>
+        <div class="table-data-popup-row"><span>Remaining Due</span><span>${Utils.formatCurrency(Utils.fromPaise(remainingPaise))}</span></div>
+        ${inv.notes ? `<div class="table-data-popup-row"><span>Notes</span><span>${Utils.escapeHtml(inv.notes)}</span></div>` : ''}
+      `.trim();
+
       return `
         <tr class="table-card-row">
           <td class="table-card-main">
-            <div class="table-cell-truncate data-link" style="font-weight: 600; color: var(--color-text-primary); font-size: 14px; max-width: 220px; cursor: pointer;" onclick="Clients.viewClientDetails('${inv.clientId}')" title="View client dossier">${Utils.escapeHtml(inv.clientName)}</div>
-            <div class="table-subtext table-cell-truncate" style="max-width: 220px;">
-              <span class="tabular-nums data-code-link" style="font-weight:500;cursor:pointer;" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice payment history">${Utils.escapeHtml(inv.invoiceNumber)}</span>
-              <span style="opacity:0.5;"> • </span>
-              <span style="color:var(--color-text-secondary);" title="${Utils.escapeHtml(inv.serviceName || 'Service')}">${Utils.escapeHtml(inv.serviceName || 'Service')}</span>
-              ${inv.notes ? `<span title="${Utils.escapeHtml(inv.notes)}" style="cursor:help;margin-left:4px;display:inline-flex;align-items:center;vertical-align:-2px;color:var(--color-text-muted);" aria-label="Notes: ${Utils.escapeHtml(inv.notes)}"><i data-lucide="info" style="width:13px;height:13px;"></i></span>` : ''}
+            <div class="table-single-line" data-table-popup="${Utils.escapeHtml(invPopupHtml)}" title="${Utils.escapeHtml(inv.clientName)} • ${Utils.escapeHtml(inv.invoiceNumber)} (${Utils.escapeHtml(inv.serviceName || 'Service')})">
+              <span class="data-link" style="font-weight: 600; color: var(--color-text-primary); font-size: 13.5px; cursor: pointer;" onclick="Clients.viewClientDetails('${inv.clientId}')" title="View client dossier">${Utils.escapeHtml(inv.clientName)}</span>
+              <span class="table-bullet">•</span>
+              <span class="tabular-nums data-code-link" style="cursor:pointer;" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice payment history">${Utils.escapeHtml(inv.invoiceNumber)}</span>
+              <span class="table-secondary-text" style="max-width:140px;">(${Utils.escapeHtml(inv.serviceName || 'Service')})</span>
             </div>
           </td>
           <td data-label="Billing Month" style="white-space:nowrap;">${Utils.formatMonth(inv.billingMonth)}</td>
@@ -835,10 +850,13 @@ const Payments = {
                    ${!canBill ? 'disabled' : ''} 
                    ${canBill ? 'checked' : ''}>
           </td>
-          <td style="font-weight:600;">${Utils.escapeHtml(c.name)}</td>
+          <td style="font-weight:600;"><div class="table-single-line" title="${Utils.escapeHtml(c.name)}">${Utils.escapeHtml(c.name)}</div></td>
           <td>
-            <div style="font-weight:500;">${Utils.escapeHtml(c.service || 'Service Retainer')}</div>
-            <div class="table-subtext">Monthly Recurring</div>
+            <div class="table-single-line" title="${Utils.escapeHtml(c.service || 'Service Retainer')} • Recurring">
+              <span style="font-weight:500;">${Utils.escapeHtml(c.service || 'Service Retainer')}</span>
+              <span class="table-bullet">•</span>
+              <span class="table-secondary-text">Recurring</span>
+            </div>
           </td>
           <td class="tabular-nums" style="font-weight:600;">${hasRetainer ? Utils.formatCurrency(c.monthlyAmount) : '<span class="table-subtext">—</span>'}</td>
           <td class="tabular-nums">${isPriorToJoining ? '<span class="table-subtext">—</span>' : Utils.formatDate(dueDate)}</td>
