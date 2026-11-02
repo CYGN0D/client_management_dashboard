@@ -463,33 +463,79 @@
     align-items: center !important;
     justify-content: space-between !important;
     gap: 8px !important;
-    padding: 10px 12px !important;
+    padding: 8px 10px !important;
     background: var(--color-surface) !important;
     border-bottom: 1px solid var(--color-border) !important;
     width: 100% !important;
     box-sizing: border-box !important;
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;
   }
 
   .client-tabs-nav {
     flex: 1 1 auto !important;
-    max-width: 100% !important;
     min-width: 0 !important;
     display: flex !important;
     align-items: center !important;
-    gap: 4px !important;
+    gap: 3px !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
-    padding: 3px !important;
+    padding: 2px !important;
     box-sizing: border-box !important;
     background: var(--color-bg-secondary) !important;
     border: 1px solid var(--color-border) !important;
     border-radius: var(--radius-md) !important;
   }
 
+  .client-tabs-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .client-tab-btn {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+    font-size: 11.5px !important;
+    padding: 4px 8px !important;
+    gap: 4px !important;
+  }
+
+  .client-tab-btn svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .client-tab-badge {
+    font-size: 10px !important;
+    padding: 0 4px !important;
+    min-width: 16px !important;
+    height: 16px !important;
+    line-height: 16px !important;
+  }
+
   .ledger-view-switcher {
     flex-shrink: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 2px !important;
+    gap: 2px !important;
+  }
+
+  /* Hide the text "Table" and "Cards" on mobile so buttons become compact icon buttons */
+  .view-switch-label {
+    display: none !important;
+  }
+
+  .view-switch-btn {
+    padding: 4px 6px !important;
+    min-width: 28px !important;
+    height: 28px !important;
+    justify-content: center !important;
+    gap: 0 !important;
+  }
+
+  .view-switch-btn svg {
+    width: 13px !important;
+    height: 13px !important;
   }
 
   .client-cards-grid,
@@ -498,17 +544,6 @@
     grid-template-columns: 1fr !important;
     gap: 12px !important;
     padding: 10px 0 !important;
-  }
-
-  .client-tabs-nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .client-tab-btn {
-    flex: 0 0 auto !important;
-    white-space: nowrap !important;
-    font-size: 12px !important;
-    padding: 6px 10px !important;
   }
 
   .client-ledger-action {
