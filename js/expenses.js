@@ -204,22 +204,23 @@ const Expenses = {
     }
 
     tbody.innerHTML = expenses.map((exp) => `
-      <tr>
-        <td>
-          <div style="font-weight: 600; color: var(--color-text-primary);">${Utils.escapeHtml(exp.title)}</div>
+      <tr class="table-card-row">
+        <td class="table-card-main">
+          <div style="font-weight: 600; color: var(--color-text-primary); font-size: 14px;">${Utils.escapeHtml(exp.title)}</div>
+          ${exp.description ? `<div class="table-subtext">${Utils.escapeHtml(exp.description)}</div>` : ''}
         </td>
-        <td>
+        <td data-label="Category">
           <span class="badge badge-neutral">${Utils.escapeHtml(exp.category)}</span>
         </td>
-        <td class="tabular-nums" style="font-weight: 600; color: var(--color-text-primary);">
+        <td data-label="Amount" class="tabular-nums" style="font-weight: 600; color: var(--color-text-primary);">
           ${Utils.formatCurrency(exp.amount)}
         </td>
-        <td>${Utils.formatDate(exp.date)}</td>
-        <td class="table-subtext" style="max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <td data-label="Date">${Utils.formatDate(exp.date)}</td>
+        <td data-label="Description" class="table-subtext" style="max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
           ${exp.description ? Utils.escapeHtml(exp.description) : '—'}
         </td>
-        <td class="actions-col">
-          <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);">
+        <td class="actions-col" data-label="Actions">
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);width:100%;">
             <button class="btn btn-secondary btn-icon btn-sm" onclick="Expenses.openAddEditModal('${exp.id}')" title="Edit Expense" aria-label="Edit Expense">
               <i data-lucide="edit-2"></i>
             </button>

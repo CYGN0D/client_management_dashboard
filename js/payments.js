@@ -290,9 +290,9 @@ const Payments = {
       }
 
       return `
-        <tr>
-          <td>
-            <div style="font-weight: 600; color: var(--color-text-primary);">${Utils.escapeHtml(inv.clientName)}</div>
+        <tr class="table-card-row">
+          <td class="table-card-main">
+            <div style="font-weight: 600; color: var(--color-text-primary); font-size: 14px;">${Utils.escapeHtml(inv.clientName)}</div>
             <div class="table-subtext">
               <span class="tabular-nums" style="font-weight:500;">${Utils.escapeHtml(inv.invoiceNumber)}</span>
               <span style="opacity:0.5;"> • </span>
@@ -300,20 +300,20 @@ const Payments = {
               ${inv.notes ? `<span title="${Utils.escapeHtml(inv.notes)}" style="cursor:help;margin-left:4px;">ℹ️</span>` : ''}
             </div>
           </td>
-          <td>${Utils.formatMonth(inv.billingMonth)}</td>
-          <td class="tabular-nums" style="font-weight: 500;">${Utils.formatCurrency(inv.amount)}</td>
-          <td class="tabular-nums" style="color: ${paidPaise > 0 ? 'var(--color-success)' : 'var(--color-text-secondary)'}; font-weight: 500;">
+          <td data-label="Billing Month">${Utils.formatMonth(inv.billingMonth)}</td>
+          <td data-label="Invoice Amount" class="tabular-nums" style="font-weight: 500;">${Utils.formatCurrency(inv.amount)}</td>
+          <td data-label="Paid Amount" class="tabular-nums" style="color: ${paidPaise > 0 ? 'var(--color-success)' : 'var(--color-text-secondary)'}; font-weight: 500;">
             ${Utils.formatCurrency(Utils.fromPaise(paidPaise))}
           </td>
-          <td class="tabular-nums" style="font-weight: 600; color: ${remainingPaise > 0 ? 'var(--color-text-primary)' : 'var(--color-text-muted)'};">
+          <td data-label="Remaining" class="tabular-nums" style="font-weight: 600; color: ${remainingPaise > 0 ? 'var(--color-danger)' : 'var(--color-text-muted)'};">
             ${Utils.formatCurrency(Utils.fromPaise(remainingPaise))}
           </td>
-          <td class="tabular-nums" style="${inv.isOverdue && !isFullyPaid ? 'color:var(--color-danger);font-weight:500;' : ''}">
+          <td data-label="Due Date" class="tabular-nums" style="${inv.isOverdue && !isFullyPaid ? 'color:var(--color-danger);font-weight:500;' : ''}">
             ${Utils.formatDate(inv.dueDate)}
           </td>
-          <td>${badgeHtml}</td>
-          <td class="actions-col">
-            <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);">
+          <td data-label="Status">${badgeHtml}</td>
+          <td class="actions-col" data-label="Actions">
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);width:100%;">
               ${!isFullyPaid ? `
                 <button class="btn btn-primary btn-sm" onclick="Payments.openRecordPaymentModal('${inv.id}')" title="Record Payment">
                   <i data-lucide="plus-circle"></i> Pay

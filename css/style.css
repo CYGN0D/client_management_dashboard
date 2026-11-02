@@ -88,11 +88,26 @@
   height: 100vh;
   pointer-events: none;
   z-index: 999999;
-  background-color: #0C0D10; /* Dark mode deep background */
+  background-color: #0C0D10;
   clip-path: circle(0px at 0px 0px);
   visibility: hidden;
   opacity: 1;
   will-change: clip-path;
+}
+
+/* View Transitions API: Clean circular expanding forward reveal without default crossfade */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 999999;
 }
 
 /* Subtle rotating animation on the toggle icon */
@@ -238,7 +253,7 @@ body,
 }
 
 html, body {
-  height: 100%;
+  min-height: 100%;
   font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.5;
@@ -246,6 +261,11 @@ html, body {
   background-color: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 /* Tabular figures for all financial amounts */
@@ -262,10 +282,12 @@ html, body {
   display: flex;
   min-height: 100vh;
   width: 100%;
+  max-width: 100%;
   background-color: var(--color-bg);
+  position: relative;
 }
 
-/* Sidebar Navigation */
+/* Sidebar Navigation - Fixed & Sticky (Does not scroll with page) */
 .app-sidebar {
   width: var(--sidebar-width);
   min-width: var(--sidebar-width);
@@ -274,9 +296,11 @@ html, body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 100;
+  left: 0;
+  bottom: 0;
+  z-index: 95;
   transition: transform var(--transition-normal);
 }
 
@@ -388,6 +412,8 @@ html, body {
   display: flex;
   flex-direction: column;
   min-width: 0; /* Prevents flex children from causing overflow */
+  margin-left: var(--sidebar-width);
+  width: calc(100% - var(--sidebar-width));
   background-color: var(--color-bg);
   min-height: 100vh;
 }
@@ -406,6 +432,14 @@ html, body {
   z-index: 90;
 }
 
+.top-navbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  flex: 1;
+}
+
 .mobile-menu-btn {
   display: none;
   background: none;
@@ -414,6 +448,7 @@ html, body {
   cursor: pointer;
   color: var(--color-text-primary);
   border-radius: var(--radius-sm);
+  flex-shrink: 0;
 }
 
 .mobile-menu-btn:hover {
@@ -422,14 +457,18 @@ html, body {
 
 .top-navbar-title {
   font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .top-navbar-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  flex-shrink: 0;
 }
 
 /* Page Views Container */

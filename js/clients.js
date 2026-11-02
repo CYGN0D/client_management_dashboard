@@ -145,18 +145,18 @@ const Clients = {
         : `<span class="badge badge-neutral" style="font-size:11px;">No Retainer (Ad-hoc)</span>`;
 
       return `
-        <tr>
-          <td>
-            <div style="font-weight: 600; color: var(--color-text-primary);">${Utils.escapeHtml(client.name)}</div>
+        <tr class="table-card-row">
+          <td class="table-card-main">
+            <div style="font-weight: 600; color: var(--color-text-primary); font-size: 14px;">${Utils.escapeHtml(client.name)}</div>
             ${client.email ? `<div class="table-subtext">${Utils.escapeHtml(client.email)}</div>` : ''}
           </td>
-          <td>${client.phone ? Utils.escapeHtml(client.phone) : '<span class="table-subtext">—</span>'}</td>
-          <td>${Utils.escapeHtml(client.service)}</td>
-          <td>${monthlyDisplay}</td>
-          <td>Day ${client.dueDay} of month</td>
-          <td>${statusBadge}</td>
-          <td class="actions-col">
-            <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);">
+          <td data-label="Phone">${client.phone ? Utils.escapeHtml(client.phone) : '<span class="table-subtext">—</span>'}</td>
+          <td data-label="Service">${Utils.escapeHtml(client.service)}</td>
+          <td data-label="Monthly Charge">${monthlyDisplay}</td>
+          <td data-label="Due Date">Day ${client.dueDay} of month</td>
+          <td data-label="Status">${statusBadge}</td>
+          <td class="actions-col" data-label="Actions">
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);width:100%;">
               <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.openCreateInvoiceModal('${client.id}')" title="Add Charge / Invoice" aria-label="Add Charge / Invoice">
                 <i data-lucide="receipt"></i>
               </button>

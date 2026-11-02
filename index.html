@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-IN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -80,7 +80,7 @@
     <div class="app-main">
       <!-- Top Navbar for Mobile & Quick Context -->
       <header class="top-navbar">
-        <div style="display:flex;align-items:center;gap:var(--space-3);">
+        <div class="top-navbar-left">
           <button id="mobileMenuToggleBtn" class="mobile-menu-btn" aria-label="Toggle navigation menu">
             <i data-lucide="menu"></i>
           </button>
@@ -90,10 +90,10 @@
           <button id="themeToggleBtn" class="btn btn-secondary btn-icon btn-sm" aria-label="Toggle dark or light theme" title="Toggle Theme">
             <i data-lucide="moon" id="themeIcon" class="theme-toggle-icon"></i>
           </button>
-          <button class="btn btn-secondary btn-sm" onclick="Payments.openCreateInvoiceModal()">
-            <i data-lucide="plus"></i> Add Charge / Invoice
+          <button class="btn btn-secondary btn-sm header-action-btn" onclick="Payments.openCreateInvoiceModal()">
+            <i data-lucide="plus"></i> Add Charge
           </button>
-          <button class="btn btn-primary btn-sm" onclick="Clients.openAddEditModal()">
+          <button class="btn btn-primary btn-sm header-action-btn" onclick="Clients.openAddEditModal()">
             <i data-lucide="user-plus"></i> New Client
           </button>
         </div>
@@ -229,7 +229,7 @@
           </div>
 
           <!-- Upcoming & Overdue Payments Dues -->
-          <div class="card" style="margin-top:var(--space-6);">
+          <div class="card card-table-container" style="margin-top:var(--space-6);">
             <div class="card-header">
               <div>
                 <div class="card-title">Upcoming & Overdue Client Dues</div>
@@ -242,7 +242,7 @@
               </a>
             </div>
             <div class="table-responsive">
-              <table class="data-table">
+              <table class="data-table responsive-card-table">
                 <thead>
                   <tr>
                     <th>Client Name</th>
@@ -286,19 +286,19 @@
               <input type="text" id="clientSearchInput" class="form-control" placeholder="Search by name, phone, or service...">
             </div>
             <div class="filter-actions">
-              <select id="clientStatusFilter" class="form-select" style="width:140px;" aria-label="Filter by client status">
+              <select id="clientStatusFilter" class="form-select select-status" aria-label="Filter by client status">
                 <option value="all">All Clients</option>
                 <option value="active">Active Only</option>
                 <option value="inactive">Inactive Only</option>
               </select>
-              <button id="clientClearFiltersBtn" class="btn btn-secondary btn-sm">Clear Filters</button>
+              <button id="clientClearFiltersBtn" class="btn btn-secondary btn-sm">Clear</button>
             </div>
           </div>
 
           <!-- Clients Table -->
-          <div class="card">
+          <div class="card card-table-container">
             <div class="table-responsive">
-              <table class="data-table">
+              <table class="data-table responsive-card-table">
                 <thead>
                   <tr>
                     <th>Client Name</th>
@@ -374,10 +374,10 @@
               <input type="text" id="paymentSearchInput" class="form-control" placeholder="Search by client, service, invoice #, or month...">
             </div>
             <div class="filter-actions">
-              <select id="paymentMonthFilter" class="form-select" style="min-width:150px;" aria-label="Filter by billing month">
+              <select id="paymentMonthFilter" class="form-select select-month" aria-label="Filter by billing month">
                 <!-- Dynamically populated -->
               </select>
-              <select id="paymentStatusFilter" class="form-select" style="width:125px;" aria-label="Filter by status">
+              <select id="paymentStatusFilter" class="form-select select-status" aria-label="Filter by status">
                 <option value="all">All Statuses</option>
                 <option value="paid">Paid</option>
                 <option value="partial">Partial</option>
@@ -389,9 +389,9 @@
           </div>
 
           <!-- Payments Listing Table -->
-          <div class="card">
+          <div class="card card-table-container">
             <div class="table-responsive">
-              <table class="data-table">
+              <table class="data-table responsive-card-table">
                 <thead>
                   <tr>
                     <th>Client Name / Invoice</th>
@@ -456,10 +456,10 @@
               <input type="text" id="expenseSearchInput" class="form-control" placeholder="Search expenses by title or notes...">
             </div>
             <div class="filter-actions">
-              <select id="expenseCategoryFilter" class="form-select" style="min-width:150px;" aria-label="Filter by category">
+              <select id="expenseCategoryFilter" class="form-select select-category" aria-label="Filter by category">
                 <!-- Dynamically populated -->
               </select>
-              <select id="expenseMonthFilter" class="form-select" style="min-width:160px;" aria-label="Filter by month">
+              <select id="expenseMonthFilter" class="form-select select-month" aria-label="Filter by month">
                 <!-- Dynamically populated -->
               </select>
               <button id="expenseClearFiltersBtn" class="btn btn-secondary btn-sm">Clear</button>
@@ -467,9 +467,9 @@
           </div>
 
           <!-- Expense Table -->
-          <div class="card">
+          <div class="card card-table-container">
             <div class="table-responsive">
-              <table class="data-table">
+              <table class="data-table responsive-card-table">
                 <thead>
                   <tr>
                     <th>Expense Name</th>
@@ -578,7 +578,7 @@
           </div>
 
           <!-- Pending Payments Audit Report -->
-          <div class="card">
+          <div class="card card-table-container">
             <div class="card-header">
               <div>
                 <div class="card-title">Pending Payments Report</div>
@@ -588,7 +588,7 @@
               </div>
             </div>
             <div class="table-responsive">
-              <table class="data-table">
+              <table class="data-table responsive-card-table">
                 <thead>
                   <tr>
                     <th>Client Name</th>
@@ -779,7 +779,12 @@
               <label for="clientJoiningDate" class="form-label">
                 Joining Date <span class="required-indicator">*</span>
               </label>
-              <input type="date" id="clientJoiningDate" class="form-control" required>
+              <div class="date-input-wrapper">
+                <input type="text" id="clientJoiningDate" class="form-control date-picker-input" placeholder="DD/MM/YYYY" maxlength="10" autocomplete="off" required>
+                <button type="button" class="date-picker-toggle-btn" aria-label="Open Calendar" tabindex="-1">
+                  <i data-lucide="calendar"></i>
+                </button>
+              </div>
             </div>
 
             <div class="form-group">
@@ -869,7 +874,12 @@
               <label for="createInvoiceDueDate" class="form-label">
                 Payment Due Date <span class="required-indicator">*</span>
               </label>
-              <input type="date" id="createInvoiceDueDate" class="form-control" required>
+              <div class="date-input-wrapper">
+                <input type="text" id="createInvoiceDueDate" class="form-control date-picker-input" placeholder="DD/MM/YYYY" maxlength="10" autocomplete="off" required>
+                <button type="button" class="date-picker-toggle-btn" aria-label="Open Calendar" tabindex="-1">
+                  <i data-lucide="calendar"></i>
+                </button>
+              </div>
             </div>
 
             <div class="form-group">
@@ -1018,7 +1028,12 @@
               <label for="recordPaymentDate" class="form-label">
                 Payment Date <span class="required-indicator">*</span>
               </label>
-              <input type="date" id="recordPaymentDate" class="form-control" required>
+              <div class="date-input-wrapper">
+                <input type="text" id="recordPaymentDate" class="form-control date-picker-input" placeholder="DD/MM/YYYY" maxlength="10" autocomplete="off" required>
+                <button type="button" class="date-picker-toggle-btn" aria-label="Open Calendar" tabindex="-1">
+                  <i data-lucide="calendar"></i>
+                </button>
+              </div>
             </div>
 
             <div class="form-group">
@@ -1103,9 +1118,14 @@
 
             <div class="form-group col-span-2">
               <label for="expenseDate" class="form-label">
-                Date <span class="required-indicator">*</span>
+                Expense Date <span class="required-indicator">*</span>
               </label>
-              <input type="date" id="expenseDate" class="form-control" required>
+              <div class="date-input-wrapper">
+                <input type="text" id="expenseDate" class="form-control date-picker-input" placeholder="DD/MM/YYYY" maxlength="10" autocomplete="off" required>
+                <button type="button" class="date-picker-toggle-btn" aria-label="Open Calendar" tabindex="-1">
+                  <i data-lucide="calendar"></i>
+                </button>
+              </div>
             </div>
 
             <div class="form-group col-span-2">
@@ -1149,6 +1169,7 @@
 
   <!-- Application Modules -->
   <script src="js/utils.js"></script>
+  <script src="js/datepicker.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/clients.js"></script>
   <script src="js/payments.js"></script>

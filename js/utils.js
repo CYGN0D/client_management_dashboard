@@ -68,28 +68,54 @@ const Utils = {
   },
 
   /**
-   * Format YYYY-MM-DD to readable date like "02 Nov 2026"
+   * Format date string to DD/MM/YYYY format everywhere
+   * Accepts YYYY-MM-DD or DD/MM/YYYY and outputs DD/MM/YYYY
    * @param {string} dateStr 
    */
   formatDate(dateStr) {
     if (!dateStr) return '—';
     try {
+      if (/^\d{2}[\/\-]\d{2}[\/\-]\d{4}$/.test(dateStr)) {
+        return dateStr.replace(/-/g, '/');
+      }
       const parts = dateStr.split('-');
       if (parts.length === 3) {
-        const year = parseInt(parts[0], 10);
-        const monthIndex = parseInt(parts[1], 10) - 1;
-        const day = parseInt(parts[2], 10);
-        const date = new Date(year, monthIndex, day);
-        return date.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric'
-        });
+        const year = parts[0];
+        const month = String(parseInt(parts[1], 10)).padStart(2, '0');
+        const day = String(parseInt(parts[2], 10)).padStart(2, '0');
+        return `${day}/${month}/${year}`;
       }
       return dateStr;
     } catch (e) {
       return dateStr;
     }
+  },
+
+  /**
+   * Convert ISO YYYY-MM-DD to DD/MM/YYYY
+   */
+  isoToDmy(isoStr) {
+    if (!isoStr) return '';
+    const m = String(isoStr).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return isoStr;
+    return `${m[3]}/${m[2]}/${m[1]}`;
+  },
+
+  /**
+   * Convert DD/MM/YYYY or DD-MM-YYYY to ISO YYYY-MM-DD
+   */
+  dmyToIso(dmyStr) {
+    if (!dmyStr) return '';
+    const m = String(dmyStr).trim().match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+    if (!m) return '';
+    const day = m[1].padStart(2, '0');
+    const month = m[2].padStart(2, '0');
+    const year = m[3];
+    const d = parseInt(day, 10);
+    const mo = parseInt(month, 10);
+    const y = parseInt(year, 10);
+    if (mo < 1 || mo > 12 || d < 1 || d > 31 || y < 1900 || y > 2100) return '';
+    return `${year}-${month}-${day}`;
   },
 
   /**

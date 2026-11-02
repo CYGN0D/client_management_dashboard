@@ -17,7 +17,12 @@ const App = {
     // 3. Initialize dark/light theme preference
     this.initTheme();
 
-    // 4. Initialize all functional modules and attach form/button event listeners
+    // 4. Initialize custom DD/MM/YYYY datepicker component
+    if (window.DatePicker && typeof DatePicker.init === 'function') {
+      DatePicker.init();
+    }
+
+    // 5. Initialize all functional modules and attach form/button event listeners
     if (window.Clients && typeof Clients.init === 'function') Clients.init();
     if (window.Payments && typeof Payments.init === 'function') Payments.init();
     if (window.Expenses && typeof Expenses.init === 'function') Expenses.init();
@@ -96,26 +101,21 @@ const App = {
 
   isThemeAnimating: false,
 
-  toggleThemeWithCircleAnimation(event) {
+  async toggleThemeWithCircleAnimation(event) {
     if (this.isThemeAnimating) return;
 
     const curTheme = document.documentElement.getAttribute('data-theme') || 'light';
     const nextTheme = curTheme === 'dark' ? 'light' : 'dark';
 
-    // If user prefers reduced motion or browser doesn't support Web Animations API
-    if (
-      (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ||
-      !Element.prototype.animate
-    ) {
-      this.setTheme(nextTheme, true);
+    // If user prefers reduced motion
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this.setTheme(nextTheme);
       return;
     }
 
     const toggleBtn = document.getElementById('themeToggleBtn');
-    const overlay = document.getElementById('themeCircleOverlay');
-
-    if (!overlay || !toggleBtn) {
-      this.setTheme(nextTheme, true);
+    if (!toggleBtn) {
+      this.setTheme(nextTheme);
       return;
     }
 
@@ -132,58 +132,71 @@ const App = {
 
     this.isThemeAnimating = true;
 
-    if (nextTheme === 'dark') {
-      // Light -> Dark: Animate circular dark overlay expanding from button to cover screen
-      overlay.style.visibility = 'visible';
-      overlay.style.opacity = '1';
+    // 1. Preferred modern path: View Transitions API (Reveals entire UI forward)
+    if (document.startViewTransition) {
+      try {
+        const transition = document.startViewTransition(() => {
+          this.setTheme(nextTheme, false);
+        });
 
-      const anim = overlay.animate([
-        { clipPath: `circle(0px at ${x}px ${y}px)` },
-        { clipPath: `circle(${endRadius}px at ${x}px ${y}px)` }
-      ], {
-        duration: 480,
-        easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-        fill: 'forwards'
-      });
+        await transition.ready;
 
-      anim.onfinish = () => {
-        // Apply dark theme across whole app
-        this.setTheme('dark', false);
-        // Hide overlay smoothly without layout shift or flicker
-        overlay.style.visibility = 'hidden';
-        anim.cancel();
+        // Animate incoming new theme expanding forward from the button center
+        const anim = document.documentElement.animate(
+          {
+            clipPath: [
+              `circle(0px at ${x}px ${y}px)`,
+              `circle(${endRadius}px at ${x}px ${y}px)`
+            ]
+          },
+          {
+            duration: 460,
+            easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+            pseudoElement: '::view-transition-new(root)'
+          }
+        );
+
+        await anim.finished;
         this.isThemeAnimating = false;
-        Utils.showToast('Dark theme applied', 'info', 1500);
-      };
-    } else {
-      // Dark -> Light: Reverse animation!
-      // Dark overlay starts fully covering screen, light theme applied underneath,
-      // and dark overlay smoothly shrinks back into button, revealing light theme
-      overlay.style.visibility = 'visible';
-      overlay.style.opacity = '1';
-
-      // Switch underlying theme to light immediately under cover of overlay
-      this.setTheme('light', false);
-
-      const anim = overlay.animate([
-        { clipPath: `circle(${endRadius}px at ${x}px ${y}px)` },
-        { clipPath: `circle(0px at ${x}px ${y}px)` }
-      ], {
-        duration: 480,
-        easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-        fill: 'forwards'
-      });
-
-      anim.onfinish = () => {
-        overlay.style.visibility = 'hidden';
-        anim.cancel();
-        this.isThemeAnimating = false;
-        Utils.showToast('Light theme applied', 'info', 1500);
-      };
+        return;
+      } catch (e) {
+        // Fallback to overlay animation if view transition failed
+      }
     }
+
+    // 2. Universal Fallback: Expanding Circle Overlay (Always Forward from 0px to endRadius)
+    const overlay = document.getElementById('themeCircleOverlay');
+    if (!overlay || !Element.prototype.animate) {
+      this.setTheme(nextTheme);
+      this.isThemeAnimating = false;
+      return;
+    }
+
+    // Set overlay background color to the incoming target theme color
+    overlay.style.backgroundColor = nextTheme === 'dark' ? '#0C0D10' : '#FFFFFF';
+    overlay.style.visibility = 'visible';
+    overlay.style.opacity = '1';
+
+    // Always forward: 0px -> endRadius
+    const anim = overlay.animate([
+      { clipPath: `circle(0px at ${x}px ${y}px)` },
+      { clipPath: `circle(${endRadius}px at ${x}px ${y}px)` }
+    ], {
+      duration: 460,
+      easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      fill: 'forwards'
+    });
+
+    anim.onfinish = () => {
+      this.setTheme(nextTheme);
+      overlay.style.visibility = 'hidden';
+      overlay.style.opacity = '0';
+      anim.cancel();
+      this.isThemeAnimating = false;
+    };
   },
 
-  setTheme(theme, showToast = false) {
+  setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('cliento_theme', theme);
 
@@ -192,10 +205,6 @@ const App = {
       toggleBtn.innerHTML = `<i data-lucide="${theme === 'dark' ? 'sun' : 'moon'}" class="theme-toggle-icon"></i>`;
     }
     Utils.refreshIcons();
-
-    if (showToast) {
-      Utils.showToast(`${theme === 'dark' ? 'Dark' : 'Light'} theme applied`, 'info', 1800);
-    }
   },
 
   navigateTo(pageId, updateHash = true) {

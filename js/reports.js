@@ -383,21 +383,23 @@ const Reports = {
       }
 
       return `
-        <tr>
-          <td style="font-weight:600;">
-            <div>${Utils.escapeHtml(inv.clientName)}</div>
+        <tr class="table-card-row">
+          <td class="table-card-main">
+            <div style="font-weight: 600; color: var(--color-text-primary); font-size: 14px;">${Utils.escapeHtml(inv.clientName)}</div>
             <div class="table-subtext">${Utils.escapeHtml(inv.serviceName || inv.invoiceNumber)}</div>
           </td>
-          <td>${Utils.formatMonth(inv.billingMonth)}</td>
-          <td class="tabular-nums">${Utils.formatCurrency(inv.amount)}</td>
-          <td class="tabular-nums" style="color:var(--color-success);">${Utils.formatCurrency(Utils.fromPaise(paidPaise))}</td>
-          <td class="tabular-nums" style="font-weight:600;color:var(--color-danger);">${Utils.formatCurrency(Utils.fromPaise(remPaise))}</td>
-          <td class="tabular-nums" style="${inv.isOverdue ? 'color:var(--color-danger);font-weight:500;' : ''}">${Utils.formatDate(inv.dueDate)}</td>
-          <td>${badgeHtml}</td>
-          <td style="text-align:right;">
-            <button class="btn btn-primary btn-sm" onclick="Payments.openRecordPaymentModal('${inv.id}')" title="Record Payment">
-              <i data-lucide="plus-circle"></i> Pay
-            </button>
+          <td data-label="Billing Month">${Utils.formatMonth(inv.billingMonth)}</td>
+          <td data-label="Invoice Amount" class="tabular-nums">${Utils.formatCurrency(inv.amount)}</td>
+          <td data-label="Paid Amount" class="tabular-nums" style="color:var(--color-success);">${Utils.formatCurrency(Utils.fromPaise(paidPaise))}</td>
+          <td data-label="Remaining" class="tabular-nums" style="font-weight:600;color:var(--color-danger);">${Utils.formatCurrency(Utils.fromPaise(remPaise))}</td>
+          <td data-label="Due Date" class="tabular-nums" style="${inv.isOverdue ? 'color:var(--color-danger);font-weight:500;' : ''}">${Utils.formatDate(inv.dueDate)}</td>
+          <td data-label="Status">${badgeHtml}</td>
+          <td class="actions-col" data-label="Action">
+            <div style="display:flex;align-items:center;justify-content:flex-end;width:100%;">
+              <button class="btn btn-primary btn-sm" onclick="Payments.openRecordPaymentModal('${inv.id}')" title="Record Payment">
+                <i data-lucide="plus-circle"></i> Pay
+              </button>
+            </div>
           </td>
         </tr>
       `;

@@ -319,6 +319,198 @@
 }
 
 /* --------------------------------------------------------------------------
+   Custom DatePicker & DD/MM/YYYY Date Inputs
+   -------------------------------------------------------------------------- */
+.date-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.date-input-wrapper .date-picker-input {
+  padding-right: 38px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+
+.date-picker-toggle-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+  z-index: 2;
+}
+
+.date-picker-toggle-btn:hover {
+  color: var(--color-primary);
+  background-color: var(--color-bg-secondary);
+}
+
+.date-picker-toggle-btn i,
+.date-picker-toggle-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
+
+/* Floating Themed Calendar Popover */
+.cliento-calendar-popover {
+  position: fixed;
+  z-index: 2500;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  width: 280px;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  user-select: none;
+  font-family: var(--font-sans);
+}
+
+.cliento-calendar-popover.open {
+  display: flex;
+  animation: calendarPopFade 0.15s ease-out;
+}
+
+@keyframes calendarPopFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 0 4px;
+}
+
+.cal-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.cal-nav-btn {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+  padding: 0;
+}
+
+.cal-nav-btn:hover {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border-color: var(--color-text-muted);
+}
+
+.cal-nav-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  padding-bottom: 2px;
+}
+
+.cal-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.cal-day-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-primary);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  padding: 0;
+}
+
+.cal-day-cell:hover:not(:disabled) {
+  background-color: var(--color-bg-secondary);
+}
+
+.cal-day-cell.other-month {
+  color: var(--color-text-muted);
+  opacity: 0.4;
+}
+
+.cal-day-cell.today {
+  border-color: var(--color-primary);
+  font-weight: 600;
+}
+
+.cal-day-cell.selected {
+  background-color: var(--color-primary) !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+}
+
+.cal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--color-border);
+  padding-top: 8px;
+  margin-top: 2px;
+}
+
+.cal-quick-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
+}
+
+.cal-quick-btn:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+/* --------------------------------------------------------------------------
    Filter & Search Toolbar
    -------------------------------------------------------------------------- */
 .toolbar {
@@ -360,6 +552,18 @@
   flex-wrap: nowrap;
 }
 
+.select-month {
+  min-width: 150px;
+}
+
+.select-status {
+  width: 130px;
+}
+
+.select-category {
+  min-width: 140px;
+}
+
 /* --------------------------------------------------------------------------
    Tables
    -------------------------------------------------------------------------- */
@@ -367,6 +571,21 @@
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.table-responsive::-webkit-scrollbar {
+  height: 5px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
 }
 
 .data-table {
