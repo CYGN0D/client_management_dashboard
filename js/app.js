@@ -11,7 +11,12 @@ const App = {
     // 1. Initialize persistent storage layer (clean real data)
     Storage.initStorage();
 
-    // 2. Initialize modal accessibility triggers
+    // 2. Initialize pure & clean authentication
+    if (window.Auth && typeof Auth.init === 'function') {
+      Auth.init();
+    }
+
+    // 3. Initialize modal accessibility triggers
     Utils.initModalListeners();
 
     // 3. Initialize dark/light theme preference

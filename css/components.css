@@ -686,14 +686,16 @@
   display: none;
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(2px);
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
   z-index: 1000;
   align-items: center;
   justify-content: center;
   padding: var(--space-4);
   opacity: 0;
   transition: opacity var(--transition-fast);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-backdrop.open {
@@ -707,12 +709,21 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-dropdown);
   width: 100%;
-  max-width: 540px;
-  max-height: 90vh;
+  max-width: 580px;
+  max-height: calc(100vh - 36px);
   display: flex;
   flex-direction: column;
   transform: scale(0.98);
   transition: transform var(--transition-fast);
+  overflow: hidden;
+  margin: auto;
+}
+
+.modal > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -721,7 +732,7 @@
 }
 
 .modal-lg {
-  max-width: 760px;
+  max-width: 800px;
 }
 
 .modal-sm {
@@ -734,6 +745,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 
 .modal-title {
@@ -760,6 +772,10 @@
 .modal-body {
   padding: var(--space-5);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  min-height: 0;
+  max-height: 100%;
 }
 
 .modal-footer {
@@ -770,6 +786,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-3);
+  flex-shrink: 0;
 }
 
 /* --------------------------------------------------------------------------
@@ -1055,4 +1072,158 @@
 .view-all-link:hover {
   color: var(--color-primary);
   text-decoration: underline;
+}
+
+/* --------------------------------------------------------------------------
+   Pure & Clean Login View
+   -------------------------------------------------------------------------- */
+.login-view {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-bg);
+  padding: var(--space-4);
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  overflow-y: auto;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-dropdown);
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin: auto;
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.login-brand .brand-icon {
+  width: 34px;
+  height: 34px;
+  font-size: 18px;
+}
+
+.login-brand .brand-text {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--color-text-primary);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.login-error-alert {
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: var(--color-danger);
+  font-size: 13px;
+  font-weight: 500;
+  display: none;
+}
+
+/* Password Input with Eye Toggle Button */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-wrapper .form-control {
+  padding-right: 40px;
+}
+
+.password-eye-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+  z-index: 2;
+}
+
+.password-eye-btn:hover {
+  color: var(--color-primary);
+  background-color: var(--color-bg-secondary);
+}
+
+.password-eye-btn svg,
+.password-eye-btn i {
+  width: 17px;
+  height: 17px;
+  stroke-width: 2;
+}
+
+/* --------------------------------------------------------------------------
+   Clean Service Quick Pills
+   -------------------------------------------------------------------------- */
+.service-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.service-pill {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.service-pill:hover {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.service-pill.active {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+[data-theme="dark"] .service-pill.active {
+  background: rgba(99, 102, 241, 0.22);
+  border-color: var(--color-primary);
+  color: #818CF8;
 }

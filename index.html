@@ -31,6 +31,37 @@
   <!-- Circular Dark Mode Expanding Transition Overlay -->
   <div id="themeCircleOverlay" class="theme-circle-overlay" aria-hidden="true"></div>
 
+  <!-- Pure & Clean Minimal Login View -->
+  <div id="loginView" class="login-view" style="display:none;">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="brand-icon">C</div>
+        <div class="brand-text">Cliento</div>
+      </div>
+
+      <form id="loginForm" class="login-form" novalidate>
+        <div id="loginErrorAlert" class="login-error-alert" role="alert"></div>
+
+        <div class="form-group">
+          <label for="loginEmail" class="form-label">Email</label>
+          <input type="email" id="loginEmail" class="form-control" placeholder="name@company.com" required autocomplete="email">
+        </div>
+
+        <div class="form-group">
+          <label for="loginPassword" class="form-label">Password</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="loginPassword" class="form-control" placeholder="Enter password" required autocomplete="current-password">
+            <button type="button" id="togglePasswordVisibilityBtn" class="password-eye-btn" aria-label="Toggle password visibility">
+              <i data-lucide="eye" id="passwordEyeIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" id="loginSubmitBtn" class="btn btn-primary" style="height:38px;margin-top:var(--space-2);width:100%;">Log In</button>
+      </form>
+    </div>
+  </div>
+
   <div class="app-container">
     <!-- Backdrop for mobile navigation drawer -->
     <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
@@ -73,6 +104,10 @@
           <i data-lucide="settings" class="nav-icon"></i>
           <span>Settings</span>
         </a>
+        <button type="button" id="logoutBtn" class="nav-item btn-logout" style="width:100%;text-align:left;background:transparent;border:1px solid transparent;cursor:pointer;" title="Log Out">
+          <i data-lucide="log-out" class="nav-icon"></i>
+          <span>Log Out</span>
+        </button>
       </div>
     </aside>
 
@@ -723,56 +758,24 @@
 
   <!-- Add / Edit Client Modal -->
   <div id="clientModal" class="modal-backdrop">
-    <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="clientModalTitle">
+    <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="clientModalTitle" style="max-width:600px;">
       <div class="modal-header">
         <h2 id="clientModalTitle" class="modal-title">Add New Client</h2>
         <button class="modal-close" data-modal-close aria-label="Close dialog">
           <i data-lucide="x"></i>
         </button>
       </div>
+
       <form id="clientForm" novalidate>
         <div class="modal-body">
           <input type="hidden" id="clientFormId">
+
           <div class="form-grid">
             <div class="form-group">
               <label for="clientName" class="form-label">
                 Client Name <span class="required-indicator">*</span>
               </label>
               <input type="text" id="clientName" class="form-control" placeholder="Client or Company Name" required>
-            </div>
-
-            <div class="form-group">
-              <label for="clientService" class="form-label">
-                Service / Retainer Purpose <span class="required-indicator">*</span>
-              </label>
-              <input type="text" id="clientService" class="form-control" placeholder="e.g. Website Maintenance, SEO, App Dev" required>
-              <span class="form-hint">Specify primary service or retainer purpose</span>
-            </div>
-
-            <div class="form-group">
-              <label for="clientPhone" class="form-label">Phone Number</label>
-              <input type="tel" id="clientPhone" class="form-control" placeholder="+91 98765 00000">
-            </div>
-
-            <div class="form-group">
-              <label for="clientEmail" class="form-label">Billing Email</label>
-              <input type="email" id="clientEmail" class="form-control" placeholder="client@company.com">
-            </div>
-
-            <div class="form-group">
-              <label for="clientMonthlyAmount" class="form-label">
-                Monthly Retainer (₹) <span style="font-weight:normal;color:var(--color-text-muted);font-size:12px;">(Optional)</span>
-              </label>
-              <input type="number" id="clientMonthlyAmount" class="form-control" placeholder="Amount in Rupees (or leave empty/0)" min="0" step="any">
-              <span class="form-hint">Optional: leave 0 if client is billed ad-hoc for custom changes</span>
-            </div>
-
-            <div class="form-group">
-              <label for="clientDueDay" class="form-label">
-                Billing Due Day <span style="font-weight:normal;color:var(--color-text-muted);font-size:12px;">(1–28)</span>
-              </label>
-              <input type="number" id="clientDueDay" class="form-control" min="1" max="28" value="5">
-              <span class="form-hint">Day of month (1 to 28) for recurring invoices</span>
             </div>
 
             <div class="form-group">
@@ -787,8 +790,76 @@
               </div>
             </div>
 
+            <div class="form-group col-span-2">
+              <label for="clientService" class="form-label">
+                Services Included <span class="required-indicator">*</span>
+              </label>
+              <input type="text" id="clientService" class="form-control" placeholder="e.g. Website Development, SEO, Maintenance" required>
+              <div class="service-pills" id="clientServiceChips">
+                <button type="button" class="service-pill" data-service="Website Development">+ Web Development</button>
+                <button type="button" class="service-pill" data-service="Mobile App Development">+ Mobile App</button>
+                <button type="button" class="service-pill" data-service="SEO & Optimization">+ SEO</button>
+                <button type="button" class="service-pill" data-service="UI/UX Design">+ UI/UX Design</button>
+                <button type="button" class="service-pill" data-service="Website Maintenance">+ Maintenance / AMC</button>
+              </div>
+            </div>
+
             <div class="form-group">
-              <label for="clientStatus" class="form-label">Status</label>
+              <label for="clientPhone" class="form-label">Phone Number</label>
+              <input type="tel" id="clientPhone" class="form-control" placeholder="+91 98765 00000">
+            </div>
+
+            <div class="form-group">
+              <label for="clientEmail" class="form-label">Billing Email</label>
+              <input type="email" id="clientEmail" class="form-control" placeholder="billing@client.com">
+            </div>
+
+            <div class="form-group" id="clientInitialAmountGroup">
+              <label for="clientInitialPayment" class="form-label">
+                Project Advance / First Payment (₹)
+              </label>
+              <input type="number" id="clientInitialPayment" class="form-control" placeholder="0 (optional)" min="0" step="any">
+              <span class="form-hint">Initial amount charged for onboarding or project advance</span>
+            </div>
+
+            <div class="form-group" id="clientInitialStatusGroup">
+              <label for="clientInitialStatus" class="form-label">Advance Status</label>
+              <select id="clientInitialStatus" class="form-select">
+                <option value="paid">Received / Paid Upfront</option>
+                <option value="pending">Pending Due (Invoice on Joining)</option>
+                <option value="none">No Initial Advance</option>
+              </select>
+              <span class="form-hint">Select whether advance is received or pending</span>
+            </div>
+
+            <div class="form-group col-span-2" id="clientInitialMethodGroup">
+              <label for="clientInitialMethod" class="form-label">Advance Payment Method</label>
+              <select id="clientInitialMethod" class="form-select">
+                <option value="Bank Transfer">Bank Transfer (NEFT/RTGS/IMPS)</option>
+                <option value="UPI">UPI (GPay / PhonePe / Paytm)</option>
+                <option value="Cash">Cash</option>
+                <option value="Cheque">Cheque</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="clientMonthlyAmount" class="form-label">
+                Monthly Retainer (₹) <span style="font-weight:normal;color:var(--color-text-muted);font-size:12px;">(Optional)</span>
+              </label>
+              <input type="number" id="clientMonthlyAmount" class="form-control" placeholder="0 (leave empty if none)" min="0" step="any">
+              <span class="form-hint">Optional: leave 0 if client is billed ad-hoc</span>
+            </div>
+
+            <div class="form-group">
+              <label for="clientDueDay" class="form-label">
+                Billing Due Day <span style="font-weight:normal;color:var(--color-text-muted);font-size:12px;">(1–28)</span>
+              </label>
+              <input type="number" id="clientDueDay" class="form-control" min="1" max="28" value="5">
+              <span class="form-hint">Day of month (1 to 28) for recurring invoices</span>
+            </div>
+
+            <div class="form-group col-span-2">
+              <label for="clientStatus" class="form-label">Client Status</label>
               <select id="clientStatus" class="form-select">
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -796,9 +867,12 @@
             </div>
           </div>
         </div>
+
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Client</button>
+          <button type="submit" class="btn btn-primary">
+            <i data-lucide="check"></i> Save Client
+          </button>
         </div>
       </form>
     </div>
@@ -1177,6 +1251,7 @@
   <script src="js/dashboard.js"></script>
   <script src="js/reports.js"></script>
   <script src="js/settings.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/app.js"></script>
 
 </body>

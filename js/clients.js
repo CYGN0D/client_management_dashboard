@@ -10,7 +10,86 @@ const Clients = {
 
   init() {
     this.bindEvents();
+    this.bindServiceChips();
+    this.bindInitialPaymentEvents();
     this.render();
+  },
+
+  bindServiceChips() {
+    const container = document.getElementById('clientServiceChips');
+    const serviceInput = document.getElementById('clientService');
+    if (!container || !serviceInput) return;
+
+    container.addEventListener('click', (e) => {
+      const pill = e.target.closest('.service-pill, .service-chip');
+      if (!pill) return;
+      e.preventDefault();
+
+      const serviceName = pill.getAttribute('data-service');
+      let currentServices = serviceInput.value
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      const existsIdx = currentServices.findIndex(
+        (s) => s.toLowerCase() === serviceName.toLowerCase()
+      );
+
+      if (existsIdx >= 0) {
+        currentServices.splice(existsIdx, 1);
+        pill.classList.remove('active');
+      } else {
+        currentServices.push(serviceName);
+        pill.classList.add('active');
+      }
+
+      serviceInput.value = currentServices.join(', ');
+      Utils.clearFieldErrors(serviceInput);
+    });
+
+    serviceInput.addEventListener('input', () => {
+      this.syncServiceChips(serviceInput.value);
+    });
+  },
+
+  syncServiceChips(serviceText) {
+    const container = document.getElementById('clientServiceChips');
+    if (!container) return;
+    const pills = container.querySelectorAll('.service-pill, .service-chip');
+    const current = (serviceText || '').toLowerCase();
+    pills.forEach((pill) => {
+      const name = (pill.getAttribute('data-service') || '').toLowerCase();
+      if (current && (current.includes(name) || name.split(' ').some(w => w.length > 3 && current.includes(w)))) {
+        pill.classList.add('active');
+      } else {
+        pill.classList.remove('active');
+      }
+    });
+  },
+
+  bindInitialPaymentEvents() {
+    const statusSelect = document.getElementById('clientInitialStatus');
+    const methodGroup = document.getElementById('clientInitialMethodGroup');
+    const paymentInput = document.getElementById('clientInitialPayment');
+
+    if (statusSelect && methodGroup) {
+      statusSelect.addEventListener('change', () => {
+        methodGroup.style.display = statusSelect.value === 'paid' ? '' : 'none';
+        if (statusSelect.value === 'none' && paymentInput) {
+          paymentInput.value = '';
+        }
+      });
+    }
+
+    if (paymentInput && statusSelect) {
+      paymentInput.addEventListener('input', () => {
+        const val = parseFloat(paymentInput.value);
+        if (val > 0 && statusSelect.value === 'none') {
+          statusSelect.value = 'paid';
+          if (methodGroup) methodGroup.style.display = '';
+        }
+      });
+    }
   },
 
   bindEvents() {
@@ -211,6 +290,13 @@ const Clients = {
     const dueDayInput = document.getElementById('clientDueDay');
     const statusInput = document.getElementById('clientStatus');
 
+    const initialAmountGroup = document.getElementById('clientInitialAmountGroup');
+    const initialStatusGroup = document.getElementById('clientInitialStatusGroup');
+    const initialMethodGroup = document.getElementById('clientInitialMethodGroup');
+    const initialPaymentInput = document.getElementById('clientInitialPayment');
+    const initialStatusSelect = document.getElementById('clientInitialStatus');
+    const initialMethodSelect = document.getElementById('clientInitialMethod');
+
     if (clientId) {
       const client = Storage.getClientById(clientId);
       if (!client) return;
@@ -221,20 +307,42 @@ const Clients = {
       emailInput.value = client.email || '';
       serviceInput.value = client.service;
       amountInput.value = (client.monthlyAmount && client.monthlyAmount > 0) ? client.monthlyAmount : '';
-      joiningDateInput.value = client.joiningDate || Utils.getTodayString();
+      joiningDateInput.value = Utils.isoToDmy(client.joiningDate) || client.joiningDate || Utils.isoToDmy(Utils.getTodayString());
       dueDayInput.value = client.dueDay || 5;
       statusInput.value = client.status || 'active';
+
+      // Hide initial advance section when editing an established client
+      if (initialAmountGroup) initialAmountGroup.style.display = 'none';
+      if (initialStatusGroup) initialStatusGroup.style.display = 'none';
+      if (initialMethodGroup) initialMethodGroup.style.display = 'none';
+
+      this.syncServiceChips(client.service);
     } else {
       modalTitle.textContent = 'Add New Client';
       idInput.value = '';
+      nameInput.value = '';
+      phoneInput.value = '';
+      emailInput.value = '';
+      serviceInput.value = '';
       amountInput.value = '';
-      joiningDateInput.value = Utils.getTodayString();
+      joiningDateInput.value = Utils.isoToDmy(Utils.getTodayString());
       const settings = Storage.getSettings();
       dueDayInput.value = settings.billingPreference || 5;
       statusInput.value = 'active';
+
+      // Show initial advance section for onboarding new client
+      if (initialAmountGroup) initialAmountGroup.style.display = '';
+      if (initialStatusGroup) initialStatusGroup.style.display = '';
+      if (initialPaymentInput) initialPaymentInput.value = '';
+      if (initialStatusSelect) initialStatusSelect.value = 'paid';
+      if (initialMethodSelect) initialMethodSelect.value = 'Bank Transfer';
+      if (initialMethodGroup) initialMethodGroup.style.display = '';
+
+      this.syncServiceChips('');
     }
 
     Utils.openModal('clientModal');
+    Utils.refreshIcons();
   },
 
   handleFormSubmit() {
@@ -262,7 +370,7 @@ const Clients = {
 
     const service = serviceInput.value.trim();
     if (!service) {
-      Utils.setFieldError(serviceInput, 'Service or retainer purpose is required');
+      Utils.setFieldError(serviceInput, 'Please select or enter at least one service');
       isValid = false;
     }
 
@@ -291,10 +399,27 @@ const Clients = {
       isValid = false;
     }
 
-    let joiningDate = joiningDateInput.value;
-    if (!joiningDate) {
+    let joiningDateRaw = joiningDateInput.value.trim();
+    let joiningDate = '';
+    if (!joiningDateRaw) {
       joiningDate = Utils.getTodayString();
-      joiningDateInput.value = joiningDate;
+      joiningDateInput.value = Utils.isoToDmy(joiningDate);
+    } else {
+      joiningDate = Utils.dmyToIso(joiningDateRaw) || joiningDateRaw;
+    }
+
+    // Initial project payment validation (for new clients)
+    let initialAmount = 0;
+    const initialPaymentInput = document.getElementById('clientInitialPayment');
+    const initialStatusSelect = document.getElementById('clientInitialStatus');
+    const initialMethodSelect = document.getElementById('clientInitialMethod');
+
+    if (!id && initialPaymentInput && initialPaymentInput.value.trim() !== '') {
+      initialAmount = parseFloat(initialPaymentInput.value);
+      if (isNaN(initialAmount) || initialAmount < 0) {
+        Utils.setFieldError(initialPaymentInput, 'Initial payment must be 0 or greater');
+        isValid = false;
+      }
     }
 
     if (!isValid) return;
@@ -314,8 +439,41 @@ const Clients = {
       Storage.updateClient(id, payload);
       Utils.showToast('Client details updated successfully', 'success');
     } else {
-      Storage.addClient(payload);
-      Utils.showToast('New client created successfully', 'success');
+      const newClient = Storage.addClient(payload);
+
+      // Handle First-Time Project Advance Payment if entered
+      if (initialAmount > 0 && initialStatusSelect && initialStatusSelect.value !== 'none') {
+        const initialStatus = initialStatusSelect.value;
+        const initialMethod = initialMethodSelect ? initialMethodSelect.value : 'Bank Transfer';
+
+        // Automatically create project advance invoice
+        const invPayload = {
+          clientId: newClient.id,
+          serviceName: service || 'Project Advance / Initial Payment',
+          billingMonth: (joiningDate || Utils.getTodayString()).substring(0, 7),
+          amount: initialAmount,
+          dueDate: joiningDate || Utils.getTodayString(),
+          chargeType: 'one_time',
+          notes: 'Initial Project Advance / Upfront Payment'
+        };
+
+        const invoice = Storage.addInvoice(invPayload);
+
+        // If marked paid/received upfront, auto-record payment receipt
+        if (initialStatus === 'paid' && invoice) {
+          Storage.recordPayment({
+            invoiceId: invoice.id,
+            amount: initialAmount,
+            paymentDate: joiningDate || Utils.getTodayString(),
+            paymentMethod: initialMethod,
+            notes: 'Project Advance received upfront upon onboarding'
+          });
+        }
+
+        Utils.showToast(`Client created & advance of ${Utils.formatCurrency(initialAmount)} recorded!`, 'success');
+      } else {
+        Utils.showToast('New client created successfully', 'success');
+      }
     }
 
     Utils.closeModal('clientModal');
