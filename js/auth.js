@@ -30,6 +30,10 @@ const Auth = {
     if (this.isAuthenticated()) {
       if (loginView) loginView.style.display = 'none';
       if (appContainer) appContainer.style.display = 'flex';
+      const userEmailEl = document.getElementById('settingsUserEmailText');
+      if (userEmailEl) {
+        userEmailEl.textContent = localStorage.getItem(this.USER_EMAIL_KEY) || 'admin@cliento.com';
+      }
       // Refresh lucide icons when app container becomes visible
       if (window.Utils && typeof Utils.refreshIcons === 'function') {
         Utils.refreshIcons();

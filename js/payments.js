@@ -39,28 +39,6 @@ const Payments = {
       genMonthInput.addEventListener('change', () => this.renderGenerateClientsList());
     }
 
-    const selectAllBtn = document.getElementById('genSelectAllBtn');
-    if (selectAllBtn) {
-      selectAllBtn.addEventListener('click', () => {
-        const tbody = document.getElementById('generateClientsListBody');
-        if (tbody) {
-          tbody.querySelectorAll('.gen-client-checkbox:not(:disabled)').forEach((cb) => { cb.checked = true; });
-          this.recalculateGenerateTotals();
-        }
-      });
-    }
-
-    const deselectAllBtn = document.getElementById('genDeselectAllBtn');
-    if (deselectAllBtn) {
-      deselectAllBtn.addEventListener('click', () => {
-        const tbody = document.getElementById('generateClientsListBody');
-        if (tbody) {
-          tbody.querySelectorAll('.gen-client-checkbox').forEach((cb) => { cb.checked = false; });
-          this.recalculateGenerateTotals();
-        }
-      });
-    }
-
     const masterCheckbox = document.getElementById('genMasterCheckbox');
     if (masterCheckbox) {
       masterCheckbox.addEventListener('change', (e) => {
@@ -292,23 +270,23 @@ const Payments = {
       return `
         <tr class="table-card-row">
           <td class="table-card-main">
-            <div style="font-weight: 600; color: var(--color-text-primary); font-size: 14px;">${Utils.escapeHtml(inv.clientName)}</div>
-            <div class="table-subtext">
+            <div class="table-cell-truncate" style="font-weight: 600; color: var(--color-text-primary); font-size: 14px; max-width: 220px;" title="${Utils.escapeHtml(inv.clientName)}">${Utils.escapeHtml(inv.clientName)}</div>
+            <div class="table-subtext table-cell-truncate" style="max-width: 220px;">
               <span class="tabular-nums" style="font-weight:500;">${Utils.escapeHtml(inv.invoiceNumber)}</span>
               <span style="opacity:0.5;"> • </span>
-              <span style="color:var(--color-text-secondary);">${Utils.escapeHtml(inv.serviceName || 'Service')}</span>
+              <span style="color:var(--color-text-secondary);" title="${Utils.escapeHtml(inv.serviceName || 'Service')}">${Utils.escapeHtml(inv.serviceName || 'Service')}</span>
               ${inv.notes ? `<span title="${Utils.escapeHtml(inv.notes)}" style="cursor:help;margin-left:4px;display:inline-flex;align-items:center;vertical-align:-2px;color:var(--color-text-muted);" aria-label="Notes: ${Utils.escapeHtml(inv.notes)}"><i data-lucide="info" style="width:13px;height:13px;"></i></span>` : ''}
             </div>
           </td>
-          <td data-label="Billing Month">${Utils.formatMonth(inv.billingMonth)}</td>
-          <td data-label="Invoice Amount" class="tabular-nums" style="font-weight: 500;">${Utils.formatCurrency(inv.amount)}</td>
-          <td data-label="Paid Amount" class="tabular-nums" style="color: ${paidPaise > 0 ? 'var(--color-success)' : 'var(--color-text-secondary)'}; font-weight: 500;">
+          <td data-label="Billing Month" style="white-space:nowrap;">${Utils.formatMonth(inv.billingMonth)}</td>
+          <td data-label="Invoice Amount" class="tabular-nums" style="font-weight: 500; white-space:nowrap;">${Utils.formatCurrency(inv.amount)}</td>
+          <td data-label="Paid Amount" class="tabular-nums" style="color: ${paidPaise > 0 ? 'var(--color-success)' : 'var(--color-text-secondary)'}; font-weight: 500; white-space:nowrap;">
             ${Utils.formatCurrency(Utils.fromPaise(paidPaise))}
           </td>
-          <td data-label="Remaining" class="tabular-nums" style="font-weight: 600; color: ${remainingPaise > 0 ? 'var(--color-danger)' : 'var(--color-text-muted)'};">
+          <td data-label="Remaining" class="tabular-nums" style="font-weight: 600; color: ${remainingPaise > 0 ? 'var(--color-danger)' : 'var(--color-text-muted)'}; white-space:nowrap;">
             ${Utils.formatCurrency(Utils.fromPaise(remainingPaise))}
           </td>
-          <td data-label="Due Date" class="tabular-nums" style="${inv.isOverdue && !isFullyPaid ? 'color:var(--color-danger);font-weight:500;' : ''}">
+          <td data-label="Due Date" class="tabular-nums" style="${inv.isOverdue && !isFullyPaid ? 'color:var(--color-danger);font-weight:500;' : ''} white-space:nowrap;">
             ${Utils.formatDate(inv.dueDate)}
           </td>
           <td data-label="Status">${badgeHtml}</td>

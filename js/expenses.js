@@ -206,17 +206,16 @@ const Expenses = {
     tbody.innerHTML = expenses.map((exp) => `
       <tr class="table-card-row">
         <td class="table-card-main">
-          <div style="font-weight: 600; color: var(--color-text-primary); font-size: 14px;">${Utils.escapeHtml(exp.title)}</div>
-          ${exp.description ? `<div class="table-subtext">${Utils.escapeHtml(exp.description)}</div>` : ''}
+          <div class="table-cell-truncate" style="font-weight: 600; color: var(--color-text-primary); font-size: 14px; max-width: 220px;" title="${Utils.escapeHtml(exp.title)}">${Utils.escapeHtml(exp.title)}</div>
         </td>
-        <td data-label="Category">
+        <td data-label="Category" style="white-space:nowrap;">
           <span class="badge badge-neutral">${Utils.escapeHtml(exp.category)}</span>
         </td>
-        <td data-label="Amount" class="tabular-nums" style="font-weight: 600; color: var(--color-text-primary);">
+        <td data-label="Amount" class="tabular-nums" style="font-weight: 600; color: var(--color-text-primary); white-space:nowrap;">
           ${Utils.formatCurrency(exp.amount)}
         </td>
-        <td data-label="Date">${Utils.formatDate(exp.date)}</td>
-        <td data-label="Description" class="table-subtext" style="max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <td data-label="Date" style="white-space:nowrap;">${Utils.formatDate(exp.date)}</td>
+        <td data-label="Description" class="table-subtext table-cell-truncate" style="max-width: 240px;" title="${Utils.escapeHtml(exp.description || '')}">
           ${exp.description ? Utils.escapeHtml(exp.description) : '—'}
         </td>
         <td class="actions-col" data-label="Actions">

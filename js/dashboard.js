@@ -224,11 +224,11 @@ const Dashboard = {
 
     tbody.innerHTML = payments.map((p) => `
       <tr>
-        <td style="font-weight:600;">${Utils.escapeHtml(p.clientName)}</td>
-        <td class="tabular-nums" style="font-weight:600;color:var(--color-success);">${Utils.formatCurrency(p.amount)}</td>
-        <td>${Utils.formatDate(p.paymentDate)}</td>
-        <td><span class="badge badge-neutral">${Utils.escapeHtml(p.paymentMethod)}</span></td>
-        <td><span class="badge badge-success"><span class="badge-dot"></span>Received</span></td>
+        <td style="font-weight:600;"><div class="table-cell-truncate" style="max-width:180px;" title="${Utils.escapeHtml(p.clientName)}">${Utils.escapeHtml(p.clientName)}</div></td>
+        <td class="tabular-nums" style="font-weight:600;color:var(--color-success);white-space:nowrap;">${Utils.formatCurrency(p.amount)}</td>
+        <td style="white-space:nowrap;">${Utils.formatDate(p.paymentDate)}</td>
+        <td style="white-space:nowrap;"><span class="badge badge-neutral">${Utils.escapeHtml(p.paymentMethod)}</span></td>
+        <td style="white-space:nowrap;"><span class="badge badge-success"><span class="badge-dot"></span>Received</span></td>
       </tr>
     `).join('');
   },
@@ -250,10 +250,10 @@ const Dashboard = {
 
     tbody.innerHTML = expenses.map((exp) => `
       <tr>
-        <td style="font-weight:600;">${Utils.escapeHtml(exp.title)}</td>
-        <td><span class="badge badge-neutral">${Utils.escapeHtml(exp.category)}</span></td>
-        <td class="tabular-nums" style="font-weight:600;">${Utils.formatCurrency(exp.amount)}</td>
-        <td>${Utils.formatDate(exp.date)}</td>
+        <td style="font-weight:600;"><div class="table-cell-truncate" style="max-width:180px;" title="${Utils.escapeHtml(exp.title)}">${Utils.escapeHtml(exp.title)}</div></td>
+        <td style="white-space:nowrap;"><span class="badge badge-neutral">${Utils.escapeHtml(exp.category)}</span></td>
+        <td class="tabular-nums" style="font-weight:600;white-space:nowrap;">${Utils.formatCurrency(exp.amount)}</td>
+        <td style="white-space:nowrap;">${Utils.formatDate(exp.date)}</td>
       </tr>
     `).join('');
   },
@@ -297,11 +297,11 @@ const Dashboard = {
       return `
         <tr class="table-card-row">
           <td class="table-card-main">
-            <div style="font-weight: 600; color: var(--color-text-primary); font-size: 14px;">${Utils.escapeHtml(inv.clientName)}</div>
-            <div class="table-subtext">${Utils.escapeHtml(inv.serviceName || inv.invoiceNumber)}</div>
+            <div class="table-cell-truncate" style="font-weight: 600; color: var(--color-text-primary); font-size: 14px; max-width: 200px;" title="${Utils.escapeHtml(inv.clientName)}">${Utils.escapeHtml(inv.clientName)}</div>
+            <div class="table-subtext table-cell-truncate" style="max-width: 200px;" title="${Utils.escapeHtml(inv.serviceName || inv.invoiceNumber)}">${Utils.escapeHtml(inv.serviceName || inv.invoiceNumber)}</div>
           </td>
-          <td data-label="Amount Due" class="tabular-nums" style="font-weight:600;color:var(--color-primary);">${Utils.formatCurrency(Utils.fromPaise(remPaise))}</td>
-          <td data-label="Due Date" class="tabular-nums" style="${inv.isOverdue ? 'color:var(--color-danger);font-weight:600;' : ''}">${Utils.formatDate(inv.dueDate)}</td>
+          <td data-label="Amount Due" class="tabular-nums" style="font-weight:600;color:var(--color-primary);white-space:nowrap;">${Utils.formatCurrency(Utils.fromPaise(remPaise))}</td>
+          <td data-label="Due Date" class="tabular-nums" style="${inv.isOverdue ? 'color:var(--color-danger);font-weight:600;' : ''} white-space:nowrap;">${Utils.formatDate(inv.dueDate)}</td>
           <td data-label="Status">${badgeHtml}</td>
           <td class="actions-col" data-label="Action">
             <div style="display:flex;align-items:center;justify-content:flex-end;width:100%;">

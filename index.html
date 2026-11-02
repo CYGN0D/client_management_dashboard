@@ -97,18 +97,11 @@
           <i data-lucide="bar-chart-3" class="nav-icon"></i>
           <span>Reports</span>
         </a>
-      </nav>
-
-      <div class="sidebar-footer">
         <a href="#settings" class="nav-item" data-nav-page="settings">
           <i data-lucide="settings" class="nav-icon"></i>
           <span>Settings</span>
         </a>
-        <button type="button" id="logoutBtn" class="nav-item btn-logout" style="width:100%;text-align:left;background:transparent;border:1px solid transparent;cursor:pointer;" title="Log Out">
-          <i data-lucide="log-out" class="nav-icon"></i>
-          <span>Log Out</span>
-        </button>
-      </div>
+      </nav>
     </aside>
 
     <!-- Main Content Area -->
@@ -618,6 +611,11 @@
             <div class="page-title-group">
               <h1 class="page-title">Settings</h1>
             </div>
+            <div class="page-actions">
+              <button type="button" id="logoutBtn" class="btn btn-secondary btn-sm" style="color:var(--color-danger);border-color:var(--color-border);" title="Log Out">
+                <i data-lucide="log-out"></i> Log Out
+              </button>
+            </div>
           </div>
 
           <!-- Business Profile & Preferences Form -->
@@ -704,6 +702,29 @@
                     <i data-lucide="trash-2"></i> Reset All Data
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Account & Session -->
+          <div class="card" style="margin-top:var(--space-6);">
+            <div class="card-header">
+              <div class="card-title">Account & Session</div>
+            </div>
+            <div class="card-body">
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-4);">
+                <div style="display:flex;align-items:center;gap:var(--space-3);">
+                  <div style="width:36px;height:36px;border-radius:var(--radius-sm);background-color:var(--color-bg-secondary);border:1px solid var(--color-border);display:flex;align-items:center;justify-content:center;color:var(--color-text-secondary);">
+                    <i data-lucide="user" style="width:18px;height:18px;"></i>
+                  </div>
+                  <div>
+                    <div style="font-weight:600;font-size:14px;color:var(--color-text-primary);">Account Session</div>
+                    <div id="settingsUserEmailText" style="font-size:12px;color:var(--color-text-secondary);">admin@cliento.com</div>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm btn-logout" style="color:var(--color-danger);border-color:var(--color-border);">
+                  <i data-lucide="log-out"></i> Log Out
+                </button>
               </div>
             </div>
           </div>
@@ -949,19 +970,12 @@
       </div>
       <form id="generateInvoicesForm" novalidate>
         <div class="modal-body">
-          <!-- Month Selector & Quick Action Filters -->
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-bottom:var(--space-4);flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:var(--space-2);">
-              <label for="generateBillingMonth" class="form-label" style="margin:0;white-space:nowrap;">
-                Billing Month:
-              </label>
-              <input type="month" id="generateBillingMonth" class="form-control" style="width:170px;" required>
-            </div>
-            
-            <div style="display:flex;align-items:center;gap:var(--space-2);">
-              <button type="button" id="genSelectAllBtn" class="btn btn-secondary btn-sm">Select All Ready</button>
-              <button type="button" id="genDeselectAllBtn" class="btn btn-secondary btn-sm">Deselect All</button>
-            </div>
+          <!-- Month Selector -->
+          <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-4);">
+            <label for="generateBillingMonth" class="form-label" style="margin:0;white-space:nowrap;">
+              Billing Month:
+            </label>
+            <input type="month" id="generateBillingMonth" class="form-control" style="width:170px;" required>
           </div>
 
           <!-- Client Checkbox Table -->

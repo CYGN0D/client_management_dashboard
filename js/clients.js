@@ -226,13 +226,15 @@ const Clients = {
       return `
         <tr class="table-card-row">
           <td class="table-card-main">
-            <div style="font-weight: 600; color: var(--color-text-primary); font-size: 14px;">${Utils.escapeHtml(client.name)}</div>
-            ${client.email ? `<div class="table-subtext">${Utils.escapeHtml(client.email)}</div>` : ''}
+            <div class="table-cell-truncate" style="font-weight: 600; color: var(--color-text-primary); font-size: 14px; max-width: 220px;" title="${Utils.escapeHtml(client.name)}">${Utils.escapeHtml(client.name)}</div>
+            ${client.email ? `<div class="table-subtext table-cell-truncate" style="max-width: 220px;" title="${Utils.escapeHtml(client.email)}">${Utils.escapeHtml(client.email)}</div>` : ''}
           </td>
-          <td data-label="Phone">${client.phone ? Utils.escapeHtml(client.phone) : '<span class="table-subtext">—</span>'}</td>
-          <td data-label="Service">${Utils.escapeHtml(client.service)}</td>
-          <td data-label="Monthly Charge">${monthlyDisplay}</td>
-          <td data-label="Due Date">Day ${client.dueDay} of month</td>
+          <td data-label="Phone" style="white-space:nowrap;">${client.phone ? Utils.escapeHtml(client.phone) : '<span class="table-subtext">—</span>'}</td>
+          <td data-label="Service">
+            <div class="table-cell-truncate" style="max-width: 200px;" title="${Utils.escapeHtml(client.service)}">${Utils.escapeHtml(client.service)}</div>
+          </td>
+          <td data-label="Monthly Charge" style="white-space:nowrap;">${monthlyDisplay}</td>
+          <td data-label="Due Date" style="white-space:nowrap;">Day ${client.dueDay} of month</td>
           <td data-label="Status">${statusBadge}</td>
           <td class="actions-col" data-label="Actions">
             <div style="display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);width:100%;">
@@ -530,11 +532,11 @@ const Clients = {
 
       <!-- Profile Details -->
       <div class="card" style="margin-bottom:var(--space-6);">
-        <div class="card-header">
+        <div class="card-header client-overview-header">
           <div class="card-title">Client Details</div>
-          <div style="display:flex;gap:var(--space-2);">
+          <div class="client-overview-actions">
             <button class="btn btn-primary btn-sm" onclick="Utils.closeModal('clientDetailModal'); Payments.openCreateInvoiceModal('${client.id}')">
-              <i data-lucide="plus"></i> Add Charge / Invoice
+              <i data-lucide="plus"></i> Add Charge
             </button>
             <button class="btn btn-secondary btn-sm" onclick="Clients.openAddEditModal('${client.id}')">
               <i data-lucide="edit-2"></i> Edit Client
@@ -596,17 +598,17 @@ const Clients = {
                 const remPaise = Utils.toPaise(inv.amount) - Utils.toPaise(inv.paidAmount || 0);
                 return `
                   <tr>
-                    <td class="tabular-nums" style="font-weight:600;">${inv.invoiceNumber}</td>
+                    <td class="tabular-nums" style="font-weight:600;white-space:nowrap;">${inv.invoiceNumber}</td>
                     <td>
-                      <div style="font-weight:500;">${Utils.escapeHtml(inv.serviceName || 'Service')}</div>
-                      ${inv.notes ? `<div class="table-subtext">${Utils.escapeHtml(inv.notes)}</div>` : ''}
+                      <div class="table-cell-truncate" style="font-weight:500;max-width:180px;" title="${Utils.escapeHtml(inv.serviceName || 'Service')}">${Utils.escapeHtml(inv.serviceName || 'Service')}</div>
+                      ${inv.notes ? `<div class="table-subtext table-cell-truncate" style="max-width:180px;" title="${Utils.escapeHtml(inv.notes)}">${Utils.escapeHtml(inv.notes)}</div>` : ''}
                     </td>
-                    <td>${Utils.formatMonth(inv.billingMonth)}</td>
-                    <td class="tabular-nums" style="font-weight:600;">${Utils.formatCurrency(inv.amount)}</td>
-                    <td>
+                    <td style="white-space:nowrap;">${Utils.formatMonth(inv.billingMonth)}</td>
+                    <td class="tabular-nums" style="font-weight:600;white-space:nowrap;">${Utils.formatCurrency(inv.amount)}</td>
+                    <td style="white-space:nowrap;">
                       ${inv.status === 'paid' ? '<span class="badge badge-success"><span class="badge-dot"></span>Paid</span>' : (inv.status === 'partial' ? '<span class="badge badge-warning"><span class="badge-dot"></span>Partial</span>' : '<span class="badge badge-danger"><span class="badge-dot"></span>Pending</span>')}
                     </td>
-                    <td style="text-align:right;">
+                    <td style="text-align:right;white-space:nowrap;">
                       ${remPaise > 0 ? `
                         <button class="btn btn-primary btn-sm" onclick="Utils.closeModal('clientDetailModal'); Payments.openRecordPaymentModal('${inv.id}')">
                           <i data-lucide="plus-circle"></i> Pay
@@ -648,11 +650,11 @@ const Clients = {
                 </tr>
               ` : payments.map((p) => `
                 <tr>
-                  <td>${Utils.formatDate(p.paymentDate)}</td>
-                  <td class="tabular-nums" style="font-weight:600;color:var(--color-success);">${Utils.formatCurrency(p.amount)}</td>
-                  <td>${Utils.escapeHtml(p.paymentMethod)}</td>
-                  <td>${Utils.escapeHtml(p.invoiceNumber || p.billingMonth)}</td>
-                  <td class="table-subtext">${p.notes ? Utils.escapeHtml(p.notes) : '—'}</td>
+                  <td style="white-space:nowrap;">${Utils.formatDate(p.paymentDate)}</td>
+                  <td class="tabular-nums" style="font-weight:600;color:var(--color-success);white-space:nowrap;">${Utils.formatCurrency(p.amount)}</td>
+                  <td style="white-space:nowrap;">${Utils.escapeHtml(p.paymentMethod)}</td>
+                  <td style="white-space:nowrap;">${Utils.escapeHtml(p.invoiceNumber || p.billingMonth)}</td>
+                  <td class="table-subtext table-cell-truncate" style="max-width:180px;" title="${Utils.escapeHtml(p.notes || '')}">${p.notes ? Utils.escapeHtml(p.notes) : '—'}</td>
                 </tr>
               `).join('')}
             </tbody>

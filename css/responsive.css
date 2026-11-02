@@ -365,6 +365,15 @@
     font-size: 13px;
   }
 
+  .responsive-card-table td > span:last-child,
+  .responsive-card-table td > div:last-child {
+    max-width: 65%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: right;
+  }
+
   .responsive-card-table td:last-child {
     border-bottom: none;
     padding-top: var(--space-2);
@@ -392,6 +401,11 @@
     margin-bottom: 2px;
   }
 
+  .responsive-card-table td.table-card-main > div {
+    max-width: 100% !important;
+    text-align: left !important;
+  }
+
   .responsive-card-table td.table-card-main::before {
     display: none;
   }
@@ -402,6 +416,33 @@
 
   .responsive-card-table td.actions-col::before {
     display: none;
+  }
+
+  /* Client Overview in Modal on Mobile */
+  .client-overview-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .client-overview-header .card-title {
+    white-space: nowrap;
+    width: 100%;
+  }
+
+  .client-overview-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+  }
+
+  .client-overview-actions .btn {
+    width: 100%;
+    justify-content: center;
+    padding: var(--space-2);
+    font-size: 12px;
+    white-space: nowrap;
   }
 
   /* Modals on Mobile */
