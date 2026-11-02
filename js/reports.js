@@ -336,7 +336,11 @@ const Reports = {
 
       return `
         <tr>
-          <td style="font-weight:600;">${Utils.formatMonth(m)}</td>
+          <td style="font-weight:600;">
+            <span class="data-link" onclick="Payments.activeMonthFilter = '${m}'; App.navigateTo('payments');" title="Filter payments for ${Utils.formatMonth(m)}" style="cursor:pointer;">
+              ${Utils.formatMonth(m)} <i data-lucide="arrow-right" style="width:12px;height:12px;margin-left:2px;opacity:0.6;"></i>
+            </span>
+          </td>
           <td class="tabular-nums" style="font-weight:600;color:var(--color-success);">${Utils.formatCurrency(Utils.fromPaise(incomePaise))}</td>
           <td class="tabular-nums" style="font-weight:500;">${Utils.formatCurrency(Utils.fromPaise(expensePaise))}</td>
           <td class="tabular-nums" style="font-weight:600;color:${netPaise >= 0 ? 'var(--color-success)' : 'var(--color-danger)'};">
@@ -348,6 +352,7 @@ const Reports = {
         </tr>
       `;
     }).join('');
+    Utils.refreshIcons();
   },
 
   renderPendingPaymentsTable() {
@@ -386,8 +391,11 @@ const Reports = {
       return `
         <tr class="table-card-row">
           <td class="table-card-main">
-            <div class="table-cell-truncate" style="font-weight: 600; color: var(--color-text-primary); font-size: 14px; max-width: 200px;" title="${Utils.escapeHtml(inv.clientName)}">${Utils.escapeHtml(inv.clientName)}</div>
-            <div class="table-subtext table-cell-truncate" style="max-width: 200px;" title="${Utils.escapeHtml(inv.serviceName || inv.invoiceNumber)}">${Utils.escapeHtml(inv.serviceName || inv.invoiceNumber)}</div>
+            <div class="table-cell-truncate data-link" style="font-weight: 600; color: var(--color-text-primary); font-size: 14px; max-width: 200px; cursor: pointer;" onclick="Clients.viewClientDetails('${inv.clientId}')" title="View client dossier">${Utils.escapeHtml(inv.clientName)}</div>
+            <div class="table-subtext table-cell-truncate" style="max-width: 200px;">
+              <span class="data-link" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice history">${Utils.escapeHtml(inv.serviceName || inv.invoiceNumber)}</span>
+              <span class="data-code-link" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice history" style="margin-left:4px;font-family:monospace;font-size:11px;">(${Utils.escapeHtml(inv.invoiceNumber)})</span>
+            </div>
           </td>
           <td data-label="Billing Month" style="white-space:nowrap;">${Utils.formatMonth(inv.billingMonth)}</td>
           <td data-label="Invoice Amount" class="tabular-nums" style="white-space:nowrap;">${Utils.formatCurrency(inv.amount)}</td>
@@ -397,6 +405,9 @@ const Reports = {
           <td data-label="Status">${badgeHtml}</td>
           <td class="actions-col" data-label="Action">
             <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;width:100%;">
+              <button class="btn btn-secondary btn-icon btn-sm" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View Invoice History" style="width:28px;height:28px;">
+                <i data-lucide="history" style="width:14px;height:14px;"></i>
+              </button>
               <button class="btn btn-primary btn-sm" onclick="Payments.openRecordPaymentModal('${inv.id}')" title="Record Payment" style="padding:2px 10px;height:28px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
                 <i data-lucide="plus-circle" style="width:13px;height:13px;"></i> Pay
               </button>

@@ -297,9 +297,9 @@ const Payments = {
       return `
         <tr class="table-card-row">
           <td class="table-card-main">
-            <div class="table-cell-truncate" style="font-weight: 600; color: var(--color-text-primary); font-size: 14px; max-width: 220px;" title="${Utils.escapeHtml(inv.clientName)}">${Utils.escapeHtml(inv.clientName)}</div>
+            <div class="table-cell-truncate data-link" style="font-weight: 600; color: var(--color-text-primary); font-size: 14px; max-width: 220px; cursor: pointer;" onclick="Clients.viewClientDetails('${inv.clientId}')" title="View client dossier">${Utils.escapeHtml(inv.clientName)}</div>
             <div class="table-subtext table-cell-truncate" style="max-width: 220px;">
-              <span class="tabular-nums" style="font-weight:500;">${Utils.escapeHtml(inv.invoiceNumber)}</span>
+              <span class="tabular-nums data-code-link" style="font-weight:500;cursor:pointer;" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice payment history">${Utils.escapeHtml(inv.invoiceNumber)}</span>
               <span style="opacity:0.5;"> • </span>
               <span style="color:var(--color-text-secondary);" title="${Utils.escapeHtml(inv.serviceName || 'Service')}">${Utils.escapeHtml(inv.serviceName || 'Service')}</span>
               ${inv.notes ? `<span title="${Utils.escapeHtml(inv.notes)}" style="cursor:help;margin-left:4px;display:inline-flex;align-items:center;vertical-align:-2px;color:var(--color-text-muted);" aria-label="Notes: ${Utils.escapeHtml(inv.notes)}"><i data-lucide="info" style="width:13px;height:13px;"></i></span>` : ''}
@@ -1050,8 +1050,14 @@ const Payments = {
     container.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--space-4);padding-bottom:var(--space-3);border-bottom:1px solid var(--color-border);">
         <div>
-          <h4 style="font-size:16px;font-weight:600;">${Utils.escapeHtml(invoice.clientName)}</h4>
-          <div style="font-size:12px;color:var(--color-text-secondary);">${Utils.escapeHtml(invoice.invoiceNumber)} • Billing Month: ${Utils.formatMonth(invoice.billingMonth)}</div>
+          <h4 class="data-link" onclick="Utils.closeModal('invoiceHistoryModal'); Clients.viewClientDetails('${invoice.clientId}');" style="font-size:16px;font-weight:600;cursor:pointer;" title="View client profile and dossier">
+            ${Utils.escapeHtml(invoice.clientName)}
+            <i data-lucide="external-link" style="width:14px;height:14px;margin-left:4px;opacity:0.6;"></i>
+          </h4>
+          <div style="font-size:12px;color:var(--color-text-secondary);margin-top:2px;">
+            <span class="ledger-badge-code">${Utils.escapeHtml(invoice.invoiceNumber)}</span> • Billing Month: ${Utils.formatMonth(invoice.billingMonth)}
+            ${invoice.serviceName ? ` • ${Utils.escapeHtml(invoice.serviceName)}` : ''}
+          </div>
         </div>
         <div style="text-align:right;">
           <div style="font-size:12px;color:var(--color-text-muted);">Invoice Amount</div>
@@ -1107,14 +1113,16 @@ const Payments = {
           </tbody>
         </table>
       </div>
-
-      <div style="margin-top:var(--space-5);padding-top:var(--space-4);border-top:1px solid var(--color-border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-        <button type="button" class="btn btn-danger btn-sm" onclick="Payments.confirmDeleteInvoice('${invoice.id}', true)">
-          <i data-lucide="trash-2"></i> Delete This Invoice
-        </button>
-        <button type="button" class="btn btn-secondary btn-sm" data-modal-close>Close</button>
-      </div>
     `;
+
+    const footerLeft = document.getElementById('invoiceHistoryFooterLeft');
+    if (footerLeft) {
+      footerLeft.innerHTML = `
+        <button type="button" class="btn btn-secondary btn-sm" onclick="Payments.confirmDeleteInvoice('${invoice.id}', true)" style="color:var(--color-danger);border-color:var(--color-border);display:inline-flex;align-items:center;gap:6px;">
+          <i data-lucide="trash-2" style="width:13px;height:13px;"></i> Delete Invoice
+        </button>
+      `;
+    }
 
     Utils.openModal('invoiceHistoryModal');
     Utils.refreshIcons();

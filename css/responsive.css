@@ -28,6 +28,11 @@
   .content-area {
     padding: var(--space-6);
   }
+
+  .client-detail-layout {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-4) !important;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -242,6 +247,258 @@
     box-sizing: border-box !important;
   }
 
+  /* Responsive Visibility Helpers */
+  .hide-mobile {
+    display: none !important;
+  }
+
+  .show-mobile-inline {
+    display: inline !important;
+  }
+
+  .show-mobile-flex {
+    display: flex !important;
+  }
+
+  /* Client Hero Card & Actions on Mobile */
+  .client-hero-card {
+    padding: 14px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .client-hero-main {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+
+  .client-hero-avatar {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 16px !important;
+    border-radius: 10px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .client-hero-info {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+
+  .client-hero-title-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .client-hero-name {
+    font-size: 18px !important;
+    line-height: 1.3 !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  .client-hero-meta {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    margin-top: 4px !important;
+    font-size: 12px !important;
+    width: 100% !important;
+  }
+
+  .client-meta-item {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 12px !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .client-hero-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    gap: 8px !important;
+    align-items: center !important;
+  }
+
+  .client-hero-actions .btn {
+    flex: 1 1 0 !important;
+    justify-content: center !important;
+    height: 38px !important;
+    font-size: 12px !important;
+    padding: 0 6px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Client KPI Grid on Mobile */
+  .client-kpi-card {
+    padding: 12px 14px !important;
+    margin-bottom: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  .client-kpi-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .client-kpi-item {
+    padding: 10px 12px !important;
+  }
+
+  .client-kpi-item:nth-child(3) {
+    grid-column: span 2 !important;
+  }
+
+  .client-kpi-value {
+    font-size: 18px !important;
+  }
+
+  .client-kpi-label {
+    font-size: 10.5px !important;
+  }
+
+  .client-kpi-subtext {
+    font-size: 11px !important;
+  }
+
+  /* Client Detail 2-Column to Single Column on Mobile */
+  .client-detail-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .client-ledger-column,
+  .client-sidebar-column {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Client List & Detail Table Containers on Mobile (Contained Horizontal Scroll) */
+  #clientsTableViewContainer.card-table-container,
+  .client-ledger-card.card-table-container {
+    background: var(--color-surface) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-sm) !important;
+    margin-bottom: 14px !important;
+    overflow: hidden !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  #clientsTableViewContainer .table-responsive,
+  .client-ledger-card.card-table-container .table-responsive {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+  }
+
+  #clientsTableViewContainer .table-streamlined,
+  .client-ledger-card .table-streamlined {
+    min-width: 580px !important;
+    width: 100% !important;
+  }
+
+  .client-ledger-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+    background: var(--color-surface) !important;
+    border-bottom: 1px solid var(--color-border) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    flex-wrap: wrap !important;
+  }
+
+  .client-tabs-nav {
+    flex: 1 1 auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding: 3px !important;
+    box-sizing: border-box !important;
+    background: var(--color-bg-secondary) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: var(--radius-md) !important;
+  }
+
+  .ledger-view-switcher {
+    flex-shrink: 0 !important;
+  }
+
+  .client-cards-grid,
+  .ledger-cards-grid,
+  .clients-cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    padding: 10px 0 !important;
+  }
+
+  .client-tabs-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .client-tab-btn {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+
+  .client-ledger-action {
+    width: 100% !important;
+  }
+
+  .client-ledger-action .btn {
+    width: 100% !important;
+    height: 36px !important;
+    font-size: 12.5px !important;
+    justify-content: center !important;
+  }
+
+  /* Sidebar Cards on Mobile */
+  .sidebar-panel-card {
+    padding: 14px !important;
+    margin-bottom: 12px !important;
+    border-radius: var(--radius-lg) !important;
+    box-sizing: border-box !important;
+  }
+
   /* Summary Cards */
   .stat-grid-3 {
     grid-template-columns: 1fr;
@@ -334,14 +591,14 @@
   }
 
   /* Responsive Table Cards (Cards on Mobile, Data Table on Desktop) */
-  .card.card-table-container {
+  .card.card-table-container:not(#clientsTableViewContainer):not(.client-ledger-card) {
     background: transparent;
     border: none;
     box-shadow: none;
     overflow: visible;
   }
 
-  .card.card-table-container .table-responsive {
+  .card.card-table-container:not(#clientsTableViewContainer):not(.client-ledger-card) .table-responsive {
     overflow: visible;
   }
 
@@ -643,5 +900,27 @@
   .client-detail-actions .btn {
     font-size: 11.5px !important;
     padding: 0 4px !important;
+  }
+
+  .client-hero-name {
+    font-size: 16.5px !important;
+  }
+
+  .client-hero-actions .btn:not(.btn-icon) {
+    font-size: 11.5px !important;
+    padding: 0 4px !important;
+  }
+
+  .client-tab-btn {
+    font-size: 11.5px !important;
+    padding: 5px 8px !important;
+  }
+
+  .client-kpi-value {
+    font-size: 16px !important;
+  }
+
+  .client-kpi-item {
+    padding: 8px 10px !important;
   }
 }

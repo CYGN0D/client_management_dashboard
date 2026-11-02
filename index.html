@@ -148,7 +148,7 @@
 
           <!-- 4 Primary Summary Metrics -->
           <div class="stat-grid">
-            <div class="stat-card">
+            <div class="stat-card stat-card-interactive" onclick="App.navigateTo('clients')" title="View Clients">
               <div class="stat-header">
                 <span class="stat-label">Total Clients</span>
                 <div class="stat-icon"><i data-lucide="users"></i></div>
@@ -156,7 +156,7 @@
               <div id="metricTotalClients" class="stat-value">0</div>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card stat-card-interactive" onclick="App.navigateTo('payments')" title="View Monthly Invoicing">
               <div class="stat-header">
                 <span class="stat-label">Monthly Income</span>
                 <div class="stat-icon"><i data-lucide="trending-up"></i></div>
@@ -164,7 +164,7 @@
               <div id="metricMonthlyIncome" class="stat-value">₹0.00</div>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card stat-card-interactive" onclick="Payments.activeStatusFilter = 'paid'; App.navigateTo('payments');" title="View Settled Payments">
               <div class="stat-header">
                 <span class="stat-label">Received Payments</span>
                 <div class="stat-icon"><i data-lucide="check-circle-2"></i></div>
@@ -172,7 +172,7 @@
               <div id="metricReceivedPayments" class="stat-value">₹0.00</div>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card stat-card-interactive" onclick="Payments.activeStatusFilter = 'pending'; App.navigateTo('payments');" title="View Pending & Overdue Invoices">
               <div class="stat-header">
                 <span class="stat-label">Pending Payments</span>
                 <div class="stat-icon"><i data-lucide="clock"></i></div>
@@ -293,8 +293,8 @@
             </div>
           </div>
 
-          <!-- Search & Filter Toolbar -->
-          <div class="toolbar">
+          <!-- Search & Filter Toolbar with View Mode Switcher -->
+          <div class="toolbar client-list-toolbar">
             <div class="search-input-wrapper">
               <i data-lucide="search" class="search-icon"></i>
               <input type="text" id="clientSearchInput" class="form-control" placeholder="Search by name, phone, or service...">
@@ -305,23 +305,32 @@
                 <option value="active">Active Only</option>
                 <option value="inactive">Inactive Only</option>
               </select>
-              <button id="clientClearFiltersBtn" class="btn btn-secondary btn-sm">Clear</button>
+
+              <!-- View Switcher (Table vs. Cards) -->
+              <div class="ledger-view-switcher" id="clientsViewSwitcher" role="radiogroup" aria-label="Clients View Mode">
+                <button type="button" class="view-switch-btn active" data-view="table" onclick="Clients.setClientsListViewMode('table')" title="Table View">
+                  <i data-lucide="table"></i>
+                  <span class="view-switch-label">Table</span>
+                </button>
+                <button type="button" class="view-switch-btn" data-view="grid" onclick="Clients.setClientsListViewMode('grid')" title="Cards View">
+                  <i data-lucide="layout-grid"></i>
+                  <span class="view-switch-label">Cards</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          <!-- Clients Table -->
-          <div class="card card-table-container">
+          <!-- Clients Table View -->
+          <div id="clientsTableViewContainer" class="card card-table-container">
             <div class="table-responsive">
-              <table class="data-table responsive-card-table">
+              <table class="table-streamlined">
                 <thead>
                   <tr>
-                    <th>Client Name</th>
-                    <th>Phone</th>
-                    <th>Service</th>
-                    <th>Monthly Charge</th>
-                    <th>Due Date</th>
-                    <th>Status</th>
-                    <th style="text-align:right;">Actions</th>
+                    <th style="min-width:220px;">Client</th>
+                    <th style="min-width:170px;">Services</th>
+                    <th style="min-width:160px;">Monthly Retainer</th>
+                    <th style="min-width:100px;">Status</th>
+                    <th style="min-width:110px;text-align:right;">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="clientsTableBody">
@@ -330,30 +339,26 @@
               </table>
             </div>
           </div>
+
+          <!-- Clients Cards Grid View -->
+          <div id="clientsGridViewContainer" class="clients-cards-grid" style="display:none;">
+            <!-- Dynamic -->
+          </div>
         </section>
 
         <!-- ==================================================================
-             PAGE: CLIENT DETAILS & OVERVIEW (Dedicated Full Page)
+             PAGE: CLIENT DETAILS & OVERVIEW (Dedicated Full Page Dossier)
              ================================================================== -->
         <section id="view-client-detail" class="page-view">
-          <div class="page-header" style="align-items:center;">
-            <div class="page-title-group">
-              <button type="button" class="btn btn-secondary btn-sm" onclick="App.navigateTo('clients')" style="margin-bottom:var(--space-2);width:fit-content;display:inline-flex;align-items:center;gap:6px;">
-                <i data-lucide="arrow-left"></i> Back to Clients
-              </button>
-              <div style="display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;">
-                <h1 id="clientDetailPageTitle" class="page-title">Client Overview</h1>
-                <span id="clientDetailPageBadge"></span>
-              </div>
-              <div id="clientDetailPageSubtitle" style="font-size:13px;color:var(--color-text-secondary);margin-top:2px;"></div>
-            </div>
-            <div id="clientDetailPageActions" class="page-actions client-detail-actions">
-              <!-- Rendered dynamically -->
-            </div>
-          </div>
-
           <div id="clientDetailPageContent">
             <!-- Rendered dynamically by clients.js -->
+          </div>
+          <!-- Backward Compatibility Elements (Hidden) -->
+          <div style="display:none;" aria-hidden="true">
+            <span id="clientDetailPageTitle"></span>
+            <span id="clientDetailPageBadge"></span>
+            <span id="clientDetailPageSubtitle"></span>
+            <div id="clientDetailPageActions"></div>
           </div>
         </section>
 
@@ -879,6 +884,24 @@
     </div>
   </div>
 
+  <!-- Client Account Settings & Audit Modal -->
+  <div id="clientSettingsModal" class="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="clientSettingsTitle" style="max-width:500px;">
+      <div class="modal-header">
+        <h2 id="clientSettingsTitle" class="modal-title">Client Account Settings</h2>
+        <button class="modal-close" data-modal-close aria-label="Close dialog">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div id="clientSettingsModalBody" class="modal-body" style="padding:var(--space-5);">
+        <!-- Dynamically rendered by Clients.openSettingsModal -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Client Details opened on full page view #view-client-detail -->
 
   <!-- Create Individual Invoice / Add Charge Modal -->
@@ -1195,7 +1218,8 @@
       <div id="invoiceHistoryContent" class="modal-body">
         <!-- Dynamic -->
       </div>
-      <div class="modal-footer">
+      <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center;">
+        <div id="invoiceHistoryFooterLeft"></div>
         <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
       </div>
     </div>
