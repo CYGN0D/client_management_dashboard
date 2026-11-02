@@ -66,27 +66,19 @@ const Dashboard = {
 
     // 1. Total Clients
     const clientValEl = document.getElementById('metricTotalClients');
-    const clientSubEl = document.getElementById('metricClientsSub');
     if (clientValEl) clientValEl.textContent = clients.length;
-    if (clientSubEl) clientSubEl.textContent = `${activeClients.length} active clients`;
 
     // 2. Monthly Income
     const incomeValEl = document.getElementById('metricMonthlyIncome');
-    const incomeSubEl = document.getElementById('metricIncomeSub');
     if (incomeValEl) incomeValEl.textContent = Utils.formatCurrency(Utils.fromPaise(monthlyIncomePaise));
-    if (incomeSubEl) incomeSubEl.textContent = `For ${Utils.formatMonth(currentMonth)}`;
 
     // 3. Received Payments
     const recValEl = document.getElementById('metricReceivedPayments');
-    const recSubEl = document.getElementById('metricReceivedSub');
     if (recValEl) recValEl.textContent = Utils.formatCurrency(Utils.fromPaise(monthlyIncomePaise));
-    if (recSubEl) recSubEl.textContent = `${monthlyTxCount} transaction${monthlyTxCount === 1 ? '' : 's'} this month`;
 
     // 4. Pending Payments
     const penValEl = document.getElementById('metricPendingPayments');
-    const penSubEl = document.getElementById('metricPendingSub');
     if (penValEl) penValEl.textContent = Utils.formatCurrency(Utils.fromPaise(pendingPaise));
-    if (penSubEl) penSubEl.textContent = `${pendingCount} invoice${pendingCount === 1 ? '' : 's'} with due balance`;
   },
 
   renderIncomeChart() {

@@ -161,7 +161,6 @@
                 <div class="stat-icon"><i data-lucide="users"></i></div>
               </div>
               <div id="metricTotalClients" class="stat-value">0</div>
-              <div id="metricClientsSub" class="stat-subtext">Active clients</div>
             </div>
 
             <div class="stat-card">
@@ -170,7 +169,6 @@
                 <div class="stat-icon"><i data-lucide="trending-up"></i></div>
               </div>
               <div id="metricMonthlyIncome" class="stat-value">₹0.00</div>
-              <div id="metricIncomeSub" class="stat-subtext">Received this month</div>
             </div>
 
             <div class="stat-card">
@@ -179,7 +177,6 @@
                 <div class="stat-icon"><i data-lucide="check-circle-2"></i></div>
               </div>
               <div id="metricReceivedPayments" class="stat-value">₹0.00</div>
-              <div id="metricReceivedSub" class="stat-subtext">Collected transactions</div>
             </div>
 
             <div class="stat-card">
@@ -188,19 +185,13 @@
                 <div class="stat-icon"><i data-lucide="clock"></i></div>
               </div>
               <div id="metricPendingPayments" class="stat-value">₹0.00</div>
-              <div id="metricPendingSub" class="stat-subtext">Outstanding balance</div>
             </div>
           </div>
 
           <!-- Monthly Income Overview Chart -->
           <div class="card" style="margin-bottom:var(--space-6);">
             <div class="card-header">
-              <div>
-                <div class="card-title">Monthly Income Overview</div>
-                <div style="font-size:12px;color:var(--color-text-muted);margin-top:2px;">
-                  Actual payment receipts recorded over the last 6 months
-                </div>
-              </div>
+              <div class="card-title">Monthly Income Overview</div>
             </div>
             <div class="card-body">
               <div id="dashboardIncomeChart" class="chart-container">
@@ -266,12 +257,7 @@
           <!-- Upcoming & Overdue Payments Dues -->
           <div class="card card-table-container" style="margin-top:var(--space-6);">
             <div class="card-header">
-              <div>
-                <div class="card-title">Upcoming & Overdue Client Dues</div>
-                <div style="font-size:12px;color:var(--color-text-muted);margin-top:2px;">
-                  Unsettled client invoices sorted by earliest due date
-                </div>
-              </div>
+              <div class="card-title">Upcoming & Overdue Client Dues</div>
               <a href="#payments" class="view-all-link" data-nav-page="payments">
                 Manage Invoices <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
               </a>
@@ -380,7 +366,6 @@
                 <div class="stat-icon"><i data-lucide="file-text"></i></div>
               </div>
               <div id="paymentsMetricExpected" class="stat-value">₹0.00</div>
-              <div class="stat-subtext">Sum of monthly billing</div>
             </div>
 
             <div class="stat-card">
@@ -389,7 +374,6 @@
                 <div class="stat-icon"><i data-lucide="check-circle"></i></div>
               </div>
               <div id="paymentsMetricReceived" class="stat-value" style="color:var(--color-success);">₹0.00</div>
-              <div class="stat-subtext">Payments recorded</div>
             </div>
 
             <div class="stat-card">
@@ -398,7 +382,6 @@
                 <div class="stat-icon"><i data-lucide="alert-circle"></i></div>
               </div>
               <div id="paymentsMetricPending" class="stat-value" style="color:var(--color-danger);">₹0.00</div>
-              <div class="stat-subtext">Unsettled balance</div>
             </div>
           </div>
 
@@ -471,7 +454,6 @@
                 <div class="stat-icon"><i data-lucide="calendar"></i></div>
               </div>
               <div id="expensesTotalMonth" class="stat-value">₹0.00</div>
-              <div class="stat-subtext">Operating expenditures for current month</div>
             </div>
 
             <div class="stat-card">
@@ -480,7 +462,6 @@
                 <div class="stat-icon"><i data-lucide="clock"></i></div>
               </div>
               <div id="expensesTotalToday" class="stat-value">₹0.00</div>
-              <div class="stat-subtext">Recorded today</div>
             </div>
           </div>
 
@@ -544,43 +525,33 @@
             <div class="stat-card">
               <div class="stat-label">Monthly Income</div>
               <div id="reportMetricIncome" class="stat-value" style="font-size:20px;color:var(--color-success);">₹0.00</div>
-              <div class="stat-subtext">Cash received</div>
             </div>
 
             <div class="stat-card">
               <div class="stat-label">Monthly Expenses</div>
               <div id="reportMetricExpenses" class="stat-value" style="font-size:20px;">₹0.00</div>
-              <div class="stat-subtext">Operating costs</div>
             </div>
 
             <div class="stat-card">
               <div class="stat-label">Net Profit</div>
               <div id="reportMetricProfit" class="stat-value" style="font-size:20px;">₹0.00</div>
-              <div class="stat-subtext">Income minus expenses</div>
             </div>
 
             <div class="stat-card">
               <div class="stat-label">Received Payments</div>
               <div id="reportMetricReceived" class="stat-value" style="font-size:20px;">0</div>
-              <div class="stat-subtext">Settlement transactions</div>
             </div>
 
             <div class="stat-card">
               <div class="stat-label">Pending Payments</div>
               <div id="reportMetricPending" class="stat-value" style="font-size:20px;color:var(--color-danger);">₹0.00</div>
-              <div class="stat-subtext">Unpaid invoices</div>
             </div>
           </div>
 
           <!-- Income vs Expenses Chart Card -->
           <div class="card" style="margin-bottom:var(--space-6);">
             <div class="card-header">
-              <div>
-                <div class="card-title">Income vs Expenses Comparison</div>
-                <div style="font-size:12px;color:var(--color-text-muted);margin-top:2px;">
-                  Actual cash collected vs operating expenses across the last 6 months
-                </div>
-              </div>
+              <div class="card-title">Income vs Expenses Comparison</div>
             </div>
             <div class="card-body">
               <div id="reportsComparisonChart" class="chart-container">
@@ -615,12 +586,7 @@
           <!-- Pending Payments Audit Report -->
           <div class="card card-table-container">
             <div class="card-header">
-              <div>
-                <div class="card-title">Pending Payments Report</div>
-                <div style="font-size:12px;color:var(--color-text-muted);margin-top:2px;">
-                  All outstanding client balances across recorded billing cycles
-                </div>
-              </div>
+              <div class="card-title">Pending Payments Report</div>
             </div>
             <div class="table-responsive">
               <table class="data-table responsive-card-table">
@@ -651,7 +617,6 @@
           <div class="page-header">
             <div class="page-title-group">
               <h1 class="page-title">Settings</h1>
-              <div class="page-subtitle">Configure business profile, billing preferences, and manage offline data backups</div>
             </div>
           </div>
 
@@ -722,10 +687,6 @@
               <div class="card-title">Data Storage & Integrity</div>
             </div>
             <div class="card-body">
-              <div style="margin-bottom:var(--space-4);padding:var(--space-3) var(--space-4);background:var(--color-bg-secondary);border:1px solid var(--color-border);border-radius:var(--radius-md);font-size:13px;color:var(--color-text-secondary);line-height:1.6;">
-                <strong>Browser Storage Notice:</strong> Cliento stores all client profiles, invoices, transactions, and expenses locally inside your browser's persistent LocalStorage. Data is completely private and does not sync to third-party cloud servers. Please download regular JSON backups before clearing your browser history or cache.
-              </div>
-
               <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-4);">
                 <div style="display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;">
                   <button id="exportBackupBtn" class="btn btn-secondary">
@@ -900,12 +861,7 @@
   <div id="createInvoiceModal" class="modal-backdrop">
     <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="createInvoiceTitle">
       <div class="modal-header">
-        <div>
-          <h2 id="createInvoiceTitle" class="modal-title">Create Invoice / Add Charge</h2>
-          <div style="font-size:12px;color:var(--color-text-muted);margin-top:2px;">
-            Bill a client for monthly retainer, custom changes, or extra services
-          </div>
-        </div>
+        <h2 id="createInvoiceTitle" class="modal-title">Create Invoice / Add Charge</h2>
         <button class="modal-close" data-modal-close aria-label="Close dialog">
           <i data-lucide="x"></i>
         </button>
@@ -986,12 +942,7 @@
   <div id="generateInvoicesModal" class="modal-backdrop">
     <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="generateInvoicesTitle">
       <div class="modal-header">
-        <div>
-          <h2 id="generateInvoicesTitle" class="modal-title">Generate Monthly Payments</h2>
-          <div style="font-size:12px;color:var(--color-text-muted);margin-top:2px;">
-            Select individual clients to bill for the recurring monthly cycle
-          </div>
-        </div>
+        <h2 id="generateInvoicesTitle" class="modal-title">Generate Monthly Payments</h2>
         <button class="modal-close" data-modal-close aria-label="Close dialog">
           <i data-lucide="x"></i>
         </button>
