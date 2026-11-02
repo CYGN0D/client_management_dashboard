@@ -1558,7 +1558,7 @@ const Clients = {
               ${client.email ? `
                 <span class="client-meta-item" title="Email: ${Utils.escapeHtml(client.email)}">
                   <i data-lucide="mail"></i>
-                  <a href="mailto:${Utils.escapeHtml(client.email)}" style="color:inherit;text-decoration:none;">${Utils.escapeHtml(client.email)}</a>
+                  <a href="mailto:${Utils.escapeHtml(client.email)}" class="client-meta-text" style="color:inherit;text-decoration:none;">${Utils.escapeHtml(client.email)}</a>
                   <button type="button" class="client-meta-copy-btn" onclick="Utils.copyToClipboard('${client.email}', 'Email address copied')" title="Copy Email">
                     <i data-lucide="copy"></i>
                   </button>
@@ -1567,7 +1567,7 @@ const Clients = {
               ${client.phone ? `
                 <span class="client-meta-item" title="Phone: ${Utils.escapeHtml(client.phone)}">
                   <i data-lucide="phone"></i>
-                  <a href="tel:${Utils.escapeHtml(client.phone)}" style="color:inherit;text-decoration:none;">${Utils.escapeHtml(client.phone)}</a>
+                  <a href="tel:${Utils.escapeHtml(client.phone)}" class="client-meta-text" style="color:inherit;text-decoration:none;">${Utils.escapeHtml(client.phone)}</a>
                   <button type="button" class="client-meta-copy-btn" onclick="Utils.copyToClipboard('${client.phone}', 'Phone number copied')" title="Copy Phone Number">
                     <i data-lucide="copy"></i>
                   </button>
