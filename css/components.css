@@ -1979,41 +1979,44 @@ a.client-meta-item:hover,
   padding-top: 4px;
 }
 
-/* Minimalist Financial Overview Strip */
+/* Financial Overview: Desktop 3 Distinct Sleek Cards */
 .client-kpi-strip {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 8px 16px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  background: transparent;
+  border: none;
+  padding: 0;
   margin-bottom: var(--space-4);
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  box-shadow: none;
 }
 
 .client-kpi-col {
-  flex: 1 1 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 4px 10px;
-  border-radius: var(--radius-md);
-  transition: all var(--transition-fast);
+  justify-content: space-between;
+  gap: 6px;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
   cursor: pointer;
   min-width: 0;
 }
 
 .client-kpi-col:hover {
-  background-color: var(--color-bg-secondary);
+  border-color: #2563EB;
+  background: var(--color-surface);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
 }
 
-.client-kpi-divider {
-  width: 1px;
-  height: 32px;
-  background-color: var(--color-border);
-  flex-shrink: 0;
+.kpi-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .kpi-col-label {
@@ -2022,28 +2025,49 @@ a.client-meta-item:hover,
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.35px;
-  line-height: 1.2;
+}
+
+.kpi-col-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+}
+
+.kpi-col-icon svg {
+  width: 13px;
+  height: 13px;
+}
+
+.kpi-col-body {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .kpi-col-value {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--color-text-primary);
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .kpi-col-sub {
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.client-kpi-divider {
+  display: none;
 }
 
 /* Left Column / KPI Summary Cards */

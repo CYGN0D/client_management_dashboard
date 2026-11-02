@@ -1600,29 +1600,46 @@ const Clients = {
         </div>
       </div>
 
-      <!-- Minimalist Financial Overview Strip -->
+      <!-- Financial Overview (Desktop 3-Card Grid / Mobile Unified Strip) -->
       <div class="client-kpi-strip">
         <div class="client-kpi-col interactive" onclick="Clients.switchDetailTab('invoices')" title="View all billed invoices">
-          <div class="kpi-col-label">Invoiced</div>
-          <div class="kpi-col-value tabular-nums">${Utils.formatCurrency(Utils.fromPaise(totalBilledPaise))}</div>
-          <div class="kpi-col-sub">${invoices.length} billed</div>
+          <div class="kpi-col-header">
+            <span class="kpi-col-label">Total Invoiced</span>
+            <div class="kpi-col-icon"><i data-lucide="file-text"></i></div>
+          </div>
+          <div class="kpi-col-body">
+            <div class="kpi-col-value tabular-nums">${Utils.formatCurrency(Utils.fromPaise(totalBilledPaise))}</div>
+            <div class="kpi-col-sub">${invoices.length} billed</div>
+          </div>
         </div>
 
         <div class="client-kpi-divider"></div>
 
-        <div class="client-kpi-col interactive" onclick="Clients.switchDetailTab('payments')" title="View settled payments">
-          <div class="kpi-col-label">Received</div>
-          <div class="kpi-col-value tabular-nums text-success">${Utils.formatCurrency(Utils.fromPaise(totalPaidPaise))}</div>
-          <div class="kpi-col-sub text-success">${payments.length} settled</div>
+        <div class="client-kpi-col interactive" onclick="Clients.switchDetailTab('payments')" title="View all settled payments">
+          <div class="kpi-col-header">
+            <span class="kpi-col-label">Total Received</span>
+            <div class="kpi-col-icon text-success"><i data-lucide="check-circle-2"></i></div>
+          </div>
+          <div class="kpi-col-body">
+            <div class="kpi-col-value tabular-nums text-success">${Utils.formatCurrency(Utils.fromPaise(totalPaidPaise))}</div>
+            <div class="kpi-col-sub text-success">${payments.length} settled</div>
+          </div>
         </div>
 
         <div class="client-kpi-divider"></div>
 
         <div class="client-kpi-col interactive" onclick="Clients.switchDetailTab('invoices')" title="View outstanding due">
-          <div class="kpi-col-label">Outstanding</div>
-          <div class="kpi-col-value tabular-nums ${outstandingPaise > 0 ? 'text-danger' : 'text-success'}">${Utils.formatCurrency(Utils.fromPaise(outstandingPaise))}</div>
-          <div class="kpi-col-sub ${outstandingPaise > 0 ? 'text-danger' : 'text-success'}">
-            ${outstandingPaise > 0 ? `${unpaidInvoices.length} pending due` : 'Settled'}
+          <div class="kpi-col-header">
+            <span class="kpi-col-label">Outstanding Due</span>
+            <div class="kpi-col-icon ${outstandingPaise > 0 ? 'text-danger' : 'text-success'}">
+              <i data-lucide="${outstandingPaise > 0 ? 'alert-circle' : 'check'}"></i>
+            </div>
+          </div>
+          <div class="kpi-col-body">
+            <div class="kpi-col-value tabular-nums ${outstandingPaise > 0 ? 'text-danger' : 'text-success'}">${Utils.formatCurrency(Utils.fromPaise(outstandingPaise))}</div>
+            <div class="kpi-col-sub ${outstandingPaise > 0 ? 'text-danger' : 'text-success'}">
+              ${outstandingPaise > 0 ? `${unpaidInvoices.length} pending due` : 'All settled'}
+            </div>
           </div>
         </div>
       </div>

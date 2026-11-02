@@ -377,33 +377,61 @@
     height: 12px !important;
   }
 
-  /* Client KPI Strip & Grid on Mobile */
+  /* Client KPI Strip & Grid on Mobile - Preserves "mobile me perfect" strip */
   .client-kpi-strip {
-    padding: 6px 8px !important;
-    margin-bottom: 10px !important;
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
     justify-content: space-between !important;
+    background: var(--color-surface) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: var(--radius-lg) !important;
+    padding: 6px 8px !important;
+    margin-bottom: 10px !important;
+    box-shadow: var(--shadow-sm) !important;
     width: 100% !important;
     box-sizing: border-box !important;
+    gap: 0 !important;
   }
 
   .client-kpi-col {
+    background: transparent !important;
+    border: none !important;
+    border-radius: var(--radius-md) !important;
     padding: 2px 5px !important;
     gap: 1px !important;
     flex: 1 1 0 !important;
     min-width: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
   }
 
-  .client-kpi-divider {
-    height: 26px !important;
-    width: 1px !important;
+  .client-kpi-col:hover {
+    background: var(--color-bg-secondary) !important;
+  }
+
+  .kpi-col-header {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .kpi-col-icon {
+    display: none !important;
   }
 
   .kpi-col-label {
     font-size: 9.5px !important;
     letter-spacing: 0.2px !important;
+  }
+
+  .kpi-col-body {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
+    align-items: flex-start !important;
+    width: 100% !important;
   }
 
   .kpi-col-value {
@@ -413,6 +441,14 @@
 
   .kpi-col-sub {
     font-size: 9.5px !important;
+  }
+
+  .client-kpi-divider {
+    display: block !important;
+    height: 26px !important;
+    width: 1px !important;
+    background-color: var(--color-border) !important;
+    flex-shrink: 0 !important;
   }
 
   .client-kpi-card {
