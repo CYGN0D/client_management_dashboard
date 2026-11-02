@@ -1552,6 +1552,38 @@ const Clients = {
                   : `<span class="badge badge-primary"><span class="badge-dot"></span>${Utils.formatCurrency(client.monthlyAmount)} / mo</span>`
               ) : `<span class="badge badge-neutral">Ad-hoc Project</span>`}
             </div>
+
+            <!-- Minimalist Tiny Contact & Info Row -->
+            <div class="client-hero-meta">
+              ${client.email ? `
+                <span class="client-meta-item" title="Email: ${Utils.escapeHtml(client.email)}">
+                  <i data-lucide="mail"></i>
+                  <a href="mailto:${Utils.escapeHtml(client.email)}" style="color:inherit;text-decoration:none;">${Utils.escapeHtml(client.email)}</a>
+                  <button type="button" class="client-meta-copy-btn" onclick="Utils.copyToClipboard('${client.email}', 'Email address copied')" title="Copy Email">
+                    <i data-lucide="copy"></i>
+                  </button>
+                </span>
+              ` : ''}
+              ${client.phone ? `
+                <span class="client-meta-item" title="Phone: ${Utils.escapeHtml(client.phone)}">
+                  <i data-lucide="phone"></i>
+                  <a href="tel:${Utils.escapeHtml(client.phone)}" style="color:inherit;text-decoration:none;">${Utils.escapeHtml(client.phone)}</a>
+                  <button type="button" class="client-meta-copy-btn" onclick="Utils.copyToClipboard('${client.phone}', 'Phone number copied')" title="Copy Phone Number">
+                    <i data-lucide="copy"></i>
+                  </button>
+                </span>
+              ` : ''}
+              <span class="client-meta-item">
+                <i data-lucide="calendar"></i>
+                <span>Joined ${Utils.formatDate(client.joiningDate)}</span>
+              </span>
+              ${serviceList.length > 0 ? `
+                <span class="client-meta-divider">•</span>
+                <span class="client-meta-item" style="gap:4px;flex-wrap:wrap;">
+                  ${serviceList.map((tag) => `<span class="client-service-tag-tiny">${Utils.escapeHtml(tag)}</span>`).join('')}
+                </span>
+              ` : ''}
+            </div>
           </div>
         </div>
 
@@ -1680,64 +1712,7 @@ const Clients = {
 
         <!-- Sidebar Dossier (Right Column) -->
         <aside class="client-sidebar-column">
-          <!-- Card 1: Contact Details (No repeated Edit button, no repeated status) -->
-          <div class="sidebar-panel-card">
-            <div class="sidebar-panel-header">
-              <span class="sidebar-panel-title"><i data-lucide="user"></i> Contact Details</span>
-            </div>
-            <div class="sidebar-info-list">
-              <div class="sidebar-info-row">
-                <span class="sidebar-info-label">Email</span>
-                <div class="sidebar-info-val">
-                  ${client.email ? `
-                    <a href="mailto:${Utils.escapeHtml(client.email)}" style="color:inherit;text-decoration:none;font-weight:600;word-break:break-all;">${Utils.escapeHtml(client.email)}</a>
-                    <button type="button" class="sidebar-copy-btn" onclick="Utils.copyToClipboard('${client.email}', 'Email address copied')" title="Copy Email">
-                      <i data-lucide="copy"></i>
-                    </button>
-                  ` : '<span style="color:var(--color-text-muted);">Not provided</span>'}
-                </div>
-              </div>
-
-              <div class="sidebar-info-row">
-                <span class="sidebar-info-label">Phone</span>
-                <div class="sidebar-info-val">
-                  ${client.phone ? `
-                    <a href="tel:${Utils.escapeHtml(client.phone)}" style="color:inherit;text-decoration:none;font-weight:600;">${Utils.escapeHtml(client.phone)}</a>
-                    <button type="button" class="sidebar-copy-btn" onclick="Utils.copyToClipboard('${client.phone}', 'Phone number copied')" title="Copy Phone Number">
-                      <i data-lucide="copy"></i>
-                    </button>
-                  ` : '<span style="color:var(--color-text-muted);">Not provided</span>'}
-                </div>
-              </div>
-
-              ${client.company ? `
-                <div class="sidebar-info-row">
-                  <span class="sidebar-info-label">Company</span>
-                  <div class="sidebar-info-val">
-                    <span style="font-weight:600;">${Utils.escapeHtml(client.company)}</span>
-                  </div>
-                </div>
-              ` : ''}
-
-              <div class="sidebar-info-row">
-                <span class="sidebar-info-label">Member Since</span>
-                <div class="sidebar-info-val">
-                  <span>${Utils.formatDate(client.joiningDate)}</span>
-                </div>
-              </div>
-
-              <div class="sidebar-info-row" style="margin-top:2px;">
-                <span class="sidebar-info-label">Services</span>
-                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
-                  ${serviceList.length > 0 
-                    ? serviceList.map((tag) => `<span class="client-service-tag">${Utils.escapeHtml(tag)}</span>`).join('') 
-                    : '<span style="color:var(--color-text-muted);font-size:12.5px;">No services listed</span>'}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Card 2: Recurring Retainer Agreement -->
+          <!-- Recurring Retainer Agreement -->
           <div class="sidebar-panel-card">
             <div class="sidebar-panel-header">
               <span class="sidebar-panel-title"><i data-lucide="repeat"></i> Retainer Agreement</span>
