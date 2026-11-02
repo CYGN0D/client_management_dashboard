@@ -1600,42 +1600,29 @@ const Clients = {
         </div>
       </div>
 
-      <!-- KPI Summary Row (3 Clean Cards, Zero Progress Box) -->
-      <div class="client-kpi-card">
-        <div class="client-kpi-grid">
-          <div class="client-kpi-item interactive" onclick="Clients.switchDetailTab('invoices')" title="View all billed invoices">
-            <div class="client-kpi-header">
-              <span class="client-kpi-label">Total Invoiced</span>
-              <div class="client-kpi-icon"><i data-lucide="file-text"></i></div>
-            </div>
-            <div class="client-kpi-value">${Utils.formatCurrency(Utils.fromPaise(totalBilledPaise))}</div>
-            <div class="client-kpi-subtext">${invoices.length} total invoice${invoices.length === 1 ? '' : 's'} billed</div>
-          </div>
+      <!-- Minimalist Financial Overview Strip -->
+      <div class="client-kpi-strip">
+        <div class="client-kpi-col interactive" onclick="Clients.switchDetailTab('invoices')" title="View all billed invoices">
+          <div class="kpi-col-label">Invoiced</div>
+          <div class="kpi-col-value tabular-nums">${Utils.formatCurrency(Utils.fromPaise(totalBilledPaise))}</div>
+          <div class="kpi-col-sub">${invoices.length} billed</div>
+        </div>
 
-          <div class="client-kpi-item interactive" onclick="Clients.switchDetailTab('payments')" title="View all settled payments">
-            <div class="client-kpi-header">
-              <span class="client-kpi-label">Total Received</span>
-              <div class="client-kpi-icon" style="color:var(--color-success);background:var(--color-success-bg);">
-                <i data-lucide="check-circle-2"></i>
-              </div>
-            </div>
-            <div class="client-kpi-value" style="color:var(--color-success);">${Utils.formatCurrency(Utils.fromPaise(totalPaidPaise))}</div>
-            <div class="client-kpi-subtext">${payments.length} transaction${payments.length === 1 ? '' : 's'} settled</div>
-          </div>
+        <div class="client-kpi-divider"></div>
 
-          <div class="client-kpi-item interactive" onclick="Clients.switchDetailTab('invoices')" title="View outstanding invoices">
-            <div class="client-kpi-header">
-              <span class="client-kpi-label">Outstanding Balance</span>
-              <div class="client-kpi-icon" style="color:${outstandingPaise > 0 ? 'var(--color-danger)' : 'var(--color-success)'};background:${outstandingPaise > 0 ? 'var(--color-danger-bg)' : 'var(--color-success-bg)'};">
-                <i data-lucide="${outstandingPaise > 0 ? 'alert-circle' : 'check'}"></i>
-              </div>
-            </div>
-            <div class="client-kpi-value" style="color:${outstandingPaise > 0 ? 'var(--color-danger)' : 'var(--color-success)'};">
-              ${Utils.formatCurrency(Utils.fromPaise(outstandingPaise))}
-            </div>
-            <div class="client-kpi-subtext">
-              ${outstandingPaise > 0 ? `${unpaidInvoices.length} invoice(s) with pending due` : 'All client invoices settled'}
-            </div>
+        <div class="client-kpi-col interactive" onclick="Clients.switchDetailTab('payments')" title="View settled payments">
+          <div class="kpi-col-label">Received</div>
+          <div class="kpi-col-value tabular-nums text-success">${Utils.formatCurrency(Utils.fromPaise(totalPaidPaise))}</div>
+          <div class="kpi-col-sub text-success">${payments.length} settled</div>
+        </div>
+
+        <div class="client-kpi-divider"></div>
+
+        <div class="client-kpi-col interactive" onclick="Clients.switchDetailTab('invoices')" title="View outstanding due">
+          <div class="kpi-col-label">Outstanding</div>
+          <div class="kpi-col-value tabular-nums ${outstandingPaise > 0 ? 'text-danger' : 'text-success'}">${Utils.formatCurrency(Utils.fromPaise(outstandingPaise))}</div>
+          <div class="kpi-col-sub ${outstandingPaise > 0 ? 'text-danger' : 'text-success'}">
+            ${outstandingPaise > 0 ? `${unpaidInvoices.length} pending due` : 'Settled'}
           </div>
         </div>
       </div>

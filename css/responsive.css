@@ -377,7 +377,44 @@
     height: 12px !important;
   }
 
-  /* Client KPI Grid on Mobile */
+  /* Client KPI Strip & Grid on Mobile */
+  .client-kpi-strip {
+    padding: 6px 8px !important;
+    margin-bottom: 10px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .client-kpi-col {
+    padding: 2px 5px !important;
+    gap: 1px !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+  }
+
+  .client-kpi-divider {
+    height: 26px !important;
+    width: 1px !important;
+  }
+
+  .kpi-col-label {
+    font-size: 9.5px !important;
+    letter-spacing: 0.2px !important;
+  }
+
+  .kpi-col-value {
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+  }
+
+  .kpi-col-sub {
+    font-size: 9.5px !important;
+  }
+
   .client-kpi-card {
     padding: 12px 14px !important;
     margin-bottom: 12px !important;
