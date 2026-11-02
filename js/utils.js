@@ -502,6 +502,7 @@ const Utils = {
       clearTimeout(hideTimeout);
       popupEl.innerHTML = content;
       popupEl.classList.add('show');
+      popupEl._activeTarget = target;
 
       const rect = target.getBoundingClientRect();
       const popupRect = popupEl.getBoundingClientRect();
@@ -520,6 +521,12 @@ const Utils = {
         left = window.innerWidth - popupRect.width - 10;
       }
 
+      // Check bottom bounds
+      if (top + popupRect.height > window.innerHeight - 10) {
+        top = window.innerHeight - popupRect.height - 10;
+        if (top < 10) top = 10;
+      }
+
       popupEl.style.top = `${top}px`;
       popupEl.style.left = `${left}px`;
     };
@@ -527,7 +534,8 @@ const Utils = {
     const hidePopup = () => {
       hideTimeout = setTimeout(() => {
         popupEl.classList.remove('show');
-      }, 100);
+        popupEl._activeTarget = null;
+      }, 150);
     };
 
     document.addEventListener('mouseover', (e) => {
@@ -554,18 +562,34 @@ const Utils = {
       hidePopup();
     });
 
+    popupEl.addEventListener('click', (e) => {
+      if (e.target.closest('.table-data-popup-close')) {
+        popupEl.classList.remove('show');
+        popupEl._activeTarget = null;
+      }
+    });
+
     document.addEventListener('click', (e) => {
+      if (e.target.closest('#tableDataPopup')) return;
+
       const target = e.target.closest('[data-table-popup]');
       if (target) {
-        showPopup(target);
-      } else if (!e.target.closest('#tableDataPopup')) {
+        if (popupEl.classList.contains('show') && popupEl._activeTarget === target) {
+          popupEl.classList.remove('show');
+          popupEl._activeTarget = null;
+        } else {
+          showPopup(target);
+        }
+      } else {
         popupEl.classList.remove('show');
+        popupEl._activeTarget = null;
       }
     });
 
     window.addEventListener('scroll', () => {
       if (popupEl.classList.contains('show')) {
         popupEl.classList.remove('show');
+        popupEl._activeTarget = null;
       }
     }, { passive: true });
   }

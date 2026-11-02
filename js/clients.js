@@ -216,6 +216,50 @@ const Clients = {
     Utils.refreshIcons();
   },
 
+  getServicesPopupHtml(clientName, serviceList) {
+    return `
+      <div class="table-data-popup-header">
+        <span class="table-data-popup-title">${Utils.escapeHtml(clientName || 'Client')} Services</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="table-data-popup-badge">${serviceList.length} Total</span>
+          <button type="button" class="table-data-popup-close" title="Close" aria-label="Close">×</button>
+        </div>
+      </div>
+      <div class="table-data-popup-tags">
+        ${serviceList.map((s) => `
+          <div class="table-data-popup-tag">
+            <span class="badge-dot" style="background:#38BDF8;margin-right:6px;width:6px;height:6px;border-radius:50%;flex-shrink:0;"></span>
+            <span>${Utils.escapeHtml(s)}</span>
+          </div>
+        `).join('')}
+      </div>
+    `.trim();
+  },
+
+  renderServiceChips(serviceList, maxVisible = 2, clientName = '', isTiny = false) {
+    if (!serviceList || serviceList.length === 0) {
+      return `<span class="table-secondary-text">—</span>`;
+    }
+
+    const popupHtml = this.getServicesPopupHtml(clientName, serviceList);
+    const tagClass = isTiny ? 'client-service-tag-tiny' : 'client-service-tag';
+    const moreClass = isTiny ? 'client-service-tag-tiny client-service-more' : 'client-service-tag client-service-more';
+
+    if (serviceList.length <= maxVisible) {
+      return serviceList.map((s) => `<span class="${tagClass}" title="${Utils.escapeHtml(s)}">${Utils.escapeHtml(s)}</span>`).join('');
+    }
+
+    const visibleTags = serviceList.slice(0, maxVisible).map((s) => `<span class="${tagClass}" title="${Utils.escapeHtml(s)}">${Utils.escapeHtml(s)}</span>`).join('');
+    const extraCount = serviceList.length - maxVisible;
+    const moreTag = `
+      <button type="button" class="${moreClass}" data-table-popup="${Utils.escapeHtml(popupHtml)}" title="Click to view all ${serviceList.length} services" style="cursor:pointer;">
+        +${extraCount} more
+      </button>
+    `;
+
+    return `${visibleTags} ${moreTag}`;
+  },
+
   renderTable() {
     const tbody = document.getElementById('clientsTableBody');
     const gridContainer = document.getElementById('clientsGridViewContainer');
@@ -299,23 +343,11 @@ const Clients = {
         <div class="table-data-popup-row"><span>Status</span><span>${isRetainerPaused ? 'Subscription Paused' : 'Subscription Active'}</span></div>
       `.trim() : '';
 
-      let servicesCellHtml = '';
-      if (serviceList.length === 0) {
-        servicesCellHtml = `<span class="table-secondary-text">—</span>`;
-      } else if (serviceList.length === 1) {
-        servicesCellHtml = `
-          <div class="table-tags-line">
-            <span class="client-service-tag" title="${Utils.escapeHtml(serviceList[0])}">${Utils.escapeHtml(serviceList[0])}</span>
-          </div>
-        `;
-      } else {
-        servicesCellHtml = `
-          <div class="table-tags-line">
-            <span class="client-service-tag" title="${Utils.escapeHtml(serviceList[0])}">${Utils.escapeHtml(serviceList[0])}</span>
-            <span class="client-service-tag client-service-more" data-table-popup="${Utils.escapeHtml(servicesPopupHtml)}" title="${Utils.escapeHtml(serviceList.join(', '))}">+${serviceList.length - 1} more</span>
-          </div>
-        `;
-      }
+      const servicesCellHtml = `
+        <div class="table-tags-line">
+          ${this.renderServiceChips(serviceList, 2, client.name, false)}
+        </div>
+      `;
 
       const monthlyCellHtml = hasRetainer ? `
         <div class="table-single-line" style="cursor:pointer;" onclick="Clients.viewClientDetails('${client.id}', 'services')" data-table-popup="${Utils.escapeHtml(retainerPopupHtml)}" title="${Utils.formatCurrency(client.monthlyAmount)} / mo • Day ${client.dueDay || 5}">
@@ -442,8 +474,7 @@ const Clients = {
               </div>
 
               <div class="client-grid-chips">
-                ${serviceList.slice(0, 3).map((s) => `<span class="client-service-tag">${Utils.escapeHtml(s)}</span>`).join('')}
-                ${serviceList.length > 3 ? `<span class="client-service-tag" style="color:var(--color-text-muted);">+${serviceList.length - 3}</span>` : ''}
+                ${this.renderServiceChips(serviceList, 2, client.name, false)}
               </div>
 
               ${(client.phone || client.email) ? `
@@ -1357,10 +1388,10 @@ const Clients = {
               ${hasMonthly ? `
                 <tr>
                   <td>
-                    <div class="table-single-line" title="${Utils.escapeHtml(client.service || 'Monthly Retainer')} • Recurring Retainer">
-                      <span style="font-weight:600;color:var(--color-text-primary);font-size:13px;">${Utils.escapeHtml(client.service || 'Monthly Retainer')}</span>
+                    <div class="table-single-line">
+                      <span style="font-weight:600;color:var(--color-text-primary);font-size:13px;">Retainer Agreement</span>
                       <span class="table-bullet">•</span>
-                      <span class="table-secondary-text">Recurring Retainer</span>
+                      ${this.renderServiceChips(serviceList, 2, client.name, false)}
                     </div>
                   </td>
                   <td>
@@ -1420,13 +1451,18 @@ const Clients = {
                   statusBadge = '<span class="badge badge-neutral"><span class="badge-dot"></span>Pending</span>';
                 }
 
+                const invServiceList = (inv.serviceName || 'Service')
+                  .split(/[,+&•]/)
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+
                 return `
                   <tr>
                     <td>
-                      <div class="table-single-line" title="${Utils.escapeHtml(inv.serviceName || 'Service')} • ${Utils.escapeHtml(inv.invoiceNumber)}">
-                        <span style="font-weight:600;color:var(--color-text-primary);font-size:13px;">${Utils.escapeHtml(inv.serviceName || 'Service')}</span>
-                        <span class="table-bullet">•</span>
+                      <div class="table-single-line">
                         <span class="ledger-badge-code data-code-link" onclick="Payments.viewInvoiceHistory('${inv.id}')" title="View invoice payment history">${Utils.escapeHtml(inv.invoiceNumber)}</span>
+                        <span class="table-bullet">•</span>
+                        ${this.renderServiceChips(invServiceList, 2, inv.invoiceNumber, false)}
                         ${inv.notes ? `<span class="table-bullet">•</span><span class="table-secondary-text" style="max-width:130px;" title="${Utils.escapeHtml(inv.notes)}">${Utils.escapeHtml(inv.notes)}</span>` : ''}
                       </div>
                     </td>
@@ -1527,7 +1563,10 @@ const Clients = {
               </div>
 
               <div class="ledger-item-body">
-                <div class="ledger-item-title">${Utils.escapeHtml(client.service || 'Monthly Retainer Agreement')}</div>
+                <div class="ledger-item-title">Retainer Agreement</div>
+                <div style="display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:6px 0 8px 0;">
+                  ${this.renderServiceChips(serviceList, 2, client.name, false)}
+                </div>
                 <div class="ledger-item-meta">
                   <span class="ledger-meta-item"><i data-lucide="calendar" style="width:12px;height:12px;"></i> Billed on Day ${client.dueDay || 5} of every month</span>
                 </div>
@@ -1556,6 +1595,11 @@ const Clients = {
             } else {
               statusBadge = '<span class="badge badge-neutral"><span class="badge-dot"></span>Pending</span>';
             }
+
+            const invServiceList = (inv.serviceName || 'Project Charge')
+              .split(/[,+&•]/)
+              .map((s) => s.trim())
+              .filter(Boolean);
 
             return `
               <div class="ledger-item-card">
@@ -1587,8 +1631,13 @@ const Clients = {
 
                 <div class="ledger-item-body">
                   <div class="ledger-item-title" title="${Utils.escapeHtml(inv.serviceName || 'Project Charge')}">
-                    ${Utils.escapeHtml(inv.serviceName || 'Project Charge')}
+                    ${invServiceList.length > 2 ? 'Project Charge' : Utils.escapeHtml(inv.serviceName || 'Project Charge')}
                   </div>
+                  ${invServiceList.length > 1 ? `
+                    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:6px 0 8px 0;">
+                      ${this.renderServiceChips(invServiceList, 2, inv.invoiceNumber, false)}
+                    </div>
+                  ` : ''}
                   <div class="ledger-item-meta">
                     <span class="ledger-meta-item"><i data-lucide="calendar" style="width:12px;height:12px;"></i> Cycle: ${Utils.formatMonth(inv.billingMonth)}</span>
                     <span class="ledger-meta-bullet">•</span>
@@ -1673,8 +1722,8 @@ const Clients = {
               </span>
               ${serviceList.length > 0 ? `
                 <span class="client-meta-divider">•</span>
-                <span class="client-meta-item" style="gap:4px;flex-wrap:wrap;">
-                  ${serviceList.map((tag) => `<span class="client-service-tag-tiny">${Utils.escapeHtml(tag)}</span>`).join('')}
+                <span class="client-meta-item" style="gap:4px;flex-wrap:nowrap;align-items:center;">
+                  ${this.renderServiceChips(serviceList, 2, client.name, true)}
                 </span>
               ` : ''}
             </div>

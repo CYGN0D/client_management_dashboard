@@ -817,15 +817,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding-bottom: 6px;
-  margin-bottom: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 7px;
+  margin-bottom: 7px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .table-data-popup-title {
   font-weight: 600;
   color: #FFFFFF;
-  font-size: 13px;
+  font-size: 12.5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -837,7 +837,27 @@
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.12);
   color: #E2E8F0;
+  font-weight: 500;
   flex-shrink: 0;
+}
+
+.table-data-popup-close {
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color var(--transition-fast);
+}
+
+.table-data-popup-close:hover {
+  color: #FFFFFF;
 }
 
 .table-data-popup-row {
@@ -861,19 +881,37 @@
 
 .table-data-popup-tags {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 8px;
-  padding-top: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 4px;
+  max-height: 220px;
+  overflow-y: auto;
 }
 
 .table-data-popup-tag {
-  background: rgba(255, 255, 255, 0.1);
-  color: #E2E8F0;
-  padding: 2px 7px;
-  border-radius: 4px;
-  font-size: 11px;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #F1F5F9;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.client-service-tag-tiny.client-service-more {
+  background: var(--color-bg-secondary);
+  color: var(--color-primary);
+  border-color: var(--color-border);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.client-service-tag-tiny.client-service-more:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface);
 }
 
 .client-overview-header {
