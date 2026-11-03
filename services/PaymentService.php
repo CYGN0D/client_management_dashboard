@@ -132,12 +132,13 @@ class PaymentService {
         $db->beginTransaction();
         try {
             // Lock invoice record for update to prevent concurrent double-settlement race conditions
-            $stmt = $db->prepare('
+            $forUpdate = Database::getDriver() === 'sqlite' ? '' : 'FOR UPDATE';
+            $stmt = $db->prepare("
                 SELECT id, client_id, invoice_number, amount, due_date
                 FROM invoices
                 WHERE id = :id AND user_id = :uid
-                FOR UPDATE
-            ');
+                $forUpdate
+            ");
             $stmt->execute([':id' => $invoiceId, ':uid' => $userId]);
             $invoice = $stmt->fetch();
 

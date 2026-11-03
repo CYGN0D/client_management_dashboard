@@ -214,11 +214,8 @@ class MigrationService {
             }
 
             // 5. Migrate Expenses
-            $expCatInsert = $db->prepare('
-                INSERT INTO expense_categories (user_id, name, is_default, created_at)
-                VALUES (:uid, :name, 0, NOW())
-                ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)
-            ');
+            $findCatStmt = $db->prepare('SELECT id FROM expense_categories WHERE user_id = :uid AND name = :name LIMIT 1');
+            $insertCatStmt = $db->prepare('INSERT INTO expense_categories (user_id, name, is_default, created_at) VALUES (:uid, :name, 0, NOW())');
 
             $expInsert = $db->prepare('
                 INSERT INTO expenses (
@@ -234,8 +231,13 @@ class MigrationService {
                 $oldExpId = $e['id'] ?? ('exp_' . uniqid());
                 $category = trim($e['category'] ?? 'Other');
 
-                $expCatInsert->execute([':uid' => $userId, ':name' => $category]);
-                $catId = (int)$db->lastInsertId();
+                $findCatStmt->execute([':uid' => $userId, ':name' => $category]);
+                $catId = $findCatStmt->fetchColumn();
+
+                if (!$catId) {
+                    $insertCatStmt->execute([':uid' => $userId, ':name' => $category]);
+                    $catId = (int)$db->lastInsertId();
+                }
 
                 $expInsert->execute([
                     ':uid' => $userId,

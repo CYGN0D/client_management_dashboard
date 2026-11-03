@@ -125,15 +125,17 @@ class ReportService {
 
         // 7. Upcoming and Overdue Dues
         $duesStmt = $db->prepare('
-            SELECT 
-                i.*,
-                c.name AS client_name,
-                COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id AND p.user_id = :uid_p), 0.00) AS paid_amount
-            FROM invoices i
-            JOIN clients c ON c.id = i.client_id
-            WHERE i.user_id = :uid_i
-            HAVING (amount - paid_amount) > 0
-            ORDER BY i.due_date ASC
+            SELECT * FROM (
+                SELECT 
+                    i.*,
+                    c.name AS client_name,
+                    COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id AND p.user_id = :uid_p), 0.00) AS paid_amount
+                FROM invoices i
+                JOIN clients c ON c.id = i.client_id
+                WHERE i.user_id = :uid_i
+            ) sub
+            WHERE (amount - paid_amount) > 0
+            ORDER BY due_date ASC
             LIMIT 10
         ');
         $duesStmt->execute([':uid_p' => $userId, ':uid_i' => $userId]);
