@@ -746,6 +746,31 @@
             </div>
           </div>
 
+          <!-- MySQL Backend & Data Migration -->
+          <div class="card" style="margin-top:var(--space-6);">
+            <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:var(--space-2);">
+                <i data-lucide="database" style="width:18px;height:18px;color:var(--color-primary);"></i>
+                <div class="card-title">MySQL Backend & Data Migration</div>
+              </div>
+              <span id="backendStatusBadge" class="badge badge-success" style="font-size:11px;padding:3px 8px;">PHP 8.2+ & MySQL 8.0 Ready</span>
+            </div>
+            <div class="card-body">
+              <p style="font-size:13.5px;color:var(--color-text-secondary);line-height:1.5;margin-bottom:var(--space-4);">
+                Migrate all offline browser records (clients, monthly retainer contracts, generated invoices, settlement transactions, and expense ledgers) directly into your normalized MySQL database. Your local browser storage remains untouched as a safe backup.
+              </p>
+              <div style="display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;">
+                <button type="button" id="migrateToDatabaseBtn" class="btn btn-primary">
+                  <i data-lucide="upload-cloud"></i> Migrate Local Data to MySQL Database
+                </button>
+                <button type="button" id="checkBackendStatusBtn" class="btn btn-secondary">
+                  <i data-lucide="activity"></i> Verify Backend Connection
+                </button>
+              </div>
+              <div id="migrationFeedback" style="margin-top:var(--space-4);display:none;"></div>
+            </div>
+          </div>
+
           <!-- Account & Session -->
           <div class="card" style="margin-top:var(--space-6);">
             <div class="card-header">
@@ -1313,6 +1338,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- Application Modules -->
+  <script src="js/api.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/datepicker.js"></script>
   <script src="js/storage.js"></script>
