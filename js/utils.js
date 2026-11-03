@@ -320,6 +320,7 @@ const Utils = {
     const modal = document.getElementById(modalId);
     if (modal) {
       modal.classList.add('open');
+      modal.style.display = 'flex';
       const firstInput = modal.querySelector('input:not([type="hidden"]), select, textarea, button.btn-primary');
       if (firstInput) {
         setTimeout(() => firstInput.focus(), 50);
@@ -334,6 +335,7 @@ const Utils = {
     const modal = document.getElementById(modalId);
     if (modal) {
       modal.classList.remove('open');
+      modal.style.display = 'none';
     }
   },
 
@@ -341,25 +343,35 @@ const Utils = {
    * Setup global modal dismiss triggers (Escape key & backdrop click)
    */
   initModalListeners() {
+    if (this._modalListenersBound) return;
+    this._modalListenersBound = true;
+
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         const openModals = document.querySelectorAll('.modal-backdrop.open');
-        openModals.forEach((m) => m.classList.remove('open'));
+        openModals.forEach((m) => {
+          m.classList.remove('open');
+          m.style.display = 'none';
+        });
       }
     });
 
-    document.querySelectorAll('.modal-backdrop').forEach((backdrop) => {
-      backdrop.addEventListener('click', (e) => {
-        if (e.target === backdrop) {
+    document.addEventListener('click', (e) => {
+      // Backdrop click
+      if (e.target.classList && e.target.classList.contains('modal-backdrop')) {
+        e.target.classList.remove('open');
+        e.target.style.display = 'none';
+      }
+      // Close button click ([data-modal-close] or .modal-close)
+      const closeBtn = e.target.closest('[data-modal-close], .modal-close');
+      if (closeBtn) {
+        e.preventDefault();
+        const backdrop = closeBtn.closest('.modal-backdrop');
+        if (backdrop) {
           backdrop.classList.remove('open');
+          backdrop.style.display = 'none';
         }
-      });
-      backdrop.querySelectorAll('.modal-close, [data-modal-close]').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          backdrop.classList.remove('open');
-        });
-      });
+      }
     });
   },
 

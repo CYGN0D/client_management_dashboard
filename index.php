@@ -1,12 +1,12 @@
 <?php
 /**
  * CLIENTO - APPLICATION ENTRY POINT & ROUTER
- * Compatible with PHP 8.2+ Built-in Web Server, Apache, and Nginx.
+ * Compatible with PHP 8.2+ Built-in Web Server, Apache, LiteSpeed, and Nginx.
  */
 
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 
-// Router mode for PHP built-in web server: `php -S localhost:8000 index.php`
+// Router mode for PHP built-in web server: `php -S localhost:3000 index.php`
 if (php_sapi_name() === 'cli-server') {
     $filePath = __DIR__ . $uri;
 
@@ -17,14 +17,17 @@ if (php_sapi_name() === 'cli-server') {
             return false; // Built-in server serves static file
         }
     }
+}
 
-    // Direct API script requests
-    if (str_starts_with($uri, '/api/')) {
-        $apiScript = __DIR__ . $uri;
-        if (file_exists($apiScript)) {
-            require $apiScript;
-            exit;
-        }
+// Check if request is directed to an API endpoint (works on all SAPIs and subdirectories)
+if (preg_match('#/api/(.+)$#', $uri, $matches)) {
+    $apiFile = __DIR__ . '/api/' . $matches[1];
+    if (is_dir($apiFile)) {
+        $apiFile = rtrim($apiFile, '/') . '/index.php';
+    }
+    if (file_exists($apiFile)) {
+        require $apiFile;
+        exit;
     }
 }
 

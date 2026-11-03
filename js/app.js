@@ -8,76 +8,113 @@ const App = {
   activePage: 'dashboard',
 
   async init() {
-    // 1. Initialize persistent storage layer (clean real data)
-    Storage.initStorage();
-
-    // 2. Initialize pure & clean authentication & ensure backend session
-    if (window.Auth && typeof Auth.init === 'function') {
-      await Auth.init();
+    // 1. Initialize persistent storage layer
+    try {
+      Storage.initStorage();
+    } catch (e) {
+      console.warn('[App] Storage init:', e);
     }
 
-    // 3. Sync live database records directly from PHP backend (cliento.db / MySQL)
-    if (window.Storage && typeof Storage.syncFromBackend === 'function') {
-      await Storage.syncFromBackend();
-    }
-
-    // 4. Initialize modal accessibility triggers & universal table popups
-    Utils.initModalListeners();
-    if (typeof Utils.initTablePopups === 'function') {
-      Utils.initTablePopups();
-    }
-
-    // 5. Initialize dark/light theme preference
-    this.initTheme();
-
-    // 6. Initialize custom DD/MM/YYYY datepicker component
-    if (window.DatePicker && typeof DatePicker.init === 'function') {
-      DatePicker.init();
-    }
-
-    // 7. Initialize all functional modules with fresh database state
-    if (window.Clients && typeof Clients.init === 'function') Clients.init();
-    if (window.Payments && typeof Payments.init === 'function') Payments.init();
-    if (window.Expenses && typeof Expenses.init === 'function') Expenses.init();
-    if (window.Dashboard && typeof Dashboard.init === 'function') Dashboard.init();
-    if (window.Reports && typeof Reports.init === 'function') Reports.init();
-    if (window.Settings && typeof Settings.init === 'function') Settings.init();
-
-    // 8. Set up sidebar navigation and routing
-    this.bindNavigation();
-
-    // 9. Set up mobile hamburger drawer
-    this.bindMobileDrawer();
-
-    // 6. Route to initial page from URL hash or default to dashboard
-    const handleHashRouting = (updateHash = false) => {
-      const rawHash = window.location.hash.replace('#', '') || 'dashboard';
-      if (rawHash.startsWith('client-detail')) {
-        let clientId = null;
-        if (rawHash.includes(':')) {
-          clientId = rawHash.split(':')[1];
-        } else if (rawHash.includes('?id=')) {
-          clientId = rawHash.split('?id=')[1];
-        } else if (rawHash.includes('/')) {
-          clientId = rawHash.split('/')[1];
-        }
-        if (clientId && window.Clients) {
-          Clients.activeDetailClientId = clientId;
-        }
-        this.navigateTo('client-detail', updateHash);
-      } else {
-        this.navigateTo(rawHash, updateHash);
+    // 2. Initialize modal accessibility triggers & universal table popups
+    try {
+      Utils.initModalListeners();
+      if (typeof Utils.initTablePopups === 'function') {
+        Utils.initTablePopups();
       }
-    };
+    } catch (e) {
+      console.warn('[App] Modal listeners init:', e);
+    }
 
-    handleHashRouting(false);
+    // 3. Initialize dark/light theme preference
+    try {
+      this.initTheme();
+    } catch (e) {
+      console.warn('[App] Theme init:', e);
+    }
 
-    // 7. Handle browser back/forward buttons
-    window.addEventListener('hashchange', () => {
+    // 4. Initialize custom DD/MM/YYYY datepicker component
+    try {
+      if (window.DatePicker && typeof DatePicker.init === 'function') {
+        DatePicker.init();
+      }
+    } catch (e) {
+      console.warn('[App] Datepicker init:', e);
+    }
+
+    // 5. Initialize all functional modules DOM event bindings and UI hooks
+    try {
+      if (window.Clients && typeof Clients.init === 'function') Clients.init();
+      if (window.Payments && typeof Payments.init === 'function') Payments.init();
+      if (window.Expenses && typeof Expenses.init === 'function') Expenses.init();
+      if (window.Dashboard && typeof Dashboard.init === 'function') Dashboard.init();
+      if (window.Reports && typeof Reports.init === 'function') Reports.init();
+      if (window.Settings && typeof Settings.init === 'function') Settings.init();
+    } catch (e) {
+      console.warn('[App] Modules init:', e);
+    }
+
+    // 6. Set up sidebar navigation, mobile drawer and routing
+    try {
+      this.bindNavigation();
+      this.bindMobileDrawer();
+
+      const handleHashRouting = (updateHash = false) => {
+        const rawHash = window.location.hash.replace('#', '') || 'dashboard';
+        if (rawHash.startsWith('client-detail')) {
+          let clientId = null;
+          if (rawHash.includes(':')) {
+            clientId = rawHash.split(':')[1];
+          } else if (rawHash.includes('?id=')) {
+            clientId = rawHash.split('?id=')[1];
+          } else if (rawHash.includes('/')) {
+            clientId = rawHash.split('/')[1];
+          }
+          if (clientId && window.Clients) {
+            Clients.activeDetailClientId = clientId;
+          }
+          this.navigateTo('client-detail', updateHash);
+        } else {
+          this.navigateTo(rawHash, updateHash);
+        }
+      };
+
       handleHashRouting(false);
-    });
+      window.addEventListener('hashchange', () => {
+        handleHashRouting(false);
+      });
+    } catch (e) {
+      console.warn('[App] Navigation init:', e);
+    }
 
-    // 8. Refresh Lucide icons
+    // 7. Refresh Lucide icons
+    Utils.refreshIcons();
+
+    // 8. Initialize backend authentication session
+    try {
+      if (window.Auth && typeof Auth.init === 'function') {
+        await Auth.init();
+      }
+    } catch (e) {
+      console.warn('[App] Auth init notice:', e);
+    }
+
+    // 9. Sync live database records directly from PHP backend (cliento.db / MySQL)
+    try {
+      if (window.Storage && typeof Storage.syncFromBackend === 'function') {
+        const synced = await Storage.syncFromBackend();
+        if (synced) {
+          if (window.Clients) Clients.render();
+          if (window.Payments) Payments.render();
+          if (window.Expenses) Expenses.render();
+          if (window.Dashboard) Dashboard.render();
+          if (window.Reports) Reports.render();
+          if (window.Settings) Settings.loadValues();
+        }
+      }
+    } catch (e) {
+      console.warn('[App] Backend data sync notice:', e);
+    }
+
     Utils.refreshIcons();
   },
 

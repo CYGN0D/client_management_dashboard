@@ -35,10 +35,22 @@ if (!function_exists('cliento_load_env')) {
 }
 cliento_load_env(dirname(__DIR__) . '/.env');
 
+// Ensure SQLite database path is resolved as an absolute path
+$rawDb = getenv('DB_DATABASE');
+if (!empty($rawDb)) {
+    if (!str_starts_with($rawDb, '/') && !preg_match('/^[a-zA-Z]:[\\\\\/]/', $rawDb)) {
+        $sqliteDbPath = dirname(__DIR__) . '/' . ltrim($rawDb, '/');
+    } else {
+        $sqliteDbPath = $rawDb;
+    }
+} else {
+    $sqliteDbPath = dirname(__DIR__) . '/database/cliento.db';
+}
+
 return [
     'default' => getenv('DB_CONNECTION') ?: 'sqlite',
     'sqlite' => [
-        'database' => getenv('DB_DATABASE') ?: (dirname(__DIR__) . '/database/cliento.db'),
+        'database' => $sqliteDbPath,
         'options' => [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

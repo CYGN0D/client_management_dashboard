@@ -287,7 +287,7 @@
               
             </div>
             <div class="page-actions">
-              <button id="addClientBtn" class="btn btn-primary">
+              <button id="addClientBtn" class="btn btn-primary" onclick="if (window.Clients && typeof Clients.openAddEditModal === 'function') Clients.openAddEditModal();">
                 <i data-lucide="plus"></i> Add Client
               </button>
             </div>
@@ -375,7 +375,7 @@
               <button class="btn btn-secondary" onclick="Payments.openCreateInvoiceModal()">
                 <i data-lucide="plus"></i> Add Charge / Invoice
               </button>
-              <button id="generateInvoicesBtn" class="btn btn-primary">
+              <button id="generateInvoicesBtn" class="btn btn-primary" onclick="if (window.Payments && typeof Payments.openGenerateModal === 'function') Payments.openGenerateModal();">
                 <i data-lucide="zap"></i> Generate Monthly Payments
               </button>
             </div>
@@ -463,7 +463,7 @@
               
             </div>
             <div class="page-actions">
-              <button id="addExpenseBtn" class="btn btn-primary">
+              <button id="addExpenseBtn" class="btn btn-primary" onclick="if (window.Expenses && typeof Expenses.openAddEditModal === 'function') Expenses.openAddEditModal();">
                 <i data-lucide="plus"></i> Add Expense
               </button>
             </div>

@@ -5,7 +5,9 @@
  */
 
 // Ensure environment variables are loaded
-if (function_exists('cliento_load_env')) {
+if (!function_exists('cliento_load_env')) {
+    require_once __DIR__ . '/database.php';
+} else {
     cliento_load_env(dirname(__DIR__) . '/.env');
 }
 

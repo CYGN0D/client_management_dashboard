@@ -579,8 +579,10 @@ const Clients = {
 
     const form = document.getElementById('clientForm');
     const modalTitle = document.getElementById('clientModalTitle');
-    Utils.clearFieldErrors(form);
-    form.reset();
+    if (form) {
+      Utils.clearFieldErrors(form);
+      form.reset();
+    }
 
     const idInput = document.getElementById('clientFormId');
     const nameInput = document.getElementById('clientName');
@@ -599,31 +601,34 @@ const Clients = {
 
     if (clientId) {
       const client = Storage.getClientById(clientId);
-      if (!client) return;
-      modalTitle.textContent = 'Edit Client';
-      idInput.value = client.id;
-      nameInput.value = client.name;
-      phoneInput.value = client.phone || '';
-      emailInput.value = client.email || '';
-      serviceInput.value = client.service;
-      joiningDateInput.value = Utils.isoToDmy(client.joiningDate) || client.joiningDate || Utils.isoToDmy(Utils.getTodayString());
-      statusInput.value = client.status || 'active';
+      if (!client) {
+        Utils.showToast('Client record not found', 'warning');
+        return;
+      }
+      if (modalTitle) modalTitle.textContent = 'Edit Client';
+      if (idInput) idInput.value = client.id;
+      if (nameInput) nameInput.value = client.name || '';
+      if (phoneInput) phoneInput.value = client.phone || '';
+      if (emailInput) emailInput.value = client.email || '';
+      if (serviceInput) serviceInput.value = client.service || '';
+      if (joiningDateInput) joiningDateInput.value = Utils.isoToDmy(client.joiningDate) || client.joiningDate || Utils.isoToDmy(Utils.getTodayString());
+      if (statusInput) statusInput.value = client.status || 'active';
 
       // Hide initial advance section when editing an established client
       if (initialAmountGroup) initialAmountGroup.style.display = 'none';
       if (initialStatusGroup) initialStatusGroup.style.display = 'none';
       if (initialMethodGroup) initialMethodGroup.style.display = 'none';
 
-      this.syncServiceChips(client.service);
+      this.syncServiceChips(client.service || '');
     } else {
-      modalTitle.textContent = 'Add New Client';
-      idInput.value = '';
-      nameInput.value = '';
-      phoneInput.value = '';
-      emailInput.value = '';
-      serviceInput.value = '';
-      joiningDateInput.value = Utils.isoToDmy(Utils.getTodayString());
-      statusInput.value = 'active';
+      if (modalTitle) modalTitle.textContent = 'Add New Client';
+      if (idInput) idInput.value = '';
+      if (nameInput) nameInput.value = '';
+      if (phoneInput) phoneInput.value = '';
+      if (emailInput) emailInput.value = '';
+      if (serviceInput) serviceInput.value = '';
+      if (joiningDateInput) joiningDateInput.value = Utils.isoToDmy(Utils.getTodayString());
+      if (statusInput) statusInput.value = 'active';
 
       // Show initial advance section for onboarding new client
       if (initialAmountGroup) initialAmountGroup.style.display = '';

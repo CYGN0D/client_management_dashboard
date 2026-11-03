@@ -5,8 +5,26 @@
  */
 
 const API = {
-  BASE_URL: 'api',
   csrfToken: null,
+
+  /**
+   * Determine absolute API endpoint URL regardless of deployment subdirectory on shared hosting
+   */
+  getApiUrl(endpoint) {
+    if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+      return endpoint;
+    }
+
+    let pathname = window.location.pathname || '/';
+    // Strip trailing script file if present (e.g. index.php or index.html)
+    pathname = pathname.replace(/\/[^\/]*\.[^\/]*$/, '/');
+    if (!pathname.endsWith('/')) {
+      pathname += '/';
+    }
+
+    const cleanEndpoint = endpoint.replace(/^\/+/, '');
+    return `${pathname}api/${cleanEndpoint}`;
+  },
 
   /**
    * Fetch CSRF token or read cached token
@@ -15,7 +33,7 @@ const API = {
     if (this.csrfToken) return this.csrfToken;
 
     try {
-      const res = await fetch(`${this.BASE_URL}/auth/csrf.php`, {
+      const res = await fetch(this.getApiUrl('auth/csrf.php'), {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
         credentials: 'same-origin'
@@ -56,7 +74,7 @@ const API = {
     }
 
     try {
-      const url = `${this.BASE_URL}/${endpoint}`;
+      const url = this.getApiUrl(endpoint);
       const response = await fetch(url, {
         ...options,
         method,

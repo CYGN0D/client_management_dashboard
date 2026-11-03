@@ -22,8 +22,9 @@ class Database {
                     $dbFile = $config['sqlite']['database'];
                     $dbDir = dirname($dbFile);
                     if (!is_dir($dbDir)) {
-                        mkdir($dbDir, 0755, true);
+                        @mkdir($dbDir, 0777, true);
                     }
+                    @chmod($dbDir, 0777);
 
                     $isNew = !file_exists($dbFile) || filesize($dbFile) === 0;
 
@@ -34,9 +35,23 @@ class Database {
                         $config['sqlite']['options'] ?? []
                     );
 
-                    // Enable foreign keys and WAL mode
+                    if (file_exists($dbFile)) {
+                        @chmod($dbFile, 0666);
+                    }
+
+                    // Enable foreign keys
                     self::$instance->exec('PRAGMA foreign_keys = ON;');
-                    self::$instance->exec('PRAGMA journal_mode = WAL;');
+
+                    // Journal mode: try WAL first, fallback safely for restricted shared hosting filesystems
+                    try {
+                        self::$instance->exec('PRAGMA journal_mode = WAL;');
+                    } catch (Throwable $t) {
+                        try {
+                            self::$instance->exec('PRAGMA journal_mode = DELETE;');
+                        } catch (Throwable $t2) {
+                            // Continue
+                        }
+                    }
 
                     // Register custom NOW() function for query parity with MySQL
                     self::$instance->sqliteCreateFunction('NOW', function () {
@@ -63,6 +78,16 @@ class Database {
                         $mysql['password'],
                         $mysql['options'] ?? []
                     );
+
+                    // Auto-initialize MySQL schema & seed if users table does not exist
+                    try {
+                        $check = self::$instance->query("SHOW TABLES LIKE 'users'")->fetch();
+                        if (empty($check)) {
+                            self::initializeMysql(self::$instance);
+                        }
+                    } catch (Throwable $t) {
+                        // Ignore if table check fails
+                    }
                 }
             } catch (PDOException $e) {
                 // In production, log error without exposing database credentials
@@ -87,6 +112,21 @@ class Database {
     private static function initializeSqlite(PDO $pdo): void {
         $schemaPath = dirname(__DIR__) . '/database/schema_sqlite.sql';
         $seedPath = dirname(__DIR__) . '/database/seeds/seed_sqlite.sql';
+
+        if (file_exists($schemaPath)) {
+            $pdo->exec(file_get_contents($schemaPath));
+        }
+        if (file_exists($seedPath)) {
+            $pdo->exec(file_get_contents($seedPath));
+        }
+    }
+
+    /**
+     * Auto-initialize MySQL tables and default seed
+     */
+    private static function initializeMysql(PDO $pdo): void {
+        $schemaPath = dirname(__DIR__) . '/database/schema.sql';
+        $seedPath = dirname(__DIR__) . '/database/seeds/seed.sql';
 
         if (file_exists($schemaPath)) {
             $pdo->exec(file_get_contents($schemaPath));
