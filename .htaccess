@@ -1,0 +1,48 @@
+# ==============================================================================
+# CLIENTO — APACHE & SHARED HOSTING CONFIGURATION (.htaccess)
+# Compatible with cPanel, DirectAdmin, Plesk, LiteSpeed, and Apache 2.4+
+# ==============================================================================
+
+# 1. Directory Index
+DirectoryIndex index.php index.html
+
+# 2. Block access to sensitive configuration, database, and backend directories
+<FilesMatch "^(\.env|\.git|\.db|schema.*\.sql|cliento\.db)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<IfModule mod_authz_core.c>
+    <FilesMatch "^(\.env|\.git|\.db|schema.*\.sql|cliento\.db)">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+# Protect internal directories
+RewriteEngine On
+
+# Block direct browsing of internal backend folders
+RewriteRule ^(config|includes|services|tests|database) - [F,L,NC]
+
+# 3. Allow existing files and directories to be served directly (CSS, JS, assets, API scripts)
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# 4. Route other requests to index.php
+RewriteRule ^ index.php [L]
+
+# 5. Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# 6. MIME Types
+<IfModule mod_mime.c>
+    AddType application/json .json
+    AddType application/javascript .js
+    AddType text/css .css
+    AddType application/zip .zip
+</IfModule>

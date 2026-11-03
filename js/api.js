@@ -71,8 +71,10 @@ const API = {
 
       // Handle 401 Unauthorized (session expired)
       if (response.status === 401) {
-        if (window.Auth && typeof Auth.logout === 'function') {
-          Auth.logout();
+        if (!endpoint.startsWith('auth/me') && !endpoint.startsWith('auth/login')) {
+          if (window.Auth && typeof Auth.logout === 'function') {
+            Auth.logout();
+          }
         }
         throw new Error(json.message || 'Session expired. Please log in again.');
       }

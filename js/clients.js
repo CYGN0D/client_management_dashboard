@@ -771,7 +771,6 @@ const Clients = {
     if (window.Payments) window.Payments.render();
     if (window.Reports) window.Reports.render();
   },
-  },
 
   viewClientDetails(clientId, targetTab = 'invoices') {
     document.querySelectorAll('.dropdown-menu.show').forEach((m) => m.classList.remove('show'));

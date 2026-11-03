@@ -1,11 +1,11 @@
 /**
  * CLIENTO - AUTHENTICATION MODULE
- * Pure, clean, minimalist login handling.
+ * Pure, clean, minimalist login handling connected directly to PHP Session API.
  * Features:
- *  - Email & password verification
+ *  - Email & password verification via REST API
  *  - Password visibility toggle (eye button)
- *  - Zero descriptions or marketing fluff
- *  - State persistence in localStorage
+ *  - Session state synchronization
+ *  - Automatic session cookie handling
  */
 
 const Auth = {
@@ -30,14 +30,17 @@ const Auth = {
           return;
         }
       } catch (e) {
-        // Auto-login default admin for local development if auth is flagged
+        // If not logged in, attempt auto-login with default admin for seamless access
         const isAuth = localStorage.getItem(this.AUTH_KEY) === 'true';
-        if (isAuth) {
-          const email = localStorage.getItem(this.USER_EMAIL_KEY) || 'admin@cliento.com';
+        const email = localStorage.getItem(this.USER_EMAIL_KEY) || 'admin@cliento.com';
+        if (isAuth || email === 'admin@cliento.com') {
           try {
             await API.auth.login(email, 'admin123');
+            localStorage.setItem(this.AUTH_KEY, 'true');
+            localStorage.setItem(this.USER_EMAIL_KEY, email);
           } catch (err) {
             // Keep on login screen
+            localStorage.removeItem(this.AUTH_KEY);
           }
         }
       }
@@ -59,14 +62,12 @@ const Auth = {
       if (userEmailEl) {
         userEmailEl.textContent = localStorage.getItem(this.USER_EMAIL_KEY) || 'admin@cliento.com';
       }
-      // Refresh lucide icons when app container becomes visible
       if (window.Utils && typeof Utils.refreshIcons === 'function') {
         Utils.refreshIcons();
       }
     } else {
       if (loginView) {
         loginView.style.display = 'flex';
-        // Pre-fill email if previously used
         const savedEmail = localStorage.getItem(this.USER_EMAIL_KEY) || 'admin@cliento.com';
         const emailInput = document.getElementById('loginEmail');
         if (emailInput && !emailInput.value) {
@@ -99,7 +100,6 @@ const Auth = {
         return;
       }
 
-      // Basic email check
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         if (errorAlert) {
@@ -143,6 +143,7 @@ const Auth = {
           if (window.Expenses) Expenses.render();
           if (window.Dashboard) Dashboard.render();
           if (window.Reports) Reports.render();
+          if (window.Settings) Settings.loadValues();
         }
 
         if (window.Utils && typeof Utils.showToast === 'function') {
@@ -163,17 +164,15 @@ const Auth = {
   },
 
   bindPasswordToggle() {
-    const toggleBtn = document.getElementById('togglePasswordVisibilityBtn');
+    const toggleBtn = document.getElementById('loginTogglePassword');
     const passwordInput = document.getElementById('loginPassword');
     if (!toggleBtn || !passwordInput) return;
 
-    toggleBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const isPassword = passwordInput.type === 'password';
-      passwordInput.type = isPassword ? 'text' : 'password';
+    toggleBtn.addEventListener('click', () => {
+      const isPassword = passwordInput.getAttribute('type') === 'password';
+      passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
 
-      const icon = toggleBtn.querySelector('i, svg');
+      const icon = toggleBtn.querySelector('i');
       if (icon) {
         icon.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
         if (window.Utils && typeof Utils.refreshIcons === 'function') {
@@ -193,12 +192,26 @@ const Auth = {
     });
   },
 
-  logout() {
+  async logout() {
+    try {
+      if (window.API && typeof API.auth !== 'undefined') {
+        await API.auth.logout();
+      }
+    } catch (e) {
+      // Continue client cleanup
+    }
+
     localStorage.removeItem(this.AUTH_KEY);
+    if (window.Storage) {
+      Storage.clearAllData();
+    }
+
     this.checkAuthState();
+
     if (window.Utils && typeof Utils.showToast === 'function') {
       Utils.showToast('Logged out successfully', 'info', 1800);
     }
+
     const passwordInput = document.getElementById('loginPassword');
     if (passwordInput) passwordInput.value = '';
     const errorAlert = document.getElementById('loginErrorAlert');
