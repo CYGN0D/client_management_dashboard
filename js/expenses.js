@@ -272,13 +272,13 @@ const Expenses = {
       titleInput.value = exp.title;
       catSelect.value = exp.category;
       amountInput.value = exp.amount;
-      dateInput.value = exp.date;
+      dateInput.value = exp.date ? (Utils.isoToDmy(exp.date) || exp.date) : Utils.isoToDmy(Utils.getTodayString());
       descInput.value = exp.description || '';
     } else {
       modalTitle.textContent = 'Add Expense';
       idInput.value = '';
       catSelect.value = 'Software';
-      dateInput.value = Utils.getTodayString();
+      dateInput.value = Utils.isoToDmy(Utils.getTodayString());
     }
 
     Utils.openModal('expenseModal');
@@ -314,11 +314,8 @@ const Expenses = {
       isValid = false;
     }
 
-    let date = dateInput.value;
-    if (!date) {
-      date = Utils.getTodayString();
-      dateInput.value = date;
-    }
+    const rawDate = dateInput ? dateInput.value.trim() : '';
+    const date = Utils.dmyToIso(rawDate) || rawDate || Utils.getTodayString();
 
     if (!isValid) return;
 
@@ -340,6 +337,7 @@ const Expenses = {
       }
     } catch (err) {
       console.error(err);
+      Utils.showToast(err.message || 'Failed to save expense', 'danger');
       return;
     }
 
@@ -361,11 +359,15 @@ const Expenses = {
     });
 
     if (confirmed) {
-      await Storage.deleteExpense(expenseId);
-      Utils.showToast('Expense deleted', 'info');
-      this.render();
-      if (window.Dashboard) window.Dashboard.render();
-      if (window.Reports) window.Reports.render();
+      try {
+        await Storage.deleteExpense(expenseId);
+        Utils.showToast('Expense deleted', 'info');
+        this.render();
+        if (window.Dashboard) window.Dashboard.render();
+        if (window.Reports) window.Reports.render();
+      } catch (err) {
+        Utils.showToast(err.message || 'Failed to delete expense', 'danger');
+      }
     }
   }
 };

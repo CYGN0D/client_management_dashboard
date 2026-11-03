@@ -5,12 +5,14 @@
  *  - Email & password verification via REST API
  *  - Password visibility toggle (eye button)
  *  - Session state synchronization
+ *  - Confirmation prompt on logout
  *  - Automatic session cookie handling
  */
 
 const Auth = {
   AUTH_KEY: 'cliento_auth',
   USER_EMAIL_KEY: 'cliento_user_email',
+  LOGGED_OUT_KEY: 'cliento_logged_out',
 
   async init() {
     this.bindLoginForm();
@@ -21,27 +23,32 @@ const Auth = {
   },
 
   async ensureBackendSession() {
-    if (window.API && typeof API.auth !== 'undefined') {
-      try {
-        const me = await API.auth.me();
-        if (me && me.id) {
-          localStorage.setItem(this.AUTH_KEY, 'true');
-          localStorage.setItem(this.USER_EMAIL_KEY, me.email || 'admin@cliento.com');
-          return;
-        }
-      } catch (e) {
-        // If not logged in, attempt auto-login with default admin for seamless access
-        const isAuth = localStorage.getItem(this.AUTH_KEY) === 'true';
+    if (!window.API || typeof API.auth === 'undefined') return;
+
+    // If user has explicitly logged out, do not auto-login
+    if (localStorage.getItem(this.LOGGED_OUT_KEY) === 'true') {
+      localStorage.removeItem(this.AUTH_KEY);
+      return;
+    }
+
+    try {
+      const me = await API.auth.me();
+      if (me && me.id) {
+        localStorage.setItem(this.AUTH_KEY, 'true');
+        localStorage.setItem(this.USER_EMAIL_KEY, me.email || 'admin@cliento.com');
+        return;
+      }
+    } catch (e) {
+      // If auth was active before page reload and not logged out, attempt auto session renewal
+      const isAuth = localStorage.getItem(this.AUTH_KEY) === 'true';
+      if (isAuth) {
         const email = localStorage.getItem(this.USER_EMAIL_KEY) || 'admin@cliento.com';
-        if (isAuth || email === 'admin@cliento.com') {
-          try {
-            await API.auth.login(email, 'admin123');
-            localStorage.setItem(this.AUTH_KEY, 'true');
-            localStorage.setItem(this.USER_EMAIL_KEY, email);
-          } catch (err) {
-            // Keep on login screen
-            localStorage.removeItem(this.AUTH_KEY);
-          }
+        try {
+          await API.auth.login(email, 'admin123');
+          localStorage.setItem(this.AUTH_KEY, 'true');
+          localStorage.setItem(this.USER_EMAIL_KEY, email);
+        } catch (err) {
+          localStorage.removeItem(this.AUTH_KEY);
         }
       }
     }
@@ -54,24 +61,27 @@ const Auth = {
   checkAuthState() {
     const loginView = document.getElementById('loginView');
     const appContainer = document.querySelector('.app-container');
+    const email = localStorage.getItem(this.USER_EMAIL_KEY) || 'admin@cliento.com';
 
     if (this.isAuthenticated()) {
       if (loginView) loginView.style.display = 'none';
       if (appContainer) appContainer.style.display = 'flex';
+
       const userEmailEl = document.getElementById('settingsUserEmailText');
-      if (userEmailEl) {
-        userEmailEl.textContent = localStorage.getItem(this.USER_EMAIL_KEY) || 'admin@cliento.com';
-      }
+      if (userEmailEl) userEmailEl.textContent = email;
+
+      const sidebarEmailEl = document.getElementById('sidebarUserEmail');
+      if (sidebarEmailEl) sidebarEmailEl.textContent = email;
+
       if (window.Utils && typeof Utils.refreshIcons === 'function') {
         Utils.refreshIcons();
       }
     } else {
       if (loginView) {
         loginView.style.display = 'flex';
-        const savedEmail = localStorage.getItem(this.USER_EMAIL_KEY) || 'admin@cliento.com';
         const emailInput = document.getElementById('loginEmail');
         if (emailInput && !emailInput.value) {
-          emailInput.value = savedEmail;
+          emailInput.value = email;
         }
       }
       if (appContainer) appContainer.style.display = 'none';
@@ -127,6 +137,8 @@ const Auth = {
           await API.auth.login(email, password);
         }
 
+        // Clear deliberate logout flag
+        localStorage.removeItem(this.LOGGED_OUT_KEY);
         localStorage.setItem(this.AUTH_KEY, 'true');
         localStorage.setItem(this.USER_EMAIL_KEY, email);
 
@@ -183,11 +195,20 @@ const Auth = {
   },
 
   bindLogout() {
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', async (e) => {
       const logoutBtn = e.target.closest('#logoutBtn, .btn-logout');
       if (logoutBtn) {
         e.preventDefault();
-        this.logout();
+        const confirmed = await Utils.confirm({
+          title: 'Log Out',
+          message: 'Are you sure you want to end your current session?',
+          confirmText: 'Log Out',
+          confirmDanger: true
+        });
+
+        if (confirmed) {
+          await this.logout();
+        }
       }
     });
   },
@@ -201,9 +222,16 @@ const Auth = {
       // Continue client cleanup
     }
 
+    // Set deliberate logout flag so user stays logged out upon page reload
+    localStorage.setItem(this.LOGGED_OUT_KEY, 'true');
     localStorage.removeItem(this.AUTH_KEY);
+
     if (window.Storage) {
       Storage.clearAllData();
+    }
+
+    if (window.Clients) {
+      Clients.activeDetailClientId = null;
     }
 
     this.checkAuthState();

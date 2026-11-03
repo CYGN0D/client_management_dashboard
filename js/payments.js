@@ -628,72 +628,88 @@ const Payments = {
 
       if (!isValid) return;
 
-      // 1. Update client profile with recurring retainer details
-      Storage.updateClient(client.id, {
-        monthlyAmount: retainerAmount,
-        dueDay,
-        service: retainerService,
-        retainerStatus: 'active'
-      });
-
-      // 2. Generate starting month invoice if checked
-      const shouldGenerateInvoice = genStartingCb ? genStartingCb.checked : true;
-      if (shouldGenerateInvoice) {
-        let dueDate = Utils.calculateDueDate(startingMonth, dueDay);
-        if (startingMonth === clientJoinMonth && client.joiningDate && dueDate < client.joiningDate) {
-          dueDate = client.joiningDate;
-        }
-
-        // Check if invoice already exists for same client and month
-        const existing = Storage.getInvoices().find(
-          (inv) => inv.clientId === client.id && inv.billingMonth === startingMonth
-        );
-
-        if (existing) {
-          const proceed = await Utils.confirm({
-            title: 'Invoice Already Exists for this Month',
-            message: `An invoice (${existing.invoiceNumber} • ${existing.serviceName || 'Service'}) already exists for ${client.name} in ${Utils.formatMonth(startingMonth)}. Do you want to create an additional retainer invoice for this month?`,
-            confirmText: 'Create Additional Invoice',
-            confirmDanger: false
-          });
-          if (!proceed) {
-            Utils.showToast(`Monthly retainer plan of ${Utils.formatCurrency(retainerAmount)} saved for ${client.name}`, 'success');
-            Utils.closeModal('createInvoiceModal');
-            this.render();
-            if (window.Dashboard) window.Dashboard.render();
-            if (window.Clients) {
-              Clients.render();
-              if (Clients.activeDetailClientId === client.id) Clients.renderClientDetailPage(client.id);
-            }
-            return;
-          }
-        }
-
-        const notes = retNotesInput ? retNotesInput.value.trim() : '';
-        Storage.addInvoice({
-          clientId: client.id,
-          clientName: client.name,
-          serviceName: retainerService,
-          chargeType: 'retainer',
-          notes: notes || `Monthly Retainer for ${Utils.formatMonth(startingMonth)}`,
-          billingMonth: startingMonth,
-          amount: retainerAmount,
-          dueDate
-        });
-
-        Utils.showToast(`Monthly retainer of ${Utils.formatCurrency(retainerAmount)} set & ${Utils.formatMonth(startingMonth)} invoice generated!`, 'success');
-      } else {
-        Utils.showToast(`Monthly retainer plan of ${Utils.formatCurrency(retainerAmount)} saved for ${client.name}`, 'success');
+      const submitBtn = document.getElementById('createInvoiceSubmitBtn');
+      const origText = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-sm"></span> Saving...';
       }
 
-      Utils.closeModal('createInvoiceModal');
-      this.activeMonthFilter = startingMonth;
-      this.render();
-      if (window.Dashboard) window.Dashboard.render();
-      if (window.Reports) window.Reports.render();
-      if (window.Clients) {
-        Clients.render();
-        if (Clients.activeDetailClientId === client.id) Clients.renderClientDetailPage(client.id);
+      try {
+        // 1. Update client profile with recurring retainer details
+        await Storage.updateClient(client.id, {
+          monthlyAmount: retainerAmount,
+          dueDay,
+          service: retainerService,
+          retainerStatus: 'active'
+        });
+
+        // 2. Generate starting month invoice if checked
+        const shouldGenerateInvoice = genStartingCb ? genStartingCb.checked : true;
+        if (shouldGenerateInvoice) {
+          let dueDate = Utils.calculateDueDate(startingMonth, dueDay);
+          if (startingMonth === clientJoinMonth && client.joiningDate && dueDate < client.joiningDate) {
+            dueDate = client.joiningDate;
+          }
+
+          // Check if invoice already exists for same client and month
+          const existing = Storage.getInvoices().find(
+            (inv) => inv.clientId === client.id && inv.billingMonth === startingMonth
+          );
+
+          if (existing) {
+            const proceed = await Utils.confirm({
+              title: 'Invoice Already Exists for this Month',
+              message: `An invoice (${existing.invoiceNumber} • ${existing.serviceName || 'Service'}) already exists for ${client.name} in ${Utils.formatMonth(startingMonth)}. Do you want to create an additional retainer invoice for this month?`,
+              confirmText: 'Create Additional Invoice',
+              confirmDanger: false
+            });
+            if (!proceed) {
+              Utils.showToast(`Monthly retainer plan of ${Utils.formatCurrency(retainerAmount)} saved for ${client.name}`, 'success');
+              Utils.closeModal('createInvoiceModal');
+              this.render();
+              if (window.Dashboard) window.Dashboard.render();
+              if (window.Clients) {
+                Clients.render();
+                if (Clients.activeDetailClientId === client.id) Clients.renderClientDetailPage(client.id);
+              }
+              return;
+            }
+          }
+
+          const notes = retNotesInput ? retNotesInput.value.trim() : '';
+          await Storage.addInvoice({
+            clientId: client.id,
+            clientName: client.name,
+            serviceName: retainerService,
+            chargeType: 'retainer',
+            notes: notes || `Monthly Retainer for ${Utils.formatMonth(startingMonth)}`,
+            billingMonth: startingMonth,
+            amount: retainerAmount,
+            dueDate
+          });
+
+          Utils.showToast(`Monthly retainer of ${Utils.formatCurrency(retainerAmount)} set & ${Utils.formatMonth(startingMonth)} invoice generated!`, 'success');
+        } else {
+          Utils.showToast(`Monthly retainer plan of ${Utils.formatCurrency(retainerAmount)} saved for ${client.name}`, 'success');
+        }
+
+        Utils.closeModal('createInvoiceModal');
+        this.activeMonthFilter = startingMonth;
+        this.render();
+        if (window.Dashboard) window.Dashboard.render();
+        if (window.Reports) window.Reports.render();
+        if (window.Clients) {
+          Clients.render();
+          if (Clients.activeDetailClientId === client.id) Clients.renderClientDetailPage(client.id);
+        }
+      } catch (err) {
+        Utils.showToast(err.message || 'Failed to save retainer plan', 'danger');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origText;
+        }
       }
       return;
     }
@@ -747,22 +763,45 @@ const Payments = {
       if (!proceed) return;
     }
 
-    const chargeCategory = categorySelect ? categorySelect.value : 'custom_changes';
-    const newInvoice = Storage.addInvoice({
-      clientId: client.id,
-      clientName: client.name,
-      serviceName,
-      chargeType: chargeCategory,
-      notes: notesInput ? notesInput.value.trim() : '',
-      billingMonth,
-      amount,
-      dueDate
-    });
+    const submitBtn = document.getElementById('createInvoiceSubmitBtn');
+    const origText = submitBtn ? submitBtn.innerHTML : '';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-sm"></span> Creating...';
+    }
 
-    Utils.showToast(`Invoice ${newInvoice.invoiceNumber} for ${client.name} (${serviceName}) created`, 'success');
-    Utils.closeModal('createInvoiceModal');
-    this.activeMonthFilter = billingMonth;
-    this.render();
+    try {
+      const chargeCategory = categorySelect ? categorySelect.value : 'custom_changes';
+      const newInvoice = await Storage.addInvoice({
+        clientId: client.id,
+        clientName: client.name,
+        serviceName,
+        chargeType: chargeCategory,
+        notes: notesInput ? notesInput.value.trim() : '',
+        billingMonth,
+        amount,
+        dueDate
+      });
+
+      const invCode = (newInvoice && newInvoice.invoiceNumber) || 'Invoice';
+      Utils.showToast(`${invCode} for ${client.name} (${serviceName}) created`, 'success');
+      Utils.closeModal('createInvoiceModal');
+      this.activeMonthFilter = billingMonth;
+      this.render();
+      if (window.Dashboard) window.Dashboard.render();
+      if (window.Reports) window.Reports.render();
+      if (window.Clients) {
+        Clients.render();
+        if (Clients.activeDetailClientId === client.id) Clients.renderClientDetailPage(client.id);
+      }
+    } catch (err) {
+      Utils.showToast(err.message || 'Failed to create invoice', 'danger');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origText;
+      }
+    }
     if (window.Dashboard) window.Dashboard.render();
     if (window.Reports) window.Reports.render();
     if (window.Clients) {
@@ -913,7 +952,7 @@ const Payments = {
     }
   },
 
-  executeGenerateInvoices() {
+  async executeGenerateInvoices() {
     const monthInput = document.getElementById('generateBillingMonth');
     const billingMonth = (monthInput && monthInput.value) || Utils.getCurrentMonthString();
 
@@ -926,42 +965,58 @@ const Payments = {
       return;
     }
 
-    let createdCount = 0;
-    let totalPaise = 0;
-
-    for (const cb of checkedBoxes) {
-      const clientId = cb.getAttribute('data-client-id');
-      const amount = parseFloat(cb.getAttribute('data-amount')) || 0;
-      const dueDate = cb.getAttribute('data-due-date') || Utils.calculateDueDate(billingMonth, 5);
-      const client = Storage.getClientById(clientId);
-
-      if (client) {
-        const clientJoinMonth = (client.joiningDate || '').substring(0, 7);
-        if (clientJoinMonth && billingMonth < clientJoinMonth) {
-          continue;
-        }
-        await Storage.addInvoice({
-          clientId: client.id,
-          clientName: client.name,
-          serviceName: client.service || 'Monthly Retainer',
-          chargeType: 'retainer',
-          notes: `Monthly Retainer for ${Utils.formatMonth(billingMonth)}`,
-          billingMonth,
-          amount,
-          dueDate
-        });
-        createdCount++;
-        totalPaise += Utils.toPaise(amount);
-      }
+    const submitBtn = document.getElementById('genSubmitBtn');
+    const origHtml = submitBtn ? submitBtn.innerHTML : '';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-sm"></span> Generating...';
     }
 
-    Utils.closeModal('generateInvoicesModal');
-    Utils.showToast(`Generated ${createdCount} invoice(s) totaling ${Utils.formatCurrency(Utils.fromPaise(totalPaise))} for ${Utils.formatMonth(billingMonth)}`, 'success');
+    try {
+      let createdCount = 0;
+      let totalPaise = 0;
 
-    this.activeMonthFilter = billingMonth;
-    this.render();
-    if (window.Dashboard) window.Dashboard.render();
-    if (window.Reports) window.Reports.render();
+      for (const cb of checkedBoxes) {
+        const clientId = cb.getAttribute('data-client-id');
+        const amount = parseFloat(cb.getAttribute('data-amount')) || 0;
+        const dueDate = cb.getAttribute('data-due-date') || Utils.calculateDueDate(billingMonth, 5);
+        const client = Storage.getClientById(clientId);
+
+        if (client) {
+          const clientJoinMonth = (client.joiningDate || '').substring(0, 7);
+          if (clientJoinMonth && billingMonth < clientJoinMonth) {
+            continue;
+          }
+          await Storage.addInvoice({
+            clientId: client.id,
+            clientName: client.name,
+            serviceName: client.service || 'Monthly Retainer',
+            chargeType: 'retainer',
+            notes: `Monthly Retainer for ${Utils.formatMonth(billingMonth)}`,
+            billingMonth,
+            amount,
+            dueDate
+          });
+          createdCount++;
+          totalPaise += Utils.toPaise(amount);
+        }
+      }
+
+      Utils.closeModal('generateInvoicesModal');
+      Utils.showToast(`Generated ${createdCount} invoice(s) totaling ${Utils.formatCurrency(Utils.fromPaise(totalPaise))} for ${Utils.formatMonth(billingMonth)}`, 'success');
+
+      this.activeMonthFilter = billingMonth;
+      this.render();
+      if (window.Dashboard) window.Dashboard.render();
+      if (window.Reports) window.Reports.render();
+    } catch (err) {
+      Utils.showToast(err.message || 'Error generating invoices', 'danger');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origHtml;
+      }
+    }
   },
 
   openRecordPaymentModal(invoiceId) {
@@ -987,13 +1042,19 @@ const Payments = {
     amountInput.value = Utils.fromPaise(remainingPaise);
     amountInput.max = Utils.fromPaise(remainingPaise);
 
-    document.getElementById('recordPaymentDate').value = Utils.getTodayString();
-    document.getElementById('recordPaymentMethod').value = 'Bank Transfer';
+    const dateInput = document.getElementById('recordPaymentDate');
+    if (dateInput) {
+      dateInput.value = Utils.isoToDmy(Utils.getTodayString());
+    }
+    const methodInput = document.getElementById('recordPaymentMethod');
+    if (methodInput) {
+      methodInput.value = 'Bank Transfer';
+    }
 
     Utils.openModal('recordPaymentModal');
   },
 
-  handleRecordPaymentSubmit() {
+  async handleRecordPaymentSubmit() {
     const form = document.getElementById('recordPaymentForm');
     Utils.clearFieldErrors(form);
 
@@ -1025,13 +1086,17 @@ const Payments = {
       isValid = false;
     }
 
-    let paymentDate = dateInput.value;
-    if (!paymentDate) {
-      paymentDate = Utils.getTodayString();
-      dateInput.value = paymentDate;
-    }
+    const rawPaymentDate = dateInput ? dateInput.value.trim() : '';
+    const paymentDate = Utils.dmyToIso(rawPaymentDate) || rawPaymentDate || Utils.getTodayString();
 
     if (!isValid) return;
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const origHtml = submitBtn ? submitBtn.innerHTML : '';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-sm"></span> Recording...';
+    }
 
     try {
       await Storage.recordPayment({
@@ -1050,6 +1115,11 @@ const Payments = {
       if (window.Clients) window.Clients.render();
     } catch (err) {
       Utils.showToast(err.message, 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origHtml;
+      }
     }
   },
 
@@ -1171,17 +1241,21 @@ const Payments = {
       Utils.closeModal('invoiceHistoryModal');
     }
 
-    await Storage.deleteInvoice(invoiceId);
-    Utils.showToast(`Invoice ${invoice.invoiceNumber} deleted successfully`, 'success');
+    try {
+      await Storage.deleteInvoice(invoiceId);
+      Utils.showToast(`Invoice ${invoice.invoiceNumber} deleted successfully`, 'success');
 
-    this.render();
-    if (window.Dashboard) window.Dashboard.render();
-    if (window.Reports) window.Reports.render();
-    if (window.Clients) {
-      Clients.render();
-      if (Clients.activeDetailClientId === invoice.clientId) {
-        Clients.renderClientDetailPage(invoice.clientId);
+      this.render();
+      if (window.Dashboard) window.Dashboard.render();
+      if (window.Reports) window.Reports.render();
+      if (window.Clients) {
+        Clients.render();
+        if (Clients.activeDetailClientId === invoice.clientId) {
+          Clients.renderClientDetailPage(invoice.clientId);
+        }
       }
+    } catch (err) {
+      Utils.showToast(err.message || 'Failed to delete invoice', 'danger');
     }
   },
 
@@ -1199,26 +1273,30 @@ const Payments = {
 
     if (!confirmed) return;
 
-    await Storage.deletePayment(paymentId);
-    Utils.showToast(`Payment of ${Utils.formatCurrency(payment.amount)} deleted`, 'success');
+    try {
+      await Storage.deletePayment(paymentId);
+      Utils.showToast(`Payment of ${Utils.formatCurrency(payment.amount)} deleted`, 'success');
 
-    if (payment.invoiceId) {
-      const inv = Storage.getInvoiceById(payment.invoiceId);
-      if (inv) {
-        this.viewInvoiceHistory(payment.invoiceId);
-      } else {
-        Utils.closeModal('invoiceHistoryModal');
+      if (payment.invoiceId) {
+        const inv = Storage.getInvoiceById(payment.invoiceId);
+        if (inv) {
+          this.viewInvoiceHistory(payment.invoiceId);
+        } else {
+          Utils.closeModal('invoiceHistoryModal');
+        }
       }
-    }
 
-    this.render();
-    if (window.Dashboard) window.Dashboard.render();
-    if (window.Reports) window.Reports.render();
-    if (window.Clients) {
-      Clients.render();
-      if (Clients.activeDetailClientId === payment.clientId) {
-        Clients.renderClientDetailPage(payment.clientId);
+      this.render();
+      if (window.Dashboard) window.Dashboard.render();
+      if (window.Reports) window.Reports.render();
+      if (window.Clients) {
+        Clients.render();
+        if (Clients.activeDetailClientId === payment.clientId) {
+          Clients.renderClientDetailPage(payment.clientId);
+        }
       }
+    } catch (err) {
+      Utils.showToast(err.message || 'Failed to delete payment', 'danger');
     }
   },
 
@@ -1239,13 +1317,17 @@ const Payments = {
       if (!confirmed) return;
     }
 
-    Storage.updateClient(clientId, { retainerStatus: newStatus });
-    Utils.showToast(
-      newStatus === 'paused'
-        ? `Monthly retainer paused for ${client.name}`
-        : `Monthly retainer resumed for ${client.name}`,
-      'success'
-    );
+    try {
+      await Storage.updateClient(clientId, { retainerStatus: newStatus });
+      Utils.showToast(
+        newStatus === 'paused'
+          ? `Monthly retainer paused for ${client.name}`
+          : `Monthly retainer resumed for ${client.name}`,
+        'success'
+      );
+    } catch (err) {
+      Utils.showToast(err.message || 'Failed to update retainer status', 'danger');
+    }
 
     this.syncCreateInvoiceFields();
     this.render();
@@ -1268,17 +1350,21 @@ const Payments = {
 
     if (!confirmed) return;
 
-    Storage.updateClient(clientId, {
-      monthlyAmount: 0,
-      dueDay: null,
-      retainerStatus: null
-    });
+    try {
+      await Storage.updateClient(clientId, {
+        monthlyAmount: 0,
+        dueDay: null,
+        retainerStatus: null
+      });
 
-    // Reset retainer inputs in modal
-    const retAmount = document.getElementById('createInvoiceRetainerAmount');
-    if (retAmount) retAmount.value = '';
+      // Reset retainer inputs in modal
+      const retAmount = document.getElementById('createInvoiceRetainerAmount');
+      if (retAmount) retAmount.value = '';
 
-    Utils.showToast(`Monthly retainer deleted for ${client.name}`, 'success');
+      Utils.showToast(`Monthly retainer deleted for ${client.name}`, 'success');
+    } catch (err) {
+      Utils.showToast(err.message || 'Failed to delete retainer', 'danger');
+    }
 
     this.syncCreateInvoiceFields();
     this.render();
@@ -1295,13 +1381,17 @@ const Payments = {
     const isPaused = client.retainerStatus === 'paused';
     const newStatus = isPaused ? 'active' : 'paused';
 
-    Storage.updateClient(clientId, { retainerStatus: newStatus });
-    Utils.showToast(
-      newStatus === 'paused'
-        ? `Monthly retainer paused for ${client.name}`
-        : `Monthly retainer resumed for ${client.name}`,
-      'success'
-    );
+    try {
+      await Storage.updateClient(clientId, { retainerStatus: newStatus });
+      Utils.showToast(
+        newStatus === 'paused'
+          ? `Monthly retainer paused for ${client.name}`
+          : `Monthly retainer resumed for ${client.name}`,
+        'success'
+      );
+    } catch (err) {
+      Utils.showToast(err.message || 'Failed to update retainer status', 'danger');
+    }
 
     if (refreshGenerateModal) {
       this.renderGenerateClientsList();

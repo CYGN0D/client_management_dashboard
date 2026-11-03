@@ -767,6 +767,7 @@ const Clients = {
       }
     } catch (err) {
       console.error(err);
+      Utils.showToast(err.message || 'Failed to save client details', 'danger');
       return;
     }
 
@@ -959,9 +960,13 @@ const Clients = {
     Utils.closeModal('clientSettingsModal');
   },
 
-  reactivateClient(clientId) {
-    Storage.updateClient(clientId, { status: 'active' });
-    Utils.showToast('Client reactivated successfully.', 'success');
+  async reactivateClient(clientId) {
+    try {
+      await Storage.updateClient(clientId, { status: 'active' });
+      Utils.showToast('Client reactivated successfully.', 'success');
+    } catch (err) {
+      Utils.showToast(err.message || 'Failed to reactivate client', 'danger');
+    }
     this.closeSettingsModal();
     this.render();
     if (this.activeDetailClientId === clientId) {
@@ -1978,18 +1983,22 @@ const Clients = {
     });
 
     if (confirmed) {
-      const res = await Storage.deleteOrDeactivateClient(clientId);
-      Utils.showToast(res.message, 'info');
-      this.render();
-      if (window.Dashboard) window.Dashboard.render();
-      if (window.Payments) window.Payments.render();
+      try {
+        const res = await Storage.deleteOrDeactivateClient(clientId);
+        Utils.showToast(res.message, 'info');
+        this.render();
+        if (window.Dashboard) window.Dashboard.render();
+        if (window.Payments) window.Payments.render();
 
-      if (res.action === 'deleted') {
-        if (window.App && App.activePage === 'client-detail') {
-          App.navigateTo('clients');
+        if (res.action === 'deleted') {
+          if (window.App && App.activePage === 'client-detail') {
+            App.navigateTo('clients');
+          }
+        } else if (this.activeDetailClientId === clientId) {
+          this.renderClientDetailPage(clientId);
         }
-      } else if (this.activeDetailClientId === clientId) {
-        this.renderClientDetailPage(clientId);
+      } catch (err) {
+        Utils.showToast(err.message || 'Action failed', 'danger');
       }
     }
   },
@@ -2011,13 +2020,17 @@ const Clients = {
       if (!confirmed) return;
     }
 
-    await Storage.updateClient(clientId, { retainerStatus: newStatus });
-    Utils.showToast(
-      newStatus === 'paused'
-        ? `Monthly retainer paused for ${client.name}`
-        : `Monthly retainer resumed for ${client.name}`,
-      'success'
-    );
+    try {
+      await Storage.updateClient(clientId, { retainerStatus: newStatus });
+      Utils.showToast(
+        newStatus === 'paused'
+          ? `Monthly retainer paused for ${client.name}`
+          : `Monthly retainer resumed for ${client.name}`,
+        'success'
+      );
+    } catch (err) {
+      Utils.showToast(err.message || 'Failed to update retainer status', 'danger');
+    }
 
     this.render();
     if (this.activeDetailClientId === clientId) {
@@ -2039,13 +2052,17 @@ const Clients = {
 
     if (!confirmed) return;
 
-    await Storage.updateClient(clientId, {
-      monthlyAmount: 0,
-      dueDay: null,
-      retainerStatus: null
-    });
+    try {
+      await Storage.updateClient(clientId, {
+        monthlyAmount: 0,
+        dueDay: null,
+        retainerStatus: null
+      });
 
-    Utils.showToast(`Monthly retainer deleted for ${client.name}`, 'success');
+      Utils.showToast(`Monthly retainer deleted for ${client.name}`, 'success');
+    } catch (err) {
+      Utils.showToast(err.message || 'Failed to delete retainer', 'danger');
+    }
 
     this.render();
     if (this.activeDetailClientId === clientId) {

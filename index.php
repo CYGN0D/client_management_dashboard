@@ -21,9 +21,12 @@ if (php_sapi_name() === 'cli-server') {
 
 // Check if request is directed to an API endpoint (works on all SAPIs and subdirectories)
 if (preg_match('#/api/(.+)$#', $uri, $matches)) {
-    $apiFile = __DIR__ . '/api/' . $matches[1];
+    $endpoint = $matches[1];
+    $apiFile = __DIR__ . '/api/' . $endpoint;
     if (is_dir($apiFile)) {
         $apiFile = rtrim($apiFile, '/') . '/index.php';
+    } elseif (!file_exists($apiFile) && file_exists($apiFile . '.php')) {
+        $apiFile = $apiFile . '.php';
     }
     if (file_exists($apiFile)) {
         require $apiFile;
