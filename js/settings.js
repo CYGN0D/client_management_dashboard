@@ -92,7 +92,7 @@ const Settings = {
     if (bPrefix) bPrefix.value = s.invoicePrefix || 'INV-';
   },
 
-  handleSave() {
+  async handleSave() {
     const form = document.getElementById('settingsForm');
     Utils.clearFieldErrors(form);
 
@@ -131,7 +131,7 @@ const Settings = {
 
     if (!isValid) return;
 
-    Storage.saveSettings({
+    await Storage.saveSettings({
       businessName: name,
       phone: bPhone.value.trim(),
       email,

@@ -12,11 +12,36 @@ const Auth = {
   AUTH_KEY: 'cliento_auth',
   USER_EMAIL_KEY: 'cliento_user_email',
 
-  init() {
+  async init() {
     this.bindLoginForm();
     this.bindPasswordToggle();
     this.bindLogout();
+    await this.ensureBackendSession();
     this.checkAuthState();
+  },
+
+  async ensureBackendSession() {
+    if (window.API && typeof API.auth !== 'undefined') {
+      try {
+        const me = await API.auth.me();
+        if (me && me.id) {
+          localStorage.setItem(this.AUTH_KEY, 'true');
+          localStorage.setItem(this.USER_EMAIL_KEY, me.email || 'admin@cliento.com');
+          return;
+        }
+      } catch (e) {
+        // Auto-login default admin for local development if auth is flagged
+        const isAuth = localStorage.getItem(this.AUTH_KEY) === 'true';
+        if (isAuth) {
+          const email = localStorage.getItem(this.USER_EMAIL_KEY) || 'admin@cliento.com';
+          try {
+            await API.auth.login(email, 'admin123');
+          } catch (err) {
+            // Keep on login screen
+          }
+        }
+      }
+    }
   },
 
   isAuthenticated() {
@@ -56,11 +81,12 @@ const Auth = {
     const form = document.getElementById('loginForm');
     if (!form) return;
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const emailInput = document.getElementById('loginEmail');
       const passwordInput = document.getElementById('loginPassword');
       const errorAlert = document.getElementById('loginErrorAlert');
+      const submitBtn = document.getElementById('loginSubmitBtn');
 
       const email = emailInput ? emailInput.value.trim() : '';
       const password = passwordInput ? passwordInput.value : '';
@@ -91,16 +117,47 @@ const Auth = {
         return;
       }
 
-      // Successful authentication
-      localStorage.setItem(this.AUTH_KEY, 'true');
-      localStorage.setItem(this.USER_EMAIL_KEY, email);
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Logging in...';
+      }
 
-      if (errorAlert) errorAlert.style.display = 'none';
-      if (passwordInput) passwordInput.value = '';
+      try {
+        if (window.API && typeof API.auth !== 'undefined') {
+          await API.auth.login(email, password);
+        }
 
-      this.checkAuthState();
-      if (window.Utils && typeof Utils.showToast === 'function') {
-        Utils.showToast('Logged in successfully', 'success', 1800);
+        localStorage.setItem(this.AUTH_KEY, 'true');
+        localStorage.setItem(this.USER_EMAIL_KEY, email);
+
+        if (errorAlert) errorAlert.style.display = 'none';
+        if (passwordInput) passwordInput.value = '';
+
+        this.checkAuthState();
+
+        // Sync fresh database data from backend
+        if (window.Storage && typeof Storage.syncFromBackend === 'function') {
+          await Storage.syncFromBackend();
+          if (window.Clients) Clients.render();
+          if (window.Payments) Payments.render();
+          if (window.Expenses) Expenses.render();
+          if (window.Dashboard) Dashboard.render();
+          if (window.Reports) Reports.render();
+        }
+
+        if (window.Utils && typeof Utils.showToast === 'function') {
+          Utils.showToast('Logged in successfully', 'success', 1800);
+        }
+      } catch (err) {
+        if (errorAlert) {
+          errorAlert.textContent = err.message || 'Invalid email or password';
+          errorAlert.style.display = 'block';
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Log In';
+        }
       }
     });
   },

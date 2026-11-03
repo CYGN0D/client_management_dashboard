@@ -929,7 +929,7 @@ const Payments = {
     let createdCount = 0;
     let totalPaise = 0;
 
-    checkedBoxes.forEach((cb) => {
+    for (const cb of checkedBoxes) {
       const clientId = cb.getAttribute('data-client-id');
       const amount = parseFloat(cb.getAttribute('data-amount')) || 0;
       const dueDate = cb.getAttribute('data-due-date') || Utils.calculateDueDate(billingMonth, 5);
@@ -938,9 +938,9 @@ const Payments = {
       if (client) {
         const clientJoinMonth = (client.joiningDate || '').substring(0, 7);
         if (clientJoinMonth && billingMonth < clientJoinMonth) {
-          return;
+          continue;
         }
-        Storage.addInvoice({
+        await Storage.addInvoice({
           clientId: client.id,
           clientName: client.name,
           serviceName: client.service || 'Monthly Retainer',
@@ -953,7 +953,7 @@ const Payments = {
         createdCount++;
         totalPaise += Utils.toPaise(amount);
       }
-    });
+    }
 
     Utils.closeModal('generateInvoicesModal');
     Utils.showToast(`Generated ${createdCount} invoice(s) totaling ${Utils.formatCurrency(Utils.fromPaise(totalPaise))} for ${Utils.formatMonth(billingMonth)}`, 'success');
@@ -1034,7 +1034,7 @@ const Payments = {
     if (!isValid) return;
 
     try {
-      Storage.recordPayment({
+      await Storage.recordPayment({
         invoiceId: invoice.id,
         amount: Utils.fromPaise(enteredPaise),
         paymentDate: paymentDate,
@@ -1171,7 +1171,7 @@ const Payments = {
       Utils.closeModal('invoiceHistoryModal');
     }
 
-    Storage.deleteInvoice(invoiceId);
+    await Storage.deleteInvoice(invoiceId);
     Utils.showToast(`Invoice ${invoice.invoiceNumber} deleted successfully`, 'success');
 
     this.render();
@@ -1199,7 +1199,7 @@ const Payments = {
 
     if (!confirmed) return;
 
-    Storage.deletePayment(paymentId);
+    await Storage.deletePayment(paymentId);
     Utils.showToast(`Payment of ${Utils.formatCurrency(payment.amount)} deleted`, 'success');
 
     if (payment.invoiceId) {

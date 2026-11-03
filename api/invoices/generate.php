@@ -18,6 +18,17 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 AuthMiddleware::verifyCsrf();
 $input = Validator::getJsonInput();
 
+// Normalize parameters
+if (isset($input['billingMonth']) && !isset($input['billing_month'])) {
+    $input['billing_month'] = $input['billingMonth'];
+}
+if (isset($input['month']) && !isset($input['billing_month'])) {
+    $input['billing_month'] = $input['month'];
+}
+if (isset($input['clientIds']) && !isset($input['client_ids'])) {
+    $input['client_ids'] = $input['clientIds'];
+}
+
 $validator = new Validator();
 $validator->month($input, 'billing_month', 'Billing Month');
 

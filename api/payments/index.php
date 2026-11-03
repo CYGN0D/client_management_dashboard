@@ -26,6 +26,20 @@ if ($method === 'POST') {
     AuthMiddleware::verifyCsrf();
     $input = Validator::getJsonInput();
 
+    // Normalize camelCase to snake_case
+    if (isset($input['invoiceId']) && !isset($input['invoice_id'])) {
+        $input['invoice_id'] = $input['invoiceId'];
+    }
+    if (isset($input['paymentDate']) && !isset($input['payment_date'])) {
+        $input['payment_date'] = $input['paymentDate'];
+    }
+    if (isset($input['paymentMethod']) && !isset($input['payment_method'])) {
+        $input['payment_method'] = $input['paymentMethod'];
+    }
+    if (isset($input['referenceNumber']) && !isset($input['reference_number'])) {
+        $input['reference_number'] = $input['referenceNumber'];
+    }
+
     $validator = new Validator();
     $validator->intRange($input, 'invoice_id', 'Invoice Selection', 1, PHP_INT_MAX);
     $validator->positiveDecimal($input, 'amount', 'Payment Amount');

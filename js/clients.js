@@ -640,7 +640,7 @@ const Clients = {
     Utils.refreshIcons();
   },
 
-  handleFormSubmit() {
+  async handleFormSubmit() {
     const form = document.getElementById('clientForm');
     Utils.clearFieldErrors(form);
 
@@ -719,51 +719,58 @@ const Clients = {
       status: statusInput.value
     };
 
-    if (id) {
-      Storage.updateClient(id, payload);
-      Utils.showToast('Client details updated successfully', 'success');
-    } else {
-      const newClient = Storage.addClient(payload);
-
-      // Handle First-Time Project Advance Payment if entered
-      if (initialAmount > 0 && initialStatusSelect && initialStatusSelect.value !== 'none') {
-        const initialStatus = initialStatusSelect.value;
-        const initialMethod = initialMethodSelect ? initialMethodSelect.value : 'Bank Transfer';
-
-        // Automatically create project advance invoice
-        const invPayload = {
-          clientId: newClient.id,
-          serviceName: service || 'Project Advance / Initial Payment',
-          billingMonth: (joiningDate || Utils.getTodayString()).substring(0, 7),
-          amount: initialAmount,
-          dueDate: joiningDate || Utils.getTodayString(),
-          chargeType: 'one_time',
-          notes: 'Initial Project Advance / Upfront Payment'
-        };
-
-        const invoice = Storage.addInvoice(invPayload);
-
-        // If marked paid/received upfront, auto-record payment receipt
-        if (initialStatus === 'paid' && invoice) {
-          Storage.recordPayment({
-            invoiceId: invoice.id,
-            amount: initialAmount,
-            paymentDate: joiningDate || Utils.getTodayString(),
-            paymentMethod: initialMethod,
-            notes: 'Project Advance received upfront upon onboarding'
-          });
-        }
-
-        Utils.showToast(`Client created & advance of ${Utils.formatCurrency(initialAmount)} recorded!`, 'success');
+    try {
+      if (id) {
+        await Storage.updateClient(id, payload);
+        Utils.showToast('Client details updated successfully', 'success');
       } else {
-        Utils.showToast('New client created successfully', 'success');
+        const newClient = await Storage.addClient(payload);
+
+        // Handle First-Time Project Advance Payment if entered
+        if (initialAmount > 0 && initialStatusSelect && initialStatusSelect.value !== 'none') {
+          const initialStatus = initialStatusSelect.value;
+          const initialMethod = initialMethodSelect ? initialMethodSelect.value : 'Bank Transfer';
+
+          // Automatically create project advance invoice
+          const invPayload = {
+            clientId: newClient.id,
+            serviceName: service || 'Project Advance / Initial Payment',
+            billingMonth: (joiningDate || Utils.getTodayString()).substring(0, 7),
+            amount: initialAmount,
+            dueDate: joiningDate || Utils.getTodayString(),
+            chargeType: 'one_time',
+            notes: 'Initial Project Advance / Upfront Payment'
+          };
+
+          const invoice = await Storage.addInvoice(invPayload);
+
+          // If marked paid/received upfront, auto-record payment receipt
+          if (initialStatus === 'paid' && invoice) {
+            await Storage.recordPayment({
+              invoiceId: invoice.id,
+              amount: initialAmount,
+              paymentDate: joiningDate || Utils.getTodayString(),
+              paymentMethod: initialMethod,
+              notes: 'Project Advance received upfront upon onboarding'
+            });
+          }
+
+          Utils.showToast(`Client created & advance of ${Utils.formatCurrency(initialAmount)} recorded!`, 'success');
+        } else {
+          Utils.showToast('New client created successfully', 'success');
+        }
       }
+    } catch (err) {
+      console.error(err);
+      return;
     }
 
     Utils.closeModal('clientModal');
     this.render();
     if (window.Dashboard) window.Dashboard.render();
     if (window.Payments) window.Payments.render();
+    if (window.Reports) window.Reports.render();
+  },
   },
 
   viewClientDetails(clientId, targetTab = 'invoices') {
@@ -1967,7 +1974,7 @@ const Clients = {
     });
 
     if (confirmed) {
-      const res = Storage.deleteOrDeactivateClient(clientId);
+      const res = await Storage.deleteOrDeactivateClient(clientId);
       Utils.showToast(res.message, 'info');
       this.render();
       if (window.Dashboard) window.Dashboard.render();
@@ -2000,7 +2007,7 @@ const Clients = {
       if (!confirmed) return;
     }
 
-    Storage.updateClient(clientId, { retainerStatus: newStatus });
+    await Storage.updateClient(clientId, { retainerStatus: newStatus });
     Utils.showToast(
       newStatus === 'paused'
         ? `Monthly retainer paused for ${client.name}`
@@ -2028,7 +2035,7 @@ const Clients = {
 
     if (!confirmed) return;
 
-    Storage.updateClient(clientId, {
+    await Storage.updateClient(clientId, {
       monthlyAmount: 0,
       dueDay: null,
       retainerStatus: null

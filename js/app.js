@@ -7,30 +7,35 @@
 const App = {
   activePage: 'dashboard',
 
-  init() {
+  async init() {
     // 1. Initialize persistent storage layer (clean real data)
     Storage.initStorage();
 
-    // 2. Initialize pure & clean authentication
+    // 2. Initialize pure & clean authentication & ensure backend session
     if (window.Auth && typeof Auth.init === 'function') {
-      Auth.init();
+      await Auth.init();
     }
 
-    // 3. Initialize modal accessibility triggers & universal table popups
+    // 3. Sync live database records directly from PHP backend (cliento.db / MySQL)
+    if (window.Storage && typeof Storage.syncFromBackend === 'function') {
+      await Storage.syncFromBackend();
+    }
+
+    // 4. Initialize modal accessibility triggers & universal table popups
     Utils.initModalListeners();
     if (typeof Utils.initTablePopups === 'function') {
       Utils.initTablePopups();
     }
 
-    // 3. Initialize dark/light theme preference
+    // 5. Initialize dark/light theme preference
     this.initTheme();
 
-    // 4. Initialize custom DD/MM/YYYY datepicker component
+    // 6. Initialize custom DD/MM/YYYY datepicker component
     if (window.DatePicker && typeof DatePicker.init === 'function') {
       DatePicker.init();
     }
 
-    // 5. Initialize all functional modules and attach form/button event listeners
+    // 7. Initialize all functional modules with fresh database state
     if (window.Clients && typeof Clients.init === 'function') Clients.init();
     if (window.Payments && typeof Payments.init === 'function') Payments.init();
     if (window.Expenses && typeof Expenses.init === 'function') Expenses.init();
@@ -38,10 +43,10 @@ const App = {
     if (window.Reports && typeof Reports.init === 'function') Reports.init();
     if (window.Settings && typeof Settings.init === 'function') Settings.init();
 
-    // 4. Set up sidebar navigation and routing
+    // 8. Set up sidebar navigation and routing
     this.bindNavigation();
 
-    // 5. Set up mobile hamburger drawer
+    // 9. Set up mobile hamburger drawer
     this.bindMobileDrawer();
 
     // 6. Route to initial page from URL hash or default to dashboard

@@ -22,6 +22,17 @@ if ($method === 'PUT' || $method === 'POST') {
     AuthMiddleware::verifyCsrf();
     $input = Validator::getJsonInput();
 
+    // Normalize camelCase to snake_case
+    if (isset($input['businessName']) && !isset($input['business_name'])) {
+        $input['business_name'] = $input['businessName'];
+    }
+    if (isset($input['billingPreference']) && !isset($input['billing_preference'])) {
+        $input['billing_preference'] = $input['billingPreference'];
+    }
+    if (isset($input['invoicePrefix']) && !isset($input['invoice_prefix'])) {
+        $input['invoice_prefix'] = $input['invoicePrefix'];
+    }
+
     $validator = new Validator();
     $validator->optionalString($input, 'business_name', 'Business Name', 150);
     $validator->optionalString($input, 'phone', 'Phone Number', 30);

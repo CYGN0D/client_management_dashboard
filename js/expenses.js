@@ -284,7 +284,7 @@ const Expenses = {
     Utils.openModal('expenseModal');
   },
 
-  handleFormSubmit() {
+  async handleFormSubmit() {
     const form = document.getElementById('expenseForm');
     Utils.clearFieldErrors(form);
 
@@ -330,12 +330,17 @@ const Expenses = {
       description: descInput.value.trim()
     };
 
-    if (id) {
-      Storage.updateExpense(id, payload);
-      Utils.showToast('Expense updated successfully', 'success');
-    } else {
-      Storage.addExpense(payload);
-      Utils.showToast('Expense added successfully', 'success');
+    try {
+      if (id) {
+        await Storage.updateExpense(id, payload);
+        Utils.showToast('Expense updated successfully', 'success');
+      } else {
+        await Storage.addExpense(payload);
+        Utils.showToast('Expense added successfully', 'success');
+      }
+    } catch (err) {
+      console.error(err);
+      return;
     }
 
     Utils.closeModal('expenseModal');
@@ -356,7 +361,7 @@ const Expenses = {
     });
 
     if (confirmed) {
-      Storage.deleteExpense(expenseId);
+      await Storage.deleteExpense(expenseId);
       Utils.showToast('Expense deleted', 'info');
       this.render();
       if (window.Dashboard) window.Dashboard.render();
