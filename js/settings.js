@@ -5,12 +5,63 @@
  */
 
 const Settings = {
+  isEditing: false,
+
   init() {
     this.bindEvents();
+    this.renderReadOnlyView();
     this.loadValues();
+    this.setEditing(false);
+  },
+
+  renderReadOnlyView() {
+    const s = Storage.getSettings();
+    const roName = document.getElementById('roSettingsBusinessName');
+    const roPhone = document.getElementById('roSettingsPhone');
+    const roEmail = document.getElementById('roSettingsEmail');
+    const roCurrency = document.getElementById('roSettingsCurrency');
+    const roPref = document.getElementById('roSettingsBillingPreference');
+    const roPrefix = document.getElementById('roSettingsInvoicePrefix');
+    const roAddress = document.getElementById('roSettingsAddress');
+
+    if (roName) roName.textContent = s.businessName || '—';
+    if (roPhone) roPhone.textContent = s.phone || '—';
+    if (roEmail) roEmail.textContent = s.email || '—';
+    if (roCurrency) roCurrency.textContent = `${s.currency || 'INR'} (₹) — Indian Rupee`;
+    if (roPref) roPref.textContent = `Day ${s.billingPreference || 5} of each month`;
+    if (roPrefix) roPrefix.textContent = s.invoicePrefix || 'INV-';
+    if (roAddress) roAddress.textContent = s.address ? s.address : 'No business address specified.';
+  },
+
+  setEditing(isEditing) {
+    this.isEditing = Boolean(isEditing);
+    const roView = document.getElementById('settingsReadOnlyView');
+    const form = document.getElementById('settingsForm');
+    const toggleBtn = document.getElementById('settingsEditToggleBtn');
+
+    if (roView) roView.style.display = this.isEditing ? 'none' : 'block';
+    if (form) form.style.display = this.isEditing ? 'block' : 'none';
+    if (toggleBtn) toggleBtn.style.display = this.isEditing ? 'none' : 'inline-flex';
+
+    if (this.isEditing) {
+      this.loadValues();
+      const firstInput = document.getElementById('settingsBusinessName');
+      if (firstInput) firstInput.focus();
+    } else {
+      this.renderReadOnlyView();
+      if (form) Utils.clearFieldErrors(form);
+    }
+    Utils.refreshIcons();
   },
 
   bindEvents() {
+    const toggleBtn = document.getElementById('settingsEditToggleBtn');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        this.setEditing(true);
+      });
+    }
+
     const form = document.getElementById('settingsForm');
     if (form) {
       form.addEventListener('submit', (e) => {
@@ -118,6 +169,8 @@ const Settings = {
         invoicePrefix: prefix
       });
 
+      this.renderReadOnlyView();
+      this.setEditing(false);
       Utils.showToast('Settings saved to database successfully', 'success');
     } catch (err) {
       Utils.showToast(`Error saving settings: ${err.message}`, 'error');
@@ -126,6 +179,7 @@ const Settings = {
 
   handleDiscard() {
     this.loadValues();
+    this.setEditing(false);
     Utils.showToast('Unsaved changes discarded', 'info');
   },
 

@@ -88,8 +88,15 @@ if ($method === 'PUT' || $method === 'PATCH') {
 
 if ($method === 'DELETE') {
     AuthMiddleware::verifyCsrf();
+    $permanent = isset($_GET['permanent']) && ($_GET['permanent'] === '1' || $_GET['permanent'] === 'true' || $_GET['permanent'] === 1);
+    $force = isset($_GET['force']) && ($_GET['force'] === '1' || $_GET['force'] === 'true' || $_GET['force'] === 1);
+    
     try {
-        $res = ClientService::deleteOrDeactivate($userId, $clientId);
+        if ($permanent || $force) {
+            $res = ClientService::deletePermanently($userId, $clientId);
+        } else {
+            $res = ClientService::deleteOrDeactivate($userId, $clientId);
+        }
         Response::success($res, $res['message']);
     } catch (Exception $e) {
         Response::error($e->getMessage(), 400);

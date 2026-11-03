@@ -305,14 +305,18 @@ const Storage = {
     return mapped;
   },
 
-  async deleteOrDeactivateClient(id) {
+  async deleteOrDeactivateClient(id, permanent = false) {
     if (!window.API || typeof API.clients === 'undefined') {
       throw new Error('API client is not available');
     }
 
-    const res = await API.clients.delete(id);
+    const res = await API.clients.delete(id, permanent);
     await this.syncFromBackend();
     return res || { action: 'deleted', message: 'Client removed' };
+  },
+
+  async deleteClientPermanently(id) {
+    return this.deleteOrDeactivateClient(id, true);
   },
 
   /* ---------------- Invoices ---------------- */

@@ -178,8 +178,9 @@ const API = {
       return res.data;
     },
 
-    async delete(id) {
-      const res = await API.request(`clients/detail.php?id=${encodeURIComponent(id)}`, {
+    async delete(id, permanent = false) {
+      const endpoint = `clients/detail.php?id=${encodeURIComponent(id)}${permanent ? '&permanent=1' : ''}`;
+      const res = await API.request(endpoint, {
         method: 'DELETE'
       });
       return res.data;

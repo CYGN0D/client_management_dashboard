@@ -13,6 +13,7 @@ const Clients = {
     this.bindEvents();
     this.bindServiceChips();
     this.bindInitialPaymentEvents();
+    this.bindDeleteModalEvents();
     if (window.Auth && typeof Auth.isAuthenticated === 'function' && Auth.isAuthenticated()) {
       this.render();
     }
@@ -397,7 +398,7 @@ const Clients = {
                   </button>
                   <div class="dropdown-divider"></div>
                   <button type="button" class="dropdown-item text-danger" onclick="Clients.confirmDeleteClient('${client.id}')">
-                    <i data-lucide="${isStatusActive ? 'user-x' : 'trash-2'}"></i> ${isStatusActive ? 'Deactivate Client' : 'Delete Client'}
+                    <i data-lucide="trash-2"></i> Delete Client
                   </button>
                 </div>
               </div>
@@ -454,7 +455,7 @@ const Clients = {
                     </button>
                     <div class="dropdown-divider"></div>
                     <button type="button" class="dropdown-item text-danger" onclick="Clients.confirmDeleteClient('${client.id}')">
-                      <i data-lucide="${isStatusActive ? 'user-x' : 'trash-2'}"></i> ${isStatusActive ? 'Deactivate' : 'Delete'}
+                      <i data-lucide="trash-2"></i> Delete Client
                     </button>
                   </div>
                 </div>
@@ -952,8 +953,8 @@ const Clients = {
                 <i data-lucide="check-circle"></i> Reactivate Client Account
               </button>
             ` : ''}
-            <button type="button" class="btn ${isStatusActive ? 'btn-secondary' : 'btn-danger'} btn-sm w-full" onclick="Clients.closeSettingsModal(); Clients.confirmDeleteClient('${client.id}')" style="${isStatusActive ? 'color:var(--color-danger);border-color:var(--color-danger);' : ''}">
-              <i data-lucide="${isStatusActive ? 'user-x' : 'trash-2'}"></i> ${isStatusActive ? 'Deactivate Client' : 'Delete Client Permanently'}
+            <button type="button" class="btn btn-danger btn-sm w-full" onclick="Clients.closeSettingsModal(); Clients.confirmDeleteClient('${client.id}')">
+              <i data-lucide="trash-2"></i> Delete Client Permanently
             </button>
           </div>
         </div>
@@ -1972,42 +1973,202 @@ const Clients = {
     Utils.refreshIcons();
   },
 
+  _deleteTargetClientId: null,
+  _deleteCurrentStep: 1,
+
+  bindDeleteModalEvents() {
+    if (this._deleteModalEventsBound) return;
+    this._deleteModalEventsBound = true;
+
+    const btn1 = document.getElementById('delClientBtnStep1');
+    const btn2 = document.getElementById('delClientBtnStep2');
+    const btn3 = document.getElementById('delClientBtnStep3');
+    const input = document.getElementById('delClientVerificationInput');
+
+    if (btn1) {
+      btn1.addEventListener('click', () => {
+        this.goToDeleteStep(2);
+      });
+    }
+
+    if (btn2) {
+      btn2.addEventListener('click', () => {
+        this.goToDeleteStep(3);
+      });
+    }
+
+    if (input) {
+      input.addEventListener('input', () => {
+        const client = Storage.getClientById(this._deleteTargetClientId);
+        if (!client) return;
+        const val = input.value.trim().toLowerCase();
+        const target = client.name.trim().toLowerCase();
+        const matches = (val === target);
+
+        if (btn3) {
+          btn3.disabled = !matches;
+        }
+
+        const errEl = document.getElementById('delClientMatchError');
+        if (errEl) {
+          errEl.style.display = (val && !matches && val.length >= 3) ? 'block' : 'none';
+        }
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && btn3 && !btn3.disabled) {
+          e.preventDefault();
+          this.executePermanentDelete();
+        }
+      });
+    }
+
+    if (btn3) {
+      btn3.addEventListener('click', () => {
+        this.executePermanentDelete();
+      });
+    }
+  },
+
   async confirmDeleteClient(clientId) {
     document.querySelectorAll('.dropdown-menu.show').forEach((m) => m.classList.remove('show'));
+    if (!Storage._isLoaded && window.Auth && Auth.isAuthenticated()) {
+      await Storage.syncFromBackend();
+    }
+
     const client = Storage.getClientById(clientId);
-    if (!client) return;
+    if (!client) {
+      Utils.showToast('Client not found', 'warning');
+      return;
+    }
 
-    const invoices = Storage.getInvoices().filter((inv) => inv.clientId === clientId);
-    const payments = Storage.getPayments().filter((p) => p.clientId === clientId);
-    const hasHistory = invoices.length > 0 || payments.length > 0;
+    this._deleteTargetClientId = clientId;
+    this.bindDeleteModalEvents();
 
-    const confirmed = await Utils.confirm({
-      title: hasHistory ? 'Deactivate Client' : 'Delete Client',
-      message: hasHistory
-        ? `Client "${client.name}" has ${invoices.length} invoice(s) and ${payments.length} payment(s). To maintain audit integrity, deactivating this client stops future billing while preserving all historical records.`
-        : `Are you sure you want to permanently delete client "${client.name}"? This action cannot be undone.`,
-      confirmText: hasHistory ? 'Deactivate Client' : 'Delete Client',
-      confirmDanger: true
-    });
+    const invoices = Storage.getInvoices().filter((inv) => String(inv.clientId) === String(clientId));
+    const payments = Storage.getPayments().filter((p) => String(p.clientId) === String(clientId));
 
-    if (confirmed) {
-      try {
-        const res = await Storage.deleteOrDeactivateClient(clientId);
-        Utils.showToast(res.message, 'info');
-        this.render();
-        if (window.Dashboard) window.Dashboard.render();
-        if (window.Payments) window.Payments.render();
+    // Populate Step 1 details
+    const idEl = document.getElementById('delClientId');
+    const name1 = document.getElementById('delClientName1');
+    const name2 = document.getElementById('delClientName2');
+    const targetName = document.getElementById('delClientTargetName');
+    const company1 = document.getElementById('delClientCompany1');
+    const email1 = document.getElementById('delClientEmail1');
+    const invCount1 = document.getElementById('delClientInvCount1');
+    const payCount1 = document.getElementById('delClientPayCount1');
+    const input = document.getElementById('delClientVerificationInput');
+    const errEl = document.getElementById('delClientMatchError');
 
-        if (res.action === 'deleted') {
-          if (window.App && App.activePage === 'client-detail') {
-            App.navigateTo('clients');
-          }
-        } else if (this.activeDetailClientId === clientId) {
-          this.renderClientDetailPage(clientId);
-        }
-      } catch (err) {
-        Utils.showToast(err.message || 'Action failed', 'danger');
+    if (idEl) idEl.value = clientId;
+    if (name1) name1.textContent = client.name;
+    if (name2) name2.textContent = client.name;
+    if (targetName) targetName.textContent = client.name;
+    if (company1) company1.textContent = client.company || 'Individual Client';
+    if (email1) email1.textContent = client.email || 'No email registered';
+    if (invCount1) invCount1.textContent = `${invoices.length} invoice(s)`;
+    if (payCount1) payCount1.textContent = `${payments.length} payment(s)`;
+    if (input) input.value = '';
+    if (errEl) errEl.style.display = 'none';
+
+    this.goToDeleteStep(1);
+    Utils.openModal('deleteClientModal');
+    Utils.refreshIcons();
+  },
+
+  goToDeleteStep(step) {
+    this._deleteCurrentStep = step;
+
+    const step1Box = document.getElementById('delClientStep1');
+    const step2Box = document.getElementById('delClientStep2');
+    const step3Box = document.getElementById('delClientStep3');
+
+    const btn1 = document.getElementById('delClientBtnStep1');
+    const btn2 = document.getElementById('delClientBtnStep2');
+    const btn3 = document.getElementById('delClientBtnStep3');
+
+    const badge1 = document.getElementById('delClientStepBadge1');
+    const badge2 = document.getElementById('delClientStepBadge2');
+    const badge3 = document.getElementById('delClientStepBadge3');
+
+    if (step1Box) step1Box.style.display = step === 1 ? 'block' : 'none';
+    if (step2Box) step2Box.style.display = step === 2 ? 'block' : 'none';
+    if (step3Box) step3Box.style.display = step === 3 ? 'block' : 'none';
+
+    if (btn1) btn1.style.display = step === 1 ? 'inline-flex' : 'none';
+    if (btn2) btn2.style.display = step === 2 ? 'inline-flex' : 'none';
+    if (btn3) btn3.style.display = step === 3 ? 'inline-flex' : 'none';
+
+    // Update progress badges
+    if (badge1) {
+      badge1.style.color = step >= 1 ? 'var(--color-danger)' : 'var(--color-text-muted)';
+      badge1.style.fontWeight = step === 1 ? '700' : '500';
+    }
+    if (badge2) {
+      badge2.style.color = step >= 2 ? 'var(--color-danger)' : 'var(--color-text-muted)';
+      badge2.style.fontWeight = step === 2 ? '700' : '500';
+      const circle = badge2.querySelector('span');
+      if (circle) {
+        circle.style.background = step >= 2 ? 'var(--color-danger)' : 'var(--color-border)';
+        circle.style.color = step >= 2 ? '#fff' : 'var(--color-text-secondary)';
       }
+    }
+    if (badge3) {
+      badge3.style.color = step >= 3 ? 'var(--color-danger)' : 'var(--color-text-muted)';
+      badge3.style.fontWeight = step === 3 ? '700' : '500';
+      const circle = badge3.querySelector('span');
+      if (circle) {
+        circle.style.background = step >= 3 ? 'var(--color-danger)' : 'var(--color-border)';
+        circle.style.color = step >= 3 ? '#fff' : 'var(--color-text-secondary)';
+      }
+    }
+
+    if (step === 3) {
+      const input = document.getElementById('delClientVerificationInput');
+      if (input) {
+        input.value = '';
+        setTimeout(() => input.focus(), 80);
+      }
+      if (btn3) btn3.disabled = true;
+    }
+    Utils.refreshIcons();
+  },
+
+  async executePermanentDelete() {
+    const clientId = this._deleteTargetClientId;
+    if (!clientId) return;
+
+    const client = Storage.getClientById(clientId);
+    const clientName = client ? client.name : 'Client';
+    const btn3 = document.getElementById('delClientBtnStep3');
+
+    try {
+      if (btn3) {
+        btn3.disabled = true;
+        btn3.innerHTML = '<i data-lucide="loader" class="spin"></i> Deleting from Database...';
+      }
+
+      await Storage.deleteClientPermanently(clientId);
+
+      Utils.closeModal('deleteClientModal');
+      Utils.showToast(`Client "${clientName}" and all associated records permanently deleted`, 'success');
+
+      this.render();
+      if (window.Dashboard) window.Dashboard.render();
+      if (window.Payments) window.Payments.render();
+      if (window.Reports) window.Reports.render();
+
+      if (window.App && App.activePage === 'client-detail') {
+        App.navigateTo('clients');
+      }
+    } catch (err) {
+      Utils.showToast(err.message || 'Failed to delete client', 'danger');
+    } finally {
+      if (btn3) {
+        btn3.disabled = false;
+        btn3.innerHTML = '<i data-lucide="trash-2"></i> Permanently Delete Client (3/3)';
+      }
+      Utils.refreshIcons();
     }
   },
 

@@ -133,7 +133,10 @@ const App = {
     if (window.Expenses && typeof Expenses.render === 'function') Expenses.render();
     if (window.Dashboard && typeof Dashboard.render === 'function') Dashboard.render();
     if (window.Reports && typeof Reports.render === 'function') Reports.render();
-    if (window.Settings && typeof Settings.loadValues === 'function') Settings.loadValues();
+    if (window.Settings) {
+      if (typeof Settings.loadValues === 'function') Settings.loadValues();
+      if (typeof Settings.renderReadOnlyView === 'function') Settings.renderReadOnlyView();
+    }
     Utils.refreshIcons();
   },
 

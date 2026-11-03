@@ -364,6 +364,58 @@ class ClientService {
     }
 
     /**
+     * Permanently delete client and cascade delete all their invoices, payments, and invoice items.
+     * Enforces strict multi-tenant isolation.
+     */
+    public static function deletePermanently(int $userId, int $clientId): array {
+        $existing = self::getById($userId, $clientId);
+        if (!$existing) {
+            throw new Exception('Client not found or unauthorized.');
+        }
+
+        $db = Database::getConnection();
+        $db->beginTransaction();
+        try {
+            // Delete invoice items for client's invoices
+            $delItemsStmt = $db->prepare('
+                DELETE FROM invoice_items 
+                WHERE invoice_id IN (SELECT id FROM invoices WHERE client_id = :cid AND user_id = :uid)
+            ');
+            $delItemsStmt->execute([':cid' => $clientId, ':uid' => $userId]);
+
+            // Delete payments for this client
+            $delPayStmt = $db->prepare('DELETE FROM payments WHERE client_id = :cid AND user_id = :uid');
+            $delPayStmt->execute([':cid' => $clientId, ':uid' => $userId]);
+
+            // Delete invoices for this client
+            $delInvStmt = $db->prepare('DELETE FROM invoices WHERE client_id = :cid AND user_id = :uid');
+            $delInvStmt->execute([':cid' => $clientId, ':uid' => $userId]);
+
+            // Delete client record
+            $delClientStmt = $db->prepare('DELETE FROM clients WHERE id = :id AND user_id = :uid');
+            $delClientStmt->execute([':id' => $clientId, ':uid' => $userId]);
+
+            Helpers::logActivity(
+                $userId,
+                'client',
+                $clientId,
+                'delete_permanent',
+                'Permanently deleted client ' . $existing['name'] . ' and all associated financial records'
+            );
+
+            $db->commit();
+            return [
+                'action' => 'deleted',
+                'message' => 'Client and all associated records permanently deleted.',
+                'client_id' => $clientId
+            ];
+        } catch (Exception $e) {
+            $db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
      * Toggle retainer active / paused status
      */
     public static function toggleRetainerStatus(int $userId, int $clientId): array {
