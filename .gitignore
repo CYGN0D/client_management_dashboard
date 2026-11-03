@@ -1,0 +1,11 @@
+# Environment configuration
+.env
+
+# Archive files
+*.zip
+
+# Operating System & Editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
