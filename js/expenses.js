@@ -248,7 +248,10 @@ const Expenses = {
     Utils.refreshIcons();
   },
 
-  openAddEditModal(expenseId = null) {
+  async openAddEditModal(expenseId = null) {
+    if (!Storage._isLoaded && window.Auth && Auth.isAuthenticated()) {
+      await Storage.syncFromBackend();
+    }
     const form = document.getElementById('expenseForm');
     const modalTitle = document.getElementById('expenseModalTitle');
     Utils.clearFieldErrors(form);

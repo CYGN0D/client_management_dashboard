@@ -8,7 +8,7 @@ const App = {
   activePage: 'dashboard',
 
   async init() {
-    // 1. Initialize persistent storage layer
+    // 1. Purge legacy database localStorage keys & obsolete session flags
     try {
       Storage.initStorage();
     } catch (e) {
@@ -41,7 +41,15 @@ const App = {
       console.warn('[App] Datepicker init:', e);
     }
 
-    // 5. Initialize all functional modules DOM event bindings and UI hooks
+    // 5. Set up sidebar navigation and mobile drawer
+    try {
+      this.bindNavigation();
+      this.bindMobileDrawer();
+    } catch (e) {
+      console.warn('[App] Navigation init:', e);
+    }
+
+    // 6. Bind DOM event handlers for all modules (without querying protected endpoints yet)
     try {
       if (window.Clients && typeof Clients.init === 'function') Clients.init();
       if (window.Payments && typeof Payments.init === 'function') Payments.init();
@@ -53,68 +61,79 @@ const App = {
       console.warn('[App] Modules init:', e);
     }
 
-    // 6. Set up sidebar navigation, mobile drawer and routing
-    try {
-      this.bindNavigation();
-      this.bindMobileDrawer();
-
-      const handleHashRouting = (updateHash = false) => {
-        const rawHash = window.location.hash.replace('#', '') || 'dashboard';
-        if (rawHash.startsWith('client-detail')) {
-          let clientId = null;
-          if (rawHash.includes(':')) {
-            clientId = rawHash.split(':')[1];
-          } else if (rawHash.includes('?id=')) {
-            clientId = rawHash.split('?id=')[1];
-          } else if (rawHash.includes('/')) {
-            clientId = rawHash.split('/')[1];
-          }
-          if (clientId && window.Clients) {
-            Clients.activeDetailClientId = clientId;
-          }
-          this.navigateTo('client-detail', updateHash);
-        } else {
-          this.navigateTo(rawHash, updateHash);
-        }
-      };
-
-      handleHashRouting(false);
-      window.addEventListener('hashchange', () => {
-        handleHashRouting(false);
-      });
-    } catch (e) {
-      console.warn('[App] Navigation init:', e);
-    }
-
-    // 7. Refresh Lucide icons
-    Utils.refreshIcons();
-
-    // 8. Initialize backend authentication session
+    // 7. Verify Server Authentication FIRST before any protected rendering
+    let isAuthed = false;
     try {
       if (window.Auth && typeof Auth.init === 'function') {
-        await Auth.init();
+        isAuthed = await Auth.init();
       }
     } catch (e) {
       console.warn('[App] Auth init notice:', e);
     }
 
-    // 9. Sync live database records directly from PHP backend (cliento.db / MySQL)
+    // If not authenticated, stop here. User will log in via the login form.
+    if (!isAuthed) {
+      Utils.refreshIcons();
+      return;
+    }
+
+    // 8. If authenticated, setup hash routing and sync live data from database
+    try {
+      this.setupHashRouting();
+    } catch (e) {
+      console.warn('[App] Routing init:', e);
+    }
+
+    // 9. Sync database records and render views
     try {
       if (window.Storage && typeof Storage.syncFromBackend === 'function') {
-        const synced = await Storage.syncFromBackend();
-        if (synced) {
-          if (window.Clients) Clients.render();
-          if (window.Payments) Payments.render();
-          if (window.Expenses) Expenses.render();
-          if (window.Dashboard) Dashboard.render();
-          if (window.Reports) Reports.render();
-          if (window.Settings) Settings.loadValues();
-        }
+        await Storage.syncFromBackend();
+        this.renderAllPages();
       }
     } catch (e) {
       console.warn('[App] Backend data sync notice:', e);
     }
 
+    Utils.refreshIcons();
+  },
+
+  setupHashRouting() {
+    const handleHashRouting = (updateHash = false) => {
+      const rawHash = window.location.hash.replace('#', '') || 'dashboard';
+      if (rawHash.startsWith('client-detail')) {
+        let clientId = null;
+        if (rawHash.includes(':')) {
+          clientId = rawHash.split(':')[1];
+        } else if (rawHash.includes('?id=')) {
+          clientId = rawHash.split('?id=')[1];
+        } else if (rawHash.includes('/')) {
+          clientId = rawHash.split('/')[1];
+        }
+        if (clientId && window.Clients) {
+          Clients.activeDetailClientId = clientId;
+        }
+        this.navigateTo('client-detail', updateHash);
+      } else {
+        this.navigateTo(rawHash, updateHash);
+      }
+    };
+
+    handleHashRouting(false);
+    if (!this._hashBound) {
+      this._hashBound = true;
+      window.addEventListener('hashchange', () => {
+        handleHashRouting(false);
+      });
+    }
+  },
+
+  renderAllPages() {
+    if (window.Clients && typeof Clients.render === 'function') Clients.render();
+    if (window.Payments && typeof Payments.render === 'function') Payments.render();
+    if (window.Expenses && typeof Expenses.render === 'function') Expenses.render();
+    if (window.Dashboard && typeof Dashboard.render === 'function') Dashboard.render();
+    if (window.Reports && typeof Reports.render === 'function') Reports.render();
+    if (window.Settings && typeof Settings.loadValues === 'function') Settings.loadValues();
     Utils.refreshIcons();
   },
 

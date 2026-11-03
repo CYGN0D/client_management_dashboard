@@ -99,17 +99,16 @@ class AuthMiddleware {
         self::startSession();
         $_SESSION = [];
 
-        if (ini_get('session.use_cookies')) {
+        if (ini_get('session.use_cookies') && !headers_sent()) {
             $params = session_get_cookie_params();
-            setcookie(
-                session_name(),
-                '',
-                time() - 42000,
-                $params['path'],
-                $params['domain'],
-                $params['secure'],
-                $params['httponly']
-            );
+            setcookie(session_name(), '', [
+                'expires' => time() - 86400,
+                'path' => $params['path'] ?? '/',
+                'domain' => $params['domain'] ?? '',
+                'secure' => $params['secure'] ?? false,
+                'httponly' => $params['httponly'] ?? true,
+                'samesite' => $params['samesite'] ?? 'Lax'
+            ]);
         }
 
         session_destroy();

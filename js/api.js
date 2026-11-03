@@ -87,14 +87,14 @@ const API = {
         message: `HTTP ${response.status}: Non-JSON response received from server.`
       }));
 
-      // Handle 401 Unauthorized (session expired)
+      // Handle 401 Unauthorized (session expired or unauthenticated)
       if (response.status === 401) {
         if (!endpoint.startsWith('auth/me') && !endpoint.startsWith('auth/login')) {
-          if (window.Auth && typeof Auth.logout === 'function') {
-            Auth.logout();
+          if (window.Auth && typeof Auth.handleSessionExpired === 'function') {
+            Auth.handleSessionExpired();
           }
         }
-        throw new Error(json.message || 'Session expired. Please log in again.');
+        throw new Error(json.message || 'Authentication required. Please log in.');
       }
 
       if (!response.ok || !json.success) {

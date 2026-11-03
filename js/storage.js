@@ -163,6 +163,9 @@ const Storage = {
   /* ---------------- BACKEND REST API SYNC ---------------- */
   async syncFromBackend() {
     if (!window.API) return false;
+    if (!window.Auth || typeof Auth.isAuthenticated !== 'function' || !Auth.isAuthenticated()) {
+      return false;
+    }
 
     try {
       const [clientsRes, invoicesRes, paymentsRes, expensesRes, settingsRes] = await Promise.allSettled([
@@ -540,14 +543,17 @@ const Storage = {
 
   /* ---------------- Initialization & Storage Cleanup ---------------- */
   initStorage() {
-    // Actively purge all legacy client-side localStorage database tables
+    // Actively purge all legacy client-side localStorage database tables & obsolete auth keys
     const legacyKeys = [
       'cliento_clients',
       'cliento_invoices',
       'cliento_payments',
       'cliento_expenses',
       'cliento_settings',
-      'cliento_initialized'
+      'cliento_initialized',
+      'cliento_auth',
+      'cliento_logged_out',
+      'cliento_session'
     ];
     legacyKeys.forEach((key) => {
       try {

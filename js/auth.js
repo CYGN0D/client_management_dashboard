@@ -1,77 +1,81 @@
 /**
  * CLIENTO - AUTHENTICATION MODULE
- * Pure, clean, minimalist login handling connected directly to PHP Session API.
- * Features:
- *  - Email & password verification via REST API
- *  - Password visibility toggle (eye button)
- *  - Session state synchronization
- *  - Confirmation prompt on logout
- *  - Automatic session cookie handling
+ * Pure, authoritative server-side session authentication.
+ * Server session cookie is the SOLE authority for authentication state.
  */
 
 const Auth = {
-  AUTH_KEY: 'cliento_auth',
+  currentUser: null,
   USER_EMAIL_KEY: 'cliento_user_email',
-  LOGGED_OUT_KEY: 'cliento_logged_out',
+  _isLoggingOut: false,
+  _isHandlingExpiry: false,
 
   async init() {
     this.bindLoginForm();
     this.bindPasswordToggle();
     this.bindLogout();
-    await this.ensureBackendSession();
+
+    // Clean up any legacy/insecure client-side auth tokens
+    try {
+      localStorage.removeItem('cliento_auth');
+      localStorage.removeItem('cliento_logged_out');
+    } catch (e) {}
+
+    // Verify session directly with the server
+    const isAuthed = await this.verifyServerSession();
     this.checkAuthState();
+    return isAuthed;
   },
 
-  async ensureBackendSession() {
-    if (!window.API || typeof API.auth === 'undefined') return;
-
-    // If user has explicitly logged out, do not auto-login
-    if (localStorage.getItem(this.LOGGED_OUT_KEY) === 'true') {
-      localStorage.removeItem(this.AUTH_KEY);
-      return;
+  /**
+   * Verify session validity with backend /api/auth/me.php
+   */
+  async verifyServerSession() {
+    if (!window.API || typeof API.auth === 'undefined') {
+      this.currentUser = null;
+      return false;
     }
 
     try {
       const me = await API.auth.me();
       if (me && me.id) {
-        localStorage.setItem(this.AUTH_KEY, 'true');
-        localStorage.setItem(this.USER_EMAIL_KEY, me.email || 'admin@cliento.com');
-        return;
+        this.currentUser = me;
+        if (me.email) {
+          try {
+            localStorage.setItem(this.USER_EMAIL_KEY, me.email);
+          } catch (e) {}
+        }
+        return true;
       }
     } catch (e) {
-      // If auth was active before page reload and not logged out, attempt auto session renewal
-      const isAuth = localStorage.getItem(this.AUTH_KEY) === 'true';
-      if (isAuth) {
-        const email = localStorage.getItem(this.USER_EMAIL_KEY) || 'admin@cliento.com';
-        try {
-          await API.auth.login(email, 'admin123');
-          localStorage.setItem(this.AUTH_KEY, 'true');
-          localStorage.setItem(this.USER_EMAIL_KEY, email);
-        } catch (err) {
-          localStorage.removeItem(this.AUTH_KEY);
-        }
-      }
+      // 401 Unauthorized or network error: session not active
+      this.currentUser = null;
     }
+
+    this.currentUser = null;
+    return false;
   },
 
   isAuthenticated() {
-    return localStorage.getItem(this.AUTH_KEY) === 'true';
+    return Boolean(this.currentUser && this.currentUser.id);
   },
 
   checkAuthState() {
     const loginView = document.getElementById('loginView');
     const appContainer = document.querySelector('.app-container');
-    const email = localStorage.getItem(this.USER_EMAIL_KEY) || 'admin@cliento.com';
+    const email = (this.currentUser && this.currentUser.email) ||
+                  localStorage.getItem(this.USER_EMAIL_KEY) ||
+                  '';
 
     if (this.isAuthenticated()) {
       if (loginView) loginView.style.display = 'none';
       if (appContainer) appContainer.style.display = 'flex';
 
       const userEmailEl = document.getElementById('settingsUserEmailText');
-      if (userEmailEl) userEmailEl.textContent = email;
+      if (userEmailEl) userEmailEl.textContent = this.currentUser.email;
 
       const sidebarEmailEl = document.getElementById('sidebarUserEmail');
-      if (sidebarEmailEl) sidebarEmailEl.textContent = email;
+      if (sidebarEmailEl) sidebarEmailEl.textContent = this.currentUser.email;
 
       if (window.Utils && typeof Utils.refreshIcons === 'function') {
         Utils.refreshIcons();
@@ -80,7 +84,7 @@ const Auth = {
       if (loginView) {
         loginView.style.display = 'flex';
         const emailInput = document.getElementById('loginEmail');
-        if (emailInput && !emailInput.value) {
+        if (emailInput && !emailInput.value && email) {
           emailInput.value = email;
         }
       }
@@ -133,33 +137,32 @@ const Auth = {
       }
 
       try {
-        if (window.API && typeof API.auth !== 'undefined') {
-          await API.auth.login(email, password);
+        if (!window.API || typeof API.auth === 'undefined') {
+          throw new Error('API service unavailable.');
         }
 
-        // Clear deliberate logout flag
-        localStorage.removeItem(this.LOGGED_OUT_KEY);
-        localStorage.setItem(this.AUTH_KEY, 'true');
-        localStorage.setItem(this.USER_EMAIL_KEY, email);
+        const res = await API.auth.login(email, password);
+        this.currentUser = res;
+
+        try {
+          localStorage.setItem(this.USER_EMAIL_KEY, email);
+        } catch (e) {}
 
         if (errorAlert) errorAlert.style.display = 'none';
         if (passwordInput) passwordInput.value = '';
 
         this.checkAuthState();
 
-        // Sync fresh database data from backend
+        // Sync fresh database data from backend and render all modules
         if (window.Storage && typeof Storage.syncFromBackend === 'function') {
           await Storage.syncFromBackend();
-          if (window.Clients) Clients.render();
-          if (window.Payments) Payments.render();
-          if (window.Expenses) Expenses.render();
-          if (window.Dashboard) Dashboard.render();
-          if (window.Reports) Reports.render();
-          if (window.Settings) Settings.loadValues();
+        }
+        if (window.App && typeof App.renderAllPages === 'function') {
+          App.renderAllPages();
         }
 
         if (window.Utils && typeof Utils.showToast === 'function') {
-          Utils.showToast('Logged in successfully', 'success', 1800);
+          Utils.showToast(`Welcome back, ${res.name || 'Admin'}!`, 'success', 2000);
         }
       } catch (err) {
         if (errorAlert) {
@@ -176,7 +179,7 @@ const Auth = {
   },
 
   bindPasswordToggle() {
-    const toggleBtn = document.getElementById('loginTogglePassword');
+    const toggleBtn = document.getElementById('togglePasswordVisibilityBtn') || document.getElementById('loginTogglePassword');
     const passwordInput = document.getElementById('loginPassword');
     if (!toggleBtn || !passwordInput) return;
 
@@ -214,17 +217,18 @@ const Auth = {
   },
 
   async logout() {
+    if (this._isLoggingOut) return;
+    this._isLoggingOut = true;
+
     try {
       if (window.API && typeof API.auth !== 'undefined') {
         await API.auth.logout();
       }
     } catch (e) {
-      // Continue client cleanup
+      // Continue client cleanup even if network fails
     }
 
-    // Set deliberate logout flag so user stays logged out upon page reload
-    localStorage.setItem(this.LOGGED_OUT_KEY, 'true');
-    localStorage.removeItem(this.AUTH_KEY);
+    this.currentUser = null;
 
     if (window.Storage) {
       Storage.clearAllData();
@@ -244,6 +248,33 @@ const Auth = {
     if (passwordInput) passwordInput.value = '';
     const errorAlert = document.getElementById('loginErrorAlert');
     if (errorAlert) errorAlert.style.display = 'none';
+
+    this._isLoggingOut = false;
+  },
+
+  handleSessionExpired() {
+    if (this._isHandlingExpiry || !this.currentUser) return;
+    this._isHandlingExpiry = true;
+
+    this.currentUser = null;
+
+    if (window.Storage) {
+      Storage.clearAllData();
+    }
+
+    if (window.Clients) {
+      Clients.activeDetailClientId = null;
+    }
+
+    this.checkAuthState();
+
+    if (window.Utils && typeof Utils.showToast === 'function') {
+      Utils.showToast('Your session has expired. Please log in again.', 'warning', 2500);
+    }
+
+    setTimeout(() => {
+      this._isHandlingExpiry = false;
+    }, 1500);
   }
 };
 

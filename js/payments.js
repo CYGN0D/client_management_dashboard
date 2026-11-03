@@ -12,7 +12,9 @@ const Payments = {
   init() {
     this.activeMonthFilter = Utils.getCurrentMonthString();
     this.bindEvents();
-    this.render();
+    if (window.Auth && typeof Auth.isAuthenticated === 'function' && Auth.isAuthenticated()) {
+      this.render();
+    }
   },
 
   bindEvents() {
@@ -406,7 +408,10 @@ const Payments = {
     Utils.refreshIcons();
   },
 
-  openCreateInvoiceModal(prefillClientId = null, defaultService = '', defaultMode = null) {
+  async openCreateInvoiceModal(prefillClientId = null, defaultService = '', defaultMode = null) {
+    if (!Storage._isLoaded && window.Auth && Auth.isAuthenticated()) {
+      await Storage.syncFromBackend();
+    }
     const clients = Storage.getClients();
     if (clients.length === 0) {
       Utils.showToast('No clients found. Please add a client first.', 'info');
@@ -810,7 +815,10 @@ const Payments = {
     }
   },
 
-    openGenerateModal() {
+  async openGenerateModal() {
+    if (!Storage._isLoaded && window.Auth && Auth.isAuthenticated()) {
+      await Storage.syncFromBackend();
+    }
     const monthInput = document.getElementById('generateBillingMonth');
     if (monthInput) {
       monthInput.value = this.activeMonthFilter || Utils.getCurrentMonthString();
@@ -1019,9 +1027,15 @@ const Payments = {
     }
   },
 
-  openRecordPaymentModal(invoiceId) {
+  async openRecordPaymentModal(invoiceId) {
+    if (!Storage._isLoaded && window.Auth && Auth.isAuthenticated()) {
+      await Storage.syncFromBackend();
+    }
     const invoice = Storage.getInvoiceById(invoiceId);
-    if (!invoice) return;
+    if (!invoice) {
+      Utils.showToast('Invoice not found', 'warning');
+      return;
+    }
 
     const form = document.getElementById('recordPaymentForm');
     Utils.clearFieldErrors(form);
@@ -1123,7 +1137,10 @@ const Payments = {
     }
   },
 
-  viewInvoiceHistory(invoiceId) {
+  async viewInvoiceHistory(invoiceId) {
+    if (!Storage._isLoaded && window.Auth && Auth.isAuthenticated()) {
+      await Storage.syncFromBackend();
+    }
     const invoice = Storage.getInvoiceById(invoiceId);
     if (!invoice) return;
 

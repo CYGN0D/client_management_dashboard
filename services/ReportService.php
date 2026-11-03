@@ -64,12 +64,12 @@ class ReportService {
         $minMonth = array_key_first($sixMonths);
         $chartStmt = $db->prepare('
             SELECT 
-                SUBSTRING(payment_date, 1, 7) AS month_key,
+                SUBSTR(payment_date, 1, 7) AS month_key,
                 SUM(amount) AS total_amount,
                 COUNT(*) AS tx_count
             FROM payments
             WHERE user_id = :uid AND payment_date >= :min_date
-            GROUP BY SUBSTRING(payment_date, 1, 7)
+            GROUP BY SUBSTR(payment_date, 1, 7)
         ');
         $chartStmt->execute([':uid' => $userId, ':min_date' => $minMonth . '-01']);
         $chartRows = $chartStmt->fetchAll();
@@ -198,7 +198,7 @@ class ReportService {
         $payParams = [$userId];
         if (!empty($months)) {
             $placeholders = implode(',', array_fill(0, count($months), '?'));
-            $paySql .= " AND SUBSTRING(payment_date, 1, 7) IN ({$placeholders})";
+            $paySql .= " AND SUBSTR(payment_date, 1, 7) IN ({$placeholders})";
             $payParams = array_merge([$userId], array_values($months));
         }
         $payStmt = $db->prepare($paySql);
@@ -212,7 +212,7 @@ class ReportService {
         $expParams = [$userId];
         if (!empty($months)) {
             $placeholders = implode(',', array_fill(0, count($months), '?'));
-            $expSql .= " AND SUBSTRING(date, 1, 7) IN ({$placeholders})";
+            $expSql .= " AND SUBSTR(date, 1, 7) IN ({$placeholders})";
             $expParams = array_merge([$userId], array_values($months));
         }
         $expStmt = $db->prepare($expSql);

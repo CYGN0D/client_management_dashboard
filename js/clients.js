@@ -13,7 +13,9 @@ const Clients = {
     this.bindEvents();
     this.bindServiceChips();
     this.bindInitialPaymentEvents();
-    this.render();
+    if (window.Auth && typeof Auth.isAuthenticated === 'function' && Auth.isAuthenticated()) {
+      this.render();
+    }
   },
 
   bindServiceChips() {
@@ -573,7 +575,10 @@ const Clients = {
     }
   },
 
-  openAddEditModal(clientId = null) {
+  async openAddEditModal(clientId = null) {
+    if (!Storage._isLoaded && window.Auth && Auth.isAuthenticated()) {
+      await Storage.syncFromBackend();
+    }
     // Close dropdowns
     document.querySelectorAll('.dropdown-menu.show').forEach((m) => m.classList.remove('show'));
 
@@ -778,7 +783,10 @@ const Clients = {
     if (window.Reports) window.Reports.render();
   },
 
-  viewClientDetails(clientId, targetTab = 'invoices') {
+  async viewClientDetails(clientId, targetTab = 'invoices') {
+    if (!Storage._isLoaded && window.Auth && Auth.isAuthenticated()) {
+      await Storage.syncFromBackend();
+    }
     document.querySelectorAll('.dropdown-menu.show').forEach((m) => m.classList.remove('show'));
     const client = Storage.getClientById(clientId);
     if (!client) return;
