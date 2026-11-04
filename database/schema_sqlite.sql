@@ -75,9 +75,10 @@ CREATE TABLE IF NOT EXISTS invoices (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
   FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE,
-  UNIQUE(user_id, invoice_number),
-  UNIQUE(client_id, billing_month, charge_type)
+  UNIQUE(user_id, invoice_number)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_client_retainer_month ON invoices (client_id, billing_month) WHERE charge_type = 'retainer';
 
 CREATE INDEX IF NOT EXISTS idx_invoices_user_month ON invoices (user_id, billing_month);
 CREATE INDEX IF NOT EXISTS idx_invoices_client_status ON invoices (client_id, status);

@@ -58,9 +58,11 @@ class Database {
                         return date('Y-m-d H:i:s');
                     });
 
-                    // Auto-initialize schema & seed if fresh SQLite database
+                    // Auto-initialize schema & seed if fresh SQLite database, or auto-migrate existing databases
                     if ($isNew) {
                         self::initializeSqlite(self::$instance);
+                    } else {
+                        self::autoMigrateSqlite(self::$instance);
                     }
                 } else {
                     $mysql = $config['mysql'];
@@ -104,6 +106,68 @@ class Database {
         }
 
         return self::$instance;
+    }
+
+    /**
+     * Auto-migrate existing SQLite databases to drop restrictive table-level UNIQUE(client_id, billing_month, charge_type)
+     * and replace it with conditional unique index on retainers.
+     */
+    private static function autoMigrateSqlite(PDO $pdo): void {
+        try {
+            $stmt = $pdo->query("SELECT sql FROM sqlite_master WHERE type='table' AND name='invoices'");
+            $sql = $stmt ? (string)$stmt->fetchColumn() : '';
+            if (str_contains($sql, 'UNIQUE(client_id, billing_month, charge_type)') || str_contains($sql, 'invoices.client_id, invoices.billing_month, invoices.charge_type')) {
+                $pdo->exec("PRAGMA foreign_keys = OFF;");
+                $pdo->beginTransaction();
+                $pdo->exec("
+                    CREATE TABLE invoices_migrated (
+                      id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      invoice_code TEXT DEFAULT NULL,
+                      user_id INTEGER NOT NULL,
+                      client_id INTEGER NOT NULL,
+                      invoice_number TEXT NOT NULL,
+                      service_name TEXT NOT NULL DEFAULT 'Service',
+                      charge_type TEXT NOT NULL DEFAULT 'standard',
+                      notes TEXT DEFAULT NULL,
+                      billing_month TEXT NOT NULL,
+                      amount NUMERIC NOT NULL,
+                      due_date DATE NOT NULL,
+                      status TEXT NOT NULL DEFAULT 'pending',
+                      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                      FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE,
+                      UNIQUE(user_id, invoice_number)
+                    );
+                ");
+                $pdo->exec("
+                    INSERT INTO invoices_migrated (id, invoice_code, user_id, client_id, invoice_number, service_name, charge_type, notes, billing_month, amount, due_date, status, created_at, updated_at)
+                    SELECT id, invoice_code, user_id, client_id, invoice_number, service_name, charge_type, notes, billing_month, amount, due_date, status, created_at, updated_at FROM invoices;
+                ");
+                $pdo->exec("DROP TABLE invoices;");
+                $pdo->exec("ALTER TABLE invoices_migrated RENAME TO invoices;");
+                $pdo->exec("CREATE UNIQUE INDEX IF NOT EXISTS uk_client_retainer_month ON invoices(client_id, billing_month) WHERE charge_type = 'retainer';");
+                $pdo->commit();
+                $pdo->exec("PRAGMA foreign_keys = ON;");
+            }
+        } catch (Throwable $t) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log('[Cliento SQLite Auto-Migrate Notice] ' . $t->getMessage());
+        }
+    }
+
+    /**
+     * Auto-migrate existing MySQL databases
+     */
+    private static function autoMigrateMysql(PDO $pdo): void {
+        try {
+            $pdo->exec("ALTER TABLE invoices DROP INDEX uk_client_retainer_month;");
+            $pdo->exec("CREATE INDEX idx_client_billing_month ON invoices(client_id, billing_month);");
+        } catch (Throwable $t) {
+            // Already migrated or index does not exist
+        }
     }
 
     /**

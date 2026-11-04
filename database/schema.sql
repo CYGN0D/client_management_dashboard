@@ -102,7 +102,7 @@ CREATE TABLE `invoices` (
   CONSTRAINT `fk_invoices_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_invoices_client` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE CASCADE,
   UNIQUE KEY `uk_user_invoice_number` (`user_id`, `invoice_number`),
-  UNIQUE KEY `uk_client_retainer_month` (`client_id`, `billing_month`, `charge_type`),
+  INDEX `idx_client_billing_month` (`client_id`, `billing_month`),
   INDEX `idx_invoices_user_month` (`user_id`, `billing_month`),
   INDEX `idx_invoices_client_status` (`client_id`, `status`),
   INDEX `idx_invoices_due` (`user_id`, `due_date`, `status`)

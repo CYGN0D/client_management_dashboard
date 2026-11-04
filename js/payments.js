@@ -727,7 +727,7 @@ const Payments = {
     const monthInput = document.getElementById('createInvoiceMonth');
     const amountInput = document.getElementById('createInvoiceAmount');
     const dueDateInput = document.getElementById('createInvoiceDueDate');
-    const categorySelect = document.getElementById('createInvoiceCategory');
+    const categorySelect = document.getElementById('createInvoiceChargeType') || document.getElementById('createInvoiceCategory');
     const notesInput = document.getElementById('createInvoiceNotes');
 
     let isValid = true;

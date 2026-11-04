@@ -289,7 +289,16 @@ class InvoiceService {
 
             return self::getById($userId, $invoiceId);
         } catch (Exception $e) {
-            $db->rollBack();
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            if (str_contains($e->getMessage(), 'UNIQUE constraint failed') || str_contains($e->getMessage(), 'Duplicate entry') || str_contains($e->getMessage(), 'uk_client_retainer_month')) {
+                if ($chargeType === 'retainer') {
+                    throw new Exception("Monthly retainer invoice already exists for {$client['name']} for {$billingMonth}.");
+                } else {
+                    throw new Exception("Invoice number '{$invNumber}' already exists. Please choose a different invoice number.");
+                }
+            }
             throw $e;
         }
     }
@@ -371,7 +380,16 @@ class InvoiceService {
                 'invoice_id' => $invoiceId
             ];
         } catch (Exception $e) {
-            $db->rollBack();
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            if (str_contains($e->getMessage(), 'UNIQUE constraint failed') || str_contains($e->getMessage(), 'Duplicate entry') || str_contains($e->getMessage(), 'uk_client_retainer_month')) {
+                if ($chargeType === 'retainer') {
+                    throw new Exception("Monthly retainer invoice already exists for {$client['name']} for {$billingMonth}.");
+                } else {
+                    throw new Exception("Invoice number '{$invNumber}' already exists. Please choose a different invoice number.");
+                }
+            }
             throw $e;
         }
     }
@@ -501,7 +519,16 @@ class InvoiceService {
                 'invoices' => $createdInvoices
             ];
         } catch (Exception $e) {
-            $db->rollBack();
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            if (str_contains($e->getMessage(), 'UNIQUE constraint failed') || str_contains($e->getMessage(), 'Duplicate entry') || str_contains($e->getMessage(), 'uk_client_retainer_month')) {
+                if ($chargeType === 'retainer') {
+                    throw new Exception("Monthly retainer invoice already exists for {$client['name']} for {$billingMonth}.");
+                } else {
+                    throw new Exception("Invoice number '{$invNumber}' already exists. Please choose a different invoice number.");
+                }
+            }
             throw $e;
         }
     }
