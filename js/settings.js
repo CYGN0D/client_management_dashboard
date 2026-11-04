@@ -119,9 +119,16 @@ const Settings = {
     if (bPrefix) bPrefix.value = s.invoicePrefix || 'INV-';
   },
 
+  _isSaving: false,
+
   async handleSave() {
+    if (this._isSaving) return;
+
     const form = document.getElementById('settingsForm');
+    if (!form) return;
     Utils.clearFieldErrors(form);
+
+    const submitBtn = document.getElementById('settingsSaveBtn') || form.querySelector('button[type="submit"]');
 
     const bName = document.getElementById('settingsBusinessName');
     const bPhone = document.getElementById('settingsPhone');
@@ -158,6 +165,9 @@ const Settings = {
 
     if (!isValid) return;
 
+    this._isSaving = true;
+    Utils.setButtonLoading(submitBtn, true, 'Saving Settings...');
+
     try {
       await Storage.saveSettings({
         businessName: name,
@@ -174,6 +184,9 @@ const Settings = {
       Utils.showToast('Settings saved to database successfully', 'success');
     } catch (err) {
       Utils.showToast(`Error saving settings: ${err.message}`, 'error');
+    } finally {
+      this._isSaving = false;
+      Utils.setButtonLoading(submitBtn, false);
     }
   },
 

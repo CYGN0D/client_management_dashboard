@@ -287,9 +287,17 @@ const Expenses = {
     Utils.openModal('expenseModal');
   },
 
+  _isSubmitting: false,
+  _isDeleting: false,
+
   async handleFormSubmit() {
+    if (this._isSubmitting) return;
+
     const form = document.getElementById('expenseForm');
+    if (!form) return;
     Utils.clearFieldErrors(form);
+
+    const submitBtn = document.getElementById('expenseSubmitBtn') || form.querySelector('button[type="submit"]');
 
     const id = document.getElementById('expenseFormId').value;
     const titleInput = document.getElementById('expenseTitle');
@@ -322,6 +330,9 @@ const Expenses = {
 
     if (!isValid) return;
 
+    this._isSubmitting = true;
+    Utils.setButtonLoading(submitBtn, true, id ? 'Updating Expense...' : 'Saving Expense...');
+
     const payload = {
       title,
       category,
@@ -338,19 +349,23 @@ const Expenses = {
         await Storage.addExpense(payload);
         Utils.showToast('Expense added successfully', 'success');
       }
+
+      Utils.closeModal('expenseModal');
+      this.render();
+      if (window.Dashboard) window.Dashboard.render();
+      if (window.Reports) window.Reports.render();
     } catch (err) {
       console.error(err);
       Utils.showToast(err.message || 'Failed to save expense', 'danger');
-      return;
+    } finally {
+      this._isSubmitting = false;
+      Utils.setButtonLoading(submitBtn, false);
     }
-
-    Utils.closeModal('expenseModal');
-    this.render();
-    if (window.Dashboard) window.Dashboard.render();
-    if (window.Reports) window.Reports.render();
   },
 
   async confirmDeleteExpense(expenseId) {
+    if (this._isDeleting) return;
+
     const exp = Storage.getExpenseById(expenseId);
     if (!exp) return;
 
@@ -362,6 +377,7 @@ const Expenses = {
     });
 
     if (confirmed) {
+      this._isDeleting = true;
       try {
         await Storage.deleteExpense(expenseId);
         Utils.showToast('Expense deleted', 'info');
@@ -370,6 +386,8 @@ const Expenses = {
         if (window.Reports) window.Reports.render();
       } catch (err) {
         Utils.showToast(err.message || 'Failed to delete expense', 'danger');
+      } finally {
+        this._isDeleting = false;
       }
     }
   }

@@ -651,9 +651,16 @@ const Clients = {
     Utils.refreshIcons();
   },
 
+  _isSubmitting: false,
+
   async handleFormSubmit() {
+    if (this._isSubmitting) return;
+
     const form = document.getElementById('clientForm');
+    if (!form) return;
     Utils.clearFieldErrors(form);
+
+    const submitBtn = document.getElementById('clientSubmitBtn') || form.querySelector('button[type="submit"]');
 
     const id = document.getElementById('clientFormId').value;
     const nameInput = document.getElementById('clientName');
@@ -719,6 +726,9 @@ const Clients = {
 
     if (!isValid) return;
 
+    this._isSubmitting = true;
+    Utils.setButtonLoading(submitBtn, true, id ? 'Updating Client...' : 'Saving Client...');
+
     const payload = {
       name,
       phone: phoneInput.value.trim(),
@@ -771,17 +781,19 @@ const Clients = {
           Utils.showToast('New client created successfully', 'success');
         }
       }
+
+      Utils.closeModal('clientModal');
+      this.render();
+      if (window.Dashboard) window.Dashboard.render();
+      if (window.Payments) window.Payments.render();
+      if (window.Reports) window.Reports.render();
     } catch (err) {
       console.error(err);
       Utils.showToast(err.message || 'Failed to save client details', 'danger');
-      return;
+    } finally {
+      this._isSubmitting = false;
+      Utils.setButtonLoading(submitBtn, false);
     }
-
-    Utils.closeModal('clientModal');
-    this.render();
-    if (window.Dashboard) window.Dashboard.render();
-    if (window.Payments) window.Payments.render();
-    if (window.Reports) window.Reports.render();
   },
 
   async viewClientDetails(clientId, targetTab = 'invoices') {
@@ -2134,7 +2146,11 @@ const Clients = {
     Utils.refreshIcons();
   },
 
+  _isDeletingClient: false,
+
   async executePermanentDelete() {
+    if (this._isDeletingClient) return;
+
     const clientId = this._deleteTargetClientId;
     if (!clientId) return;
 
@@ -2142,12 +2158,10 @@ const Clients = {
     const clientName = client ? client.name : 'Client';
     const btn3 = document.getElementById('delClientBtnStep3');
 
-    try {
-      if (btn3) {
-        btn3.disabled = true;
-        btn3.innerHTML = '<i data-lucide="loader" class="spin"></i> Deleting from Database...';
-      }
+    this._isDeletingClient = true;
+    Utils.setButtonLoading(btn3, true, 'Deleting from Database...');
 
+    try {
       await Storage.deleteClientPermanently(clientId);
 
       Utils.closeModal('deleteClientModal');
@@ -2164,15 +2178,19 @@ const Clients = {
     } catch (err) {
       Utils.showToast(err.message || 'Failed to delete client', 'danger');
     } finally {
+      this._isDeletingClient = false;
+      Utils.setButtonLoading(btn3, false);
       if (btn3) {
-        btn3.disabled = false;
         btn3.innerHTML = '<i data-lucide="trash-2"></i> Permanently Delete Client (3/3)';
       }
       Utils.refreshIcons();
     }
   },
 
+  _isTogglingRetainer: false,
+
   async toggleRetainerStatus(clientId) {
+    if (this._isTogglingRetainer) return;
     const client = Storage.getClientById(clientId);
     if (!client || !client.monthlyAmount || client.monthlyAmount <= 0) return;
 
@@ -2189,6 +2207,7 @@ const Clients = {
       if (!confirmed) return;
     }
 
+    this._isTogglingRetainer = true;
     try {
       await Storage.updateClient(clientId, { retainerStatus: newStatus });
       Utils.showToast(
@@ -2199,6 +2218,8 @@ const Clients = {
       );
     } catch (err) {
       Utils.showToast(err.message || 'Failed to update retainer status', 'danger');
+    } finally {
+      this._isTogglingRetainer = false;
     }
 
     this.render();

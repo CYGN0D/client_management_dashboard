@@ -574,9 +574,16 @@ const Payments = {
     }
   },
 
+  _isInvoiceSubmitting: false,
+
   async handleCreateInvoiceSubmit() {
+    if (this._isInvoiceSubmitting) return;
+
     const form = document.getElementById('createInvoiceForm');
+    if (!form) return;
     Utils.clearFieldErrors(form);
+
+    const submitBtn = document.getElementById('createInvoiceSubmitBtn');
 
     const clientSelect = document.getElementById('createInvoiceClientId');
     const clientId = clientSelect ? clientSelect.value : '';
@@ -633,12 +640,8 @@ const Payments = {
 
       if (!isValid) return;
 
-      const submitBtn = document.getElementById('createInvoiceSubmitBtn');
-      const origText = submitBtn ? submitBtn.innerHTML : '';
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-sm"></span> Saving...';
-      }
+      this._isInvoiceSubmitting = true;
+      Utils.setButtonLoading(submitBtn, true, 'Saving Retainer...');
 
       try {
         // 1. Update client profile with recurring retainer details
@@ -711,10 +714,8 @@ const Payments = {
       } catch (err) {
         Utils.showToast(err.message || 'Failed to save retainer plan', 'danger');
       } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = origText;
-        }
+        this._isInvoiceSubmitting = false;
+        Utils.setButtonLoading(submitBtn, false);
       }
       return;
     }
@@ -768,12 +769,8 @@ const Payments = {
       if (!proceed) return;
     }
 
-    const submitBtn = document.getElementById('createInvoiceSubmitBtn');
-    const origText = submitBtn ? submitBtn.innerHTML : '';
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner-sm"></span> Creating...';
-    }
+    this._isInvoiceSubmitting = true;
+    Utils.setButtonLoading(submitBtn, true, 'Creating Invoice...');
 
     try {
       const chargeCategory = categorySelect ? categorySelect.value : 'custom_changes';
@@ -802,16 +799,8 @@ const Payments = {
     } catch (err) {
       Utils.showToast(err.message || 'Failed to create invoice', 'danger');
     } finally {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = origText;
-      }
-    }
-    if (window.Dashboard) window.Dashboard.render();
-    if (window.Reports) window.Reports.render();
-    if (window.Clients) {
-      Clients.render();
-      if (Clients.activeDetailClientId === client.id) Clients.renderClientDetailPage(client.id);
+      this._isInvoiceSubmitting = false;
+      Utils.setButtonLoading(submitBtn, false);
     }
   },
 
@@ -960,7 +949,11 @@ const Payments = {
     }
   },
 
+  _isGeneratingInvoices: false,
+
   async executeGenerateInvoices() {
+    if (this._isGeneratingInvoices) return;
+
     const monthInput = document.getElementById('generateBillingMonth');
     const billingMonth = (monthInput && monthInput.value) || Utils.getCurrentMonthString();
 
@@ -974,11 +967,8 @@ const Payments = {
     }
 
     const submitBtn = document.getElementById('genSubmitBtn');
-    const origHtml = submitBtn ? submitBtn.innerHTML : '';
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner-sm"></span> Generating...';
-    }
+    this._isGeneratingInvoices = true;
+    Utils.setButtonLoading(submitBtn, true, 'Generating Retainers...');
 
     try {
       let createdCount = 0;
@@ -1020,10 +1010,8 @@ const Payments = {
     } catch (err) {
       Utils.showToast(err.message || 'Error generating invoices', 'danger');
     } finally {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = origHtml;
-      }
+      this._isGeneratingInvoices = false;
+      Utils.setButtonLoading(submitBtn, false);
     }
   },
 
@@ -1068,8 +1056,13 @@ const Payments = {
     Utils.openModal('recordPaymentModal');
   },
 
+  _isRecordingPayment: false,
+
   async handleRecordPaymentSubmit() {
+    if (this._isRecordingPayment) return;
+
     const form = document.getElementById('recordPaymentForm');
+    if (!form) return;
     Utils.clearFieldErrors(form);
 
     const invoiceId = document.getElementById('recordPaymentInvoiceId').value;
@@ -1105,12 +1098,9 @@ const Payments = {
 
     if (!isValid) return;
 
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const origHtml = submitBtn ? submitBtn.innerHTML : '';
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner-sm"></span> Recording...';
-    }
+    const submitBtn = document.getElementById('recordPaymentSubmitBtn') || form.querySelector('button[type="submit"]');
+    this._isRecordingPayment = true;
+    Utils.setButtonLoading(submitBtn, true, 'Recording Payment...');
 
     try {
       await Storage.recordPayment({
@@ -1130,10 +1120,8 @@ const Payments = {
     } catch (err) {
       Utils.showToast(err.message, 'error');
     } finally {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = origHtml;
-      }
+      this._isRecordingPayment = false;
+      Utils.setButtonLoading(submitBtn, false);
     }
   },
 
@@ -1233,7 +1221,10 @@ const Payments = {
     Utils.refreshIcons();
   },
 
+  _isDeletingInvoice: false,
+
   async confirmDeleteInvoice(invoiceId, isFromModal = false) {
+    if (this._isDeletingInvoice) return;
     const invoice = Storage.getInvoiceById(invoiceId);
     if (!invoice) return;
 
@@ -1254,6 +1245,7 @@ const Payments = {
 
     if (!confirmed) return;
 
+    this._isDeletingInvoice = true;
     if (isFromModal) {
       Utils.closeModal('invoiceHistoryModal');
     }
@@ -1273,10 +1265,15 @@ const Payments = {
       }
     } catch (err) {
       Utils.showToast(err.message || 'Failed to delete invoice', 'danger');
+    } finally {
+      this._isDeletingInvoice = false;
     }
   },
 
+  _isDeletingPayment: false,
+
   async confirmDeletePayment(paymentId) {
+    if (this._isDeletingPayment) return;
     const payments = Storage.getPayments();
     const payment = payments.find((p) => p.id === paymentId);
     if (!payment) return;
@@ -1290,6 +1287,7 @@ const Payments = {
 
     if (!confirmed) return;
 
+    this._isDeletingPayment = true;
     try {
       await Storage.deletePayment(paymentId);
       Utils.showToast(`Payment of ${Utils.formatCurrency(payment.amount)} deleted`, 'success');
@@ -1314,10 +1312,15 @@ const Payments = {
       }
     } catch (err) {
       Utils.showToast(err.message || 'Failed to delete payment', 'danger');
+    } finally {
+      this._isDeletingPayment = false;
     }
   },
 
+  _isTogglingRetainer: false,
+
   async toggleClientRetainer(clientId) {
+    if (this._isTogglingRetainer) return;
     const client = Storage.getClientById(clientId);
     if (!client || !client.monthlyAmount || client.monthlyAmount <= 0) return;
 
@@ -1334,6 +1337,7 @@ const Payments = {
       if (!confirmed) return;
     }
 
+    this._isTogglingRetainer = true;
     try {
       await Storage.updateClient(clientId, { retainerStatus: newStatus });
       Utils.showToast(
@@ -1344,6 +1348,8 @@ const Payments = {
       );
     } catch (err) {
       Utils.showToast(err.message || 'Failed to update retainer status', 'danger');
+    } finally {
+      this._isTogglingRetainer = false;
     }
 
     this.syncCreateInvoiceFields();
@@ -1354,7 +1360,10 @@ const Payments = {
     }
   },
 
+  _isDeletingRetainer: false,
+
   async deleteClientRetainer(clientId) {
+    if (this._isDeletingRetainer) return;
     const client = Storage.getClientById(clientId);
     if (!client) return;
 
@@ -1367,6 +1376,7 @@ const Payments = {
 
     if (!confirmed) return;
 
+    this._isDeletingRetainer = true;
     try {
       await Storage.updateClient(clientId, {
         monthlyAmount: 0,
@@ -1381,6 +1391,8 @@ const Payments = {
       Utils.showToast(`Monthly retainer deleted for ${client.name}`, 'success');
     } catch (err) {
       Utils.showToast(err.message || 'Failed to delete retainer', 'danger');
+    } finally {
+      this._isDeletingRetainer = false;
     }
 
     this.syncCreateInvoiceFields();

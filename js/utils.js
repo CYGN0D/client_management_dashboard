@@ -336,15 +336,68 @@ const Utils = {
     if (modal) {
       modal.classList.remove('open');
       modal.style.display = 'none';
+      // Reset any pending form submission flags inside the modal
+      modal.querySelectorAll('form').forEach((f) => {
+        f.dataset.isSubmitting = 'false';
+      });
+    }
+  },
+
+  /**
+   * Set loading state on a button to prevent multiple rapid clicks / double submissions.
+   * Disables the button, sets pointer-events: none, aria-busy, and renders spinner.
+   * Restores original HTML and state when isLoading is false.
+   */
+  setButtonLoading(btn, isLoading, loadingText = 'Processing...') {
+    if (!btn) return false;
+    if (isLoading) {
+      if (btn.dataset.isBusy === 'true') return false; // already busy
+      btn.dataset.isBusy = 'true';
+      btn.dataset.originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+      btn.classList.add('is-loading');
+      btn.innerHTML = `<span class="spinner-sm"></span> ${this.escapeHtml(loadingText)}`;
+      return true;
+    } else {
+      btn.dataset.isBusy = 'false';
+      btn.disabled = false;
+      btn.removeAttribute('aria-busy');
+      btn.classList.remove('is-loading');
+      if (btn.dataset.originalHtml) {
+        btn.innerHTML = btn.dataset.originalHtml;
+        delete btn.dataset.originalHtml;
+      }
+      if (typeof this.refreshIcons === 'function') {
+        this.refreshIcons();
+      }
+      return true;
     }
   },
 
   /**
    * Setup global modal dismiss triggers (Escape key & backdrop click)
+   * and global double-submission interception.
    */
   initModalListeners() {
     if (this._modalListenersBound) return;
     this._modalListenersBound = true;
+
+    // Universal double-submission guard on all forms
+    document.addEventListener('submit', (e) => {
+      const form = e.target;
+      if (!form || form.tagName !== 'FORM') return;
+      if (form.dataset.isSubmitting === 'true') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
+      }
+      form.dataset.isSubmitting = 'true';
+      // Automatically unlock if something stalled or timed out after 8 seconds
+      setTimeout(() => {
+        if (form) form.dataset.isSubmitting = 'false';
+      }, 8000);
+    }, true);
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {

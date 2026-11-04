@@ -92,12 +92,16 @@ const Auth = {
     }
   },
 
+  _isLoggingIn: false,
+
   bindLoginForm() {
     const form = document.getElementById('loginForm');
     if (!form) return;
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (this._isLoggingIn) return;
+
       const emailInput = document.getElementById('loginEmail');
       const passwordInput = document.getElementById('loginPassword');
       const errorAlert = document.getElementById('loginErrorAlert');
@@ -131,10 +135,8 @@ const Auth = {
         return;
       }
 
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Logging in...';
-      }
+      this._isLoggingIn = true;
+      Utils.setButtonLoading(submitBtn, true, 'Logging in...');
 
       try {
         if (!window.API || typeof API.auth === 'undefined') {
@@ -170,10 +172,8 @@ const Auth = {
           errorAlert.style.display = 'block';
         }
       } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Log In';
-        }
+        this._isLoggingIn = false;
+        Utils.setButtonLoading(submitBtn, false);
       }
     });
   },
