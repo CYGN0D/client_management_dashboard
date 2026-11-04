@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/response.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/helpers.php';
 
 class AuthMiddleware {
     private static bool $sessionStarted = false;
@@ -129,7 +130,7 @@ class AuthMiddleware {
      * Verify CSRF token for state-changing HTTP methods
      */
     public static function verifyCsrf(): void {
-        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        $method = Helpers::getRequestMethod();
         if (in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) {
             return;
         }
@@ -140,14 +141,25 @@ class AuthMiddleware {
             Response::forbidden('CSRF session token missing. Please refresh and try again.');
         }
 
-        // Check header first (e.g. X-CSRF-Token), then POST body
-        $receivedToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+        // Check header first (e.g. X-CSRF-Token or FastCGI environment redirect header)
+        $receivedToken = $_SERVER['HTTP_X_CSRF_TOKEN'] 
+            ?? $_SERVER['REDIRECT_HTTP_X_CSRF_TOKEN'] 
+            ?? '';
+
         if (empty($receivedToken)) {
-            $input = json_decode(file_get_contents('php://input'), true);
-            if (is_array($input) && isset($input['csrf_token'])) {
-                $receivedToken = $input['csrf_token'];
-            } elseif (isset($_POST['csrf_token'])) {
-                $receivedToken = $_POST['csrf_token'];
+            // Check query parameter fallback (crucial for shared hosting that strips custom headers)
+            if (!empty($_GET['csrf_token'])) {
+                $receivedToken = (string)$_GET['csrf_token'];
+            } elseif (!empty($_POST['csrf_token'])) {
+                $receivedToken = (string)$_POST['csrf_token'];
+            } else {
+                $raw = @file_get_contents('php://input');
+                if (!empty($raw) && ($raw[0] === '{' || $raw[0] === '[')) {
+                    $input = json_decode($raw, true);
+                    if (is_array($input) && isset($input['csrf_token'])) {
+                        $receivedToken = (string)$input['csrf_token'];
+                    }
+                }
             }
         }
 

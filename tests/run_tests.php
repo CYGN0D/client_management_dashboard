@@ -79,6 +79,7 @@ class TestRunner {
         $this->testSqlInjectionPrevention($testUserAId);
         $this->testDatabaseTransactionRollback($testUserAId);
         $this->testLocalStorageMigration($testUserAId);
+        $this->testSharedHostingHardening($testUserAId);
 
         $this->cleanupTestUsers([$testUserAId, $testUserBId]);
 
@@ -549,6 +550,109 @@ class TestRunner {
         $stmt->execute([':uid' => $userId]);
         $status = $stmt->fetchColumn();
         $this->assert($status === 'paid', 'Migrated invoice status verified as paid');
+    }
+
+    private function testSharedHostingHardening(int $userId): void {
+        echo "\n[14] Testing Shared Hosting Compatibility & Hardening\n";
+
+        // Backup existing server variables
+        $origServer = $_SERVER;
+        $origGet = $_GET;
+        $origPost = $_POST;
+
+        // 1. Test getRequestMethod() overrides
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $this->assert(Helpers::getRequestMethod() === 'GET', 'Helpers::getRequestMethod returns GET for standard GET');
+
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $this->assert(Helpers::getRequestMethod() === 'POST', 'Helpers::getRequestMethod returns POST for standard POST');
+
+        // Header override
+        $_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'] = 'DELETE';
+        $this->assert(Helpers::getRequestMethod() === 'DELETE', 'Helpers::getRequestMethod detects X-HTTP-Method-Override: DELETE');
+        unset($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']);
+
+        // FastCGI redirect header override
+        $_SERVER['REDIRECT_HTTP_X_HTTP_METHOD_OVERRIDE'] = 'PUT';
+        $this->assert(Helpers::getRequestMethod() === 'PUT', 'Helpers::getRequestMethod detects FastCGI REDIRECT_HTTP_X_HTTP_METHOD_OVERRIDE: PUT');
+        unset($_SERVER['REDIRECT_HTTP_X_HTTP_METHOD_OVERRIDE']);
+
+        // Query param override
+        $_GET['_method'] = 'DELETE';
+        $this->assert(Helpers::getRequestMethod() === 'DELETE', 'Helpers::getRequestMethod detects _method=DELETE in query string');
+        unset($_GET['_method']);
+
+        // POST body override
+        $_POST['_method'] = 'PATCH';
+        $this->assert(Helpers::getRequestMethod() === 'PATCH', 'Helpers::getRequestMethod detects _method=PATCH in form body');
+        unset($_POST['_method']);
+
+        // 2. Test CSRF fallback handling for shared hosts stripping custom headers
+        if (session_status() === PHP_SESSION_NONE) {
+            @session_start();
+        }
+        $validToken = 'test_token_' . bin2hex(random_bytes(16));
+        $_SESSION['csrf_token'] = $validToken;
+
+        // Header CSRF
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_SERVER['HTTP_X_CSRF_TOKEN'] = $validToken;
+        $passedHeader = false;
+        try {
+            AuthMiddleware::verifyCsrf();
+            $passedHeader = true;
+        } catch (Throwable $t) {
+            $passedHeader = false;
+        }
+        $this->assert($passedHeader, 'CSRF verification succeeds via HTTP_X_CSRF_TOKEN');
+        unset($_SERVER['HTTP_X_CSRF_TOKEN']);
+
+        // Query param CSRF (shared hosting fallback)
+        $_GET['csrf_token'] = $validToken;
+        $passedGet = false;
+        try {
+            AuthMiddleware::verifyCsrf();
+            $passedGet = true;
+        } catch (Throwable $t) {
+            $passedGet = false;
+        }
+        $this->assert($passedGet, 'CSRF verification succeeds via query param ?csrf_token= fallback on shared hosting');
+        unset($_GET['csrf_token']);
+
+        // POST param CSRF
+        $_POST['csrf_token'] = $validToken;
+        $passedPost = false;
+        try {
+            AuthMiddleware::verifyCsrf();
+            $passedPost = true;
+        } catch (Throwable $t) {
+            $passedPost = false;
+        }
+        $this->assert($passedPost, 'CSRF verification succeeds via POST body csrf_token fallback');
+        unset($_POST['csrf_token']);
+
+        // Invalid CSRF rejection (tested in isolated process to handle exit;)
+        $cmd = 'php -r \'require "includes/auth.php"; AuthMiddleware::startSession(); $_SESSION["csrf_token"]="real"; $_SERVER["REQUEST_METHOD"]="POST"; $_SERVER["HTTP_X_CSRF_TOKEN"]="fake"; AuthMiddleware::verifyCsrf();\'';
+        $output = shell_exec($cmd . ' 2>&1');
+        $this->assert(str_contains($output, 'Invalid CSRF token') && str_contains($output, '"success":false'), 'CSRF verification strictly rejects invalid token with 403 JSON');
+
+        // 3. Test SQLite PRAGMA configuration
+        if (Database::getDriver() === 'sqlite') {
+            $db = Database::getConnection();
+            $fk = $db->query('PRAGMA foreign_keys;')->fetchColumn();
+            $this->assert((int)$fk === 1, 'SQLite PRAGMA foreign_keys is ON');
+
+            $busy = $db->query('PRAGMA busy_timeout;')->fetchColumn();
+            $this->assert((int)$busy >= 5000, 'SQLite PRAGMA busy_timeout is configured (>= 5000ms)');
+
+            $journal = $db->query('PRAGMA journal_mode;')->fetchColumn();
+            $this->assert(in_array(strtolower($journal), ['delete', 'truncate', 'wal']), 'SQLite PRAGMA journal_mode is valid (' . $journal . ')');
+        }
+
+        // Restore environment
+        $_SERVER = $origServer;
+        $_GET = $origGet;
+        $_POST = $origPost;
     }
 }
 

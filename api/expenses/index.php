@@ -11,7 +11,7 @@ require_once __DIR__ . '/../../includes/validation.php';
 require_once __DIR__ . '/../../services/ExpenseService.php';
 
 $userId = AuthMiddleware::requireAuth();
-$method = $_SERVER['REQUEST_METHOD'];
+$method = Helpers::getRequestMethod();
 
 if ($method === 'GET') {
     $category = $_GET['category'] ?? null;

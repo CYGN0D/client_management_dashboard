@@ -13,7 +13,7 @@ require_once __DIR__ . '/../../services/ExpenseService.php';
 
 $userId = AuthMiddleware::requireAuth();
 $expenseId = (int)($_GET['id'] ?? 0);
-$method = $_SERVER['REQUEST_METHOD'];
+$method = Helpers::getRequestMethod();
 
 if (!$expenseId) {
     Response::error('Missing expense ID parameter.', 400);
@@ -54,7 +54,7 @@ if ($method === 'PUT' || $method === 'PATCH') {
     }
 }
 
-if ($method === 'DELETE') {
+if ($method === 'DELETE' || ($method === 'POST' && (($_GET['action'] ?? '') === 'delete' || ($_POST['action'] ?? '') === 'delete'))) {
     AuthMiddleware::verifyCsrf();
     try {
         $res = ExpenseService::delete($userId, $expenseId);

@@ -11,7 +11,7 @@ require_once __DIR__ . '/../../services/PaymentService.php';
 
 $userId = AuthMiddleware::requireAuth();
 $paymentId = (int)($_GET['id'] ?? 0);
-$method = $_SERVER['REQUEST_METHOD'];
+$method = Helpers::getRequestMethod();
 
 if (!$paymentId) {
     Response::error('Missing payment ID parameter.', 400);

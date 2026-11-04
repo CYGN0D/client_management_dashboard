@@ -13,7 +13,7 @@ require_once __DIR__ . '/../../services/ReportService.php';
 
 $userId = AuthMiddleware::requireAuth();
 
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+if (Helpers::getRequestMethod() !== 'GET') {
     Response::error('Method not allowed', 405);
 }
 

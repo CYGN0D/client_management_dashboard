@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../includes/response.php';
 require_once __DIR__ . '/../../includes/validation.php';
 require_once __DIR__ . '/../../services/AuthService.php';
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+if (Helpers::getRequestMethod() !== 'POST') {
     Response::error('Method not allowed', 405);
 }
 

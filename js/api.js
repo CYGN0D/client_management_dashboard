@@ -36,7 +36,7 @@ const API = {
       const res = await fetch(this.getApiUrl('auth/csrf.php'), {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
-        credentials: 'same-origin'
+        credentials: 'include'
       });
       const data = await res.json();
       if (data && data.success && data.data && data.data.csrf_token) {
@@ -50,36 +50,57 @@ const API = {
   },
 
   /**
-   * Universal fetch wrapper with automatic CSRF, JSON headers, and error handling
+   * Universal fetch wrapper with automatic CSRF, HTTP method tunneling, and error handling.
+   * Hardened specifically for shared hosting (cPanel, LiteSpeed, Apache, FastCGI).
    */
   async request(endpoint, options = {}) {
-    const method = (options.method || 'GET').toUpperCase();
+    const desiredMethod = (options.method || 'GET').toUpperCase();
+    let effectiveMethod = desiredMethod;
+    let url = this.getApiUrl(endpoint);
     const headers = {
       'Accept': 'application/json',
       ...(options.headers || {})
     };
 
+    // SHARED HOSTING HARDENING:
+    // Tunnel PUT, PATCH, and DELETE via POST with X-HTTP-Method-Override & ?_method=
+    // Many shared hosting web servers and mod_security rules block raw PUT and DELETE verbs.
+    if (['PUT', 'PATCH', 'DELETE'].includes(desiredMethod)) {
+      effectiveMethod = 'POST';
+      headers['X-HTTP-Method-Override'] = desiredMethod;
+      const sep = url.includes('?') ? '&' : '?';
+      url = `${url}${sep}_method=${desiredMethod}`;
+    }
+
     // Attach CSRF token on state-changing requests
-    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(desiredMethod)) {
       const csrf = await this.getCsrfToken();
       if (csrf) {
         headers['X-CSRF-Token'] = csrf;
+        // Also attach to URL query as safe fallback for FastCGI environments that strip custom headers
+        const sep = url.includes('?') ? '&' : '?';
+        url = `${url}${sep}csrf_token=${encodeURIComponent(csrf)}`;
       }
     }
 
     // Attach Content-Type for JSON body
-    if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData)) {
+    let body = options.body;
+    if (body && typeof body === 'object' && !(body instanceof FormData)) {
       headers['Content-Type'] = 'application/json; charset=UTF-8';
-      options.body = JSON.stringify(options.body);
+      // If method is tunneled, also include _method in the JSON body
+      if (['PUT', 'PATCH', 'DELETE'].includes(desiredMethod) && !body._method) {
+        body = { ...body, _method: desiredMethod };
+      }
+      body = JSON.stringify(body);
     }
 
     try {
-      const url = this.getApiUrl(endpoint);
       const response = await fetch(url, {
         ...options,
-        method,
+        method: effectiveMethod,
         headers,
-        credentials: 'same-origin'
+        body,
+        credentials: 'include'
       });
 
       const json = await response.json().catch(() => ({

@@ -8,6 +8,46 @@ require_once __DIR__ . '/db.php';
 
 class Helpers {
     /**
+     * Get effective HTTP request method with Method Tunneling support for shared hosting
+     * (Supports X-HTTP-Method-Override header, FastCGI redirect header, _method query param, and _method form/JSON body)
+     */
+    public static function getRequestMethod(): string {
+        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        if ($method === 'POST') {
+            // 1. Check HTTP header (standard or Apache FastCGI environment prefix)
+            $override = $_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'] 
+                ?? $_SERVER['REDIRECT_HTTP_X_HTTP_METHOD_OVERRIDE'] 
+                ?? '';
+            if (!empty($override)) {
+                return strtoupper(trim($override));
+            }
+
+            // 2. Check query string ?_method=DELETE or ?_method=PUT
+            if (!empty($_GET['_method'])) {
+                return strtoupper(trim((string)$_GET['_method']));
+            }
+
+            // 3. Check parsed form body $_POST['_method']
+            if (!empty($_POST['_method'])) {
+                return strtoupper(trim((string)$_POST['_method']));
+            }
+
+            // 4. Check JSON body if Content-Type is application/json
+            $contentType = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
+            if (stripos($contentType, 'application/json') !== false) {
+                $raw = @file_get_contents('php://input');
+                if (!empty($raw) && ($raw[0] === '{' || $raw[0] === '[')) {
+                    $json = json_decode($raw, true);
+                    if (is_array($json) && !empty($json['_method'])) {
+                        return strtoupper(trim((string)$json['_method']));
+                    }
+                }
+            }
+        }
+        return $method;
+    }
+
+    /**
      * Record an audit action into activity_logs
      */
     public static function logActivity(

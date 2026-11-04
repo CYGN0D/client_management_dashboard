@@ -249,8 +249,12 @@ const Expenses = {
   },
 
   async openAddEditModal(expenseId = null) {
-    if (!Storage._isLoaded && window.Auth && Auth.isAuthenticated()) {
-      await Storage.syncFromBackend();
+    if (expenseId && !Storage._isLoaded && window.Auth && Auth.isAuthenticated()) {
+      try {
+        await Storage.syncFromBackend();
+      } catch (e) {
+        console.warn('[Cliento] Sync before expense edit warning:', e);
+      }
     }
     const form = document.getElementById('expenseForm');
     const modalTitle = document.getElementById('expenseModalTitle');
@@ -268,7 +272,15 @@ const Expenses = {
     catSelect.innerHTML = this.CATEGORIES.map((c) => `<option value="${c}">${c}</option>`).join('');
 
     if (expenseId) {
-      const exp = Storage.getExpenseById(expenseId);
+      let exp = Storage.getExpenseById(expenseId);
+      if (!exp) {
+        try {
+          const res = await API.expenses.getById(expenseId);
+          if (res) exp = Storage._mapExpenseFromApi(res);
+        } catch (e) {
+          console.warn('[Cliento] Direct expense fetch warning:', e);
+        }
+      }
       if (!exp) return;
       modalTitle.textContent = 'Edit Expense';
       idInput.value = exp.id;

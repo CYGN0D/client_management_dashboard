@@ -1,6 +1,6 @@
 # ==============================================================================
 # CLIENTO — APACHE & SHARED HOSTING CONFIGURATION (.htaccess)
-# Compatible with cPanel, DirectAdmin, Plesk, LiteSpeed, and Apache 2.4+
+# Hardened for cPanel, DirectAdmin, Plesk, LiteSpeed, Hostinger, GoDaddy, and Apache 2.4+
 # ==============================================================================
 
 # 1. Directory Index
@@ -19,9 +19,21 @@ DirectoryIndex index.php index.html
     </FilesMatch>
 </IfModule>
 
-# 3. Rewrite Rules for Routing & Protection
+# 3. Environment Headers for Apache FastCGI / PHP-FPM on Shared Hosting
+<IfModule mod_setenvif.c>
+    SetEnvIfNoCase ^X-CSRF-Token$ ^(.*)$ HTTP_X_CSRF_TOKEN=$1
+    SetEnvIfNoCase ^X-HTTP-Method-Override$ ^(.*)$ HTTP_X_HTTP_METHOD_OVERRIDE=$1
+    SetEnvIfNoCase ^Authorization$ ^(.*)$ HTTP_AUTHORIZATION=$1
+</IfModule>
+
+# 4. Rewrite Rules for Routing & Protection
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Forward custom headers to PHP under FastCGI
+    RewriteRule .* - [E=HTTP_X_CSRF_TOKEN:%{HTTP:X-CSRF-Token}]
+    RewriteRule .* - [E=HTTP_X_HTTP_METHOD_OVERRIDE:%{HTTP:X-HTTP-Method-Override}]
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
     # Block direct browsing of internal backend folders
     RewriteRule ^(config|includes|services|tests|database) - [F,L,NC]
@@ -35,17 +47,27 @@ DirectoryIndex index.php index.html
     RewriteRule ^ index.php [L]
 </IfModule>
 
-# 4. Security Headers
+# 5. Prevent Aggressive Shared Hosting Caching on Dynamic Endpoints and HTML
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "SAMEORIGIN"
     Header set X-XSS-Protection "1; mode=block"
+
+    <FilesMatch "\.(html|htm|php|json)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
 </IfModule>
 
-# 5. MIME Types
+# 6. Disable LiteSpeed Cache for dynamic requests on shared hosting
+<IfModule LiteSpeed>
+    CacheLookup off
+</IfModule>
+
+# 7. MIME Types
 <IfModule mod_mime.c>
     AddType application/json .json
     AddType application/javascript .js
     AddType text/css .css
-    AddType application/zip .zip
 </IfModule>

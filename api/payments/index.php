@@ -11,7 +11,7 @@ require_once __DIR__ . '/../../includes/validation.php';
 require_once __DIR__ . '/../../services/PaymentService.php';
 
 $userId = AuthMiddleware::requireAuth();
-$method = $_SERVER['REQUEST_METHOD'];
+$method = Helpers::getRequestMethod();
 
 if ($method === 'GET') {
     $month = $_GET['month'] ?? null;

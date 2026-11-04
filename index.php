@@ -34,10 +34,13 @@ if (preg_match('#/api/(.+)$#', $uri, $matches)) {
     }
 }
 
-// Serve main frontend single-page application
+// Serve main frontend single-page application with cache-busting headers
 $indexHtml = __DIR__ . '/index.html';
 if (file_exists($indexHtml)) {
     header('Content-Type: text/html; charset=UTF-8');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
     readfile($indexHtml);
     exit;
 }

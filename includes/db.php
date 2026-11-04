@@ -39,18 +39,18 @@ class Database {
                         @chmod($dbFile, 0666);
                     }
 
-                    // Enable foreign keys
+                    // Enable foreign keys and set busy timeout for shared hosting concurrent writes
                     self::$instance->exec('PRAGMA foreign_keys = ON;');
+                    self::$instance->exec('PRAGMA busy_timeout = 5000;');
 
-                    // Journal mode: try WAL first, fallback safely for restricted shared hosting filesystems
+                    // Journal mode for shared hosting:
+                    // DELETE mode is universally supported across all shared hosting filesystems (including CageFS/NFS)
+                    // Avoid WAL because WAL requires POSIX shared memory (/dev/shm) which fails silently on shared hosts.
                     try {
-                        self::$instance->exec('PRAGMA journal_mode = WAL;');
+                        self::$instance->exec('PRAGMA journal_mode = DELETE;');
+                        self::$instance->exec('PRAGMA synchronous = NORMAL;');
                     } catch (Throwable $t) {
-                        try {
-                            self::$instance->exec('PRAGMA journal_mode = DELETE;');
-                        } catch (Throwable $t2) {
-                            // Continue
-                        }
+                        // Fallback gracefully
                     }
 
                     // Register custom NOW() function for query parity with MySQL

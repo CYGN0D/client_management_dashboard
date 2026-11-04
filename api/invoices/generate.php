@@ -11,7 +11,7 @@ require_once __DIR__ . '/../../services/InvoiceService.php';
 
 $userId = AuthMiddleware::requireAuth();
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+if (Helpers::getRequestMethod() !== 'POST') {
     Response::error('Method not allowed', 405);
 }
 

@@ -577,8 +577,12 @@ const Clients = {
   },
 
   async openAddEditModal(clientId = null) {
-    if (!Storage._isLoaded && window.Auth && Auth.isAuthenticated()) {
-      await Storage.syncFromBackend();
+    if (clientId && !Storage._isLoaded && window.Auth && Auth.isAuthenticated()) {
+      try {
+        await Storage.syncFromBackend();
+      } catch (e) {
+        console.warn('[Cliento] Sync before edit warning:', e);
+      }
     }
     // Close dropdowns
     document.querySelectorAll('.dropdown-menu.show').forEach((m) => m.classList.remove('show'));
@@ -606,7 +610,15 @@ const Clients = {
     const initialMethodSelect = document.getElementById('clientInitialMethod');
 
     if (clientId) {
-      const client = Storage.getClientById(clientId);
+      let client = Storage.getClientById(clientId);
+      if (!client) {
+        try {
+          const res = await API.clients.getById(clientId);
+          if (res) client = Storage._mapClientFromApi(res);
+        } catch (e) {
+          console.warn('[Cliento] Direct client fetch warning:', e);
+        }
+      }
       if (!client) {
         Utils.showToast('Client record not found', 'warning');
         return;
@@ -2045,10 +2057,22 @@ const Clients = {
   async confirmDeleteClient(clientId) {
     document.querySelectorAll('.dropdown-menu.show').forEach((m) => m.classList.remove('show'));
     if (!Storage._isLoaded && window.Auth && Auth.isAuthenticated()) {
-      await Storage.syncFromBackend();
+      try {
+        await Storage.syncFromBackend();
+      } catch (e) {
+        console.warn('[Cliento] Sync before delete warning:', e);
+      }
     }
 
-    const client = Storage.getClientById(clientId);
+    let client = Storage.getClientById(clientId);
+    if (!client) {
+      try {
+        const res = await API.clients.getById(clientId);
+        if (res) client = Storage._mapClientFromApi(res);
+      } catch (e) {
+        console.warn('[Cliento] Direct client fetch for delete warning:', e);
+      }
+    }
     if (!client) {
       Utils.showToast('Client not found', 'warning');
       return;

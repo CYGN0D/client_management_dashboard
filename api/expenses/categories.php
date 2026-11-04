@@ -10,7 +10,7 @@ require_once __DIR__ . '/../../services/ExpenseService.php';
 
 $userId = AuthMiddleware::requireAuth();
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+if (Helpers::getRequestMethod() === 'GET') {
     $categories = ExpenseService::getCategories($userId);
     Response::success($categories, 'Categories retrieved');
 }

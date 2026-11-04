@@ -14,7 +14,7 @@ require_once __DIR__ . '/../../services/ClientService.php';
 
 $userId = AuthMiddleware::requireAuth();
 $clientId = (int)($_GET['id'] ?? 0);
-$method = $_SERVER['REQUEST_METHOD'];
+$method = Helpers::getRequestMethod();
 
 if (!$clientId) {
     Response::error('Missing client ID parameter.', 400);
@@ -86,7 +86,7 @@ if ($method === 'PUT' || $method === 'PATCH') {
     }
 }
 
-if ($method === 'DELETE') {
+if ($method === 'DELETE' || ($method === 'POST' && (($_GET['action'] ?? '') === 'delete' || ($_POST['action'] ?? '') === 'delete'))) {
     AuthMiddleware::verifyCsrf();
     $permanent = isset($_GET['permanent']) && ($_GET['permanent'] === '1' || $_GET['permanent'] === 'true' || $_GET['permanent'] === 1);
     $force = isset($_GET['force']) && ($_GET['force'] === '1' || $_GET['force'] === 'true' || $_GET['force'] === 1);
